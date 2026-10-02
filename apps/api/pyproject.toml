@@ -31,6 +31,9 @@ dev = [
 line-length = 88
 target-version = "py312"
 
+[tool.ruff.lint]
+ignore = ["B008", "UP046"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
