@@ -11,7 +11,8 @@
     "verify:shell": "node scripts/verify-responsive-shell.mjs",
     "verify:public": "node scripts/verify-public-experience.mjs",
     "verify:auth": "node scripts/verify-auth-experience.mjs",
-    "verify:all": "npm run verify:shell && npm run verify:public && npm run verify:auth"
+    "verify:authz": "node scripts/verify-authorization-flow.mjs",
+    "verify:all": "npm run verify:shell && npm run verify:public && npm run verify:auth && npm run verify:authz"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.45.0",
