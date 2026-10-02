@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "verify:shell": "node scripts/verify-responsive-shell.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.45.0",
