@@ -1,11 +1,19 @@
-"""Arogyavajra API Entrypoint."""
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.core.config import settings
-from app.db.session import check_db_connection
+from app.db.session import check_db_connection, close_db_engine
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan manager for startup and shutdown hooks."""
+    yield
+    close_db_engine()
+
 
 app = FastAPI(
     title="Arogyavajra Healthcare Management API",
@@ -13,6 +21,7 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 # CORS Middleware
