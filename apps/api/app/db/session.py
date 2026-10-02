@@ -2,13 +2,18 @@
 
 from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.orm import sessionmaker
 
 from app.core.config import settings
+from app.db.base import Base
 
-Base = declarative_base()
-
-_engine = None
+__all__ = [
+    "Base",
+    "check_db_connection",
+    "get_db",
+    "get_engine",
+    "get_sessionmaker",
+]
 _SessionLocal = None
 
 
