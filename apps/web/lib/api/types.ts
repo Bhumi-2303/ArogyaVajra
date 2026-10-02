@@ -15,7 +15,32 @@ export interface User {
   role: UserRole;
   is_active: boolean;
   created_at: string;
+  updated_at?: string | null;
   last_login_at?: string | null;
+}
+
+export interface UserUpdateInput {
+  role?: UserRole;
+  is_active?: boolean;
+}
+
+export interface UserListResponse {
+  data: User[];
+  pagination: PaginationMeta;
+  message: string;
+}
+
+export interface UserDetailResponse {
+  data: User;
+  message: string;
+}
+
+export interface UserSearchParams {
+  search?: string;
+  role?: UserRole;
+  is_active?: boolean;
+  page?: number;
+  page_size?: number;
 }
 
 export interface AuthTokens {
