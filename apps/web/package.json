@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
-    "verify:shell": "node scripts/verify-responsive-shell.mjs"
+    "verify:shell": "node scripts/verify-responsive-shell.mjs",
+    "verify:public": "node scripts/verify-public-experience.mjs",
+    "verify:all": "npm run verify:shell && npm run verify:public"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.45.0",

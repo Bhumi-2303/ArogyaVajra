@@ -134,10 +134,10 @@ async function run() {
   assert(sidebarContent.includes("BILLING_STAFF:"), "Configured navigation items for BILLING_STAFF role");
   assert(sidebarContent.includes("ADMIN:"), "Configured navigation items for ADMIN role");
 
-  // 5. Verify Live Server DOM & Rendered HTML
-  console.log("\n[5/5] Verifying Live Next.js Web Server (http://localhost:3000)...");
+  // 5. Verify Live Server DOM & Rendered HTML on /design-system
+  console.log("\n[5/5] Verifying Live Next.js Web Server (http://localhost:3000/design-system)...");
   try {
-    const res = await fetchPage("http://localhost:3000");
+    const res = await fetchPage("http://localhost:3000/design-system");
     assert(res.statusCode === 200, `Next.js server responds with HTTP ${res.statusCode}`);
     assert(res.body.includes("skip-to-content"), "Rendered HTML contains skip-to-content landmark");
     assert(res.body.includes('id="main-content"'), "Rendered HTML contains id='main-content'");
@@ -145,7 +145,7 @@ async function run() {
     assert(res.body.includes("Shared Frontend Infrastructure"), "Rendered HTML contains PageHeader title");
     assert(res.body.includes("Deep Navy"), "Rendered HTML contains Palette tokens showcase");
   } catch (err) {
-    assert(false, `Could not connect to http://localhost:3000: ${err.message}`);
+    assert(false, `Could not connect to http://localhost:3000/design-system: ${err.message}`);
   }
 
   console.log("\n============================================================");

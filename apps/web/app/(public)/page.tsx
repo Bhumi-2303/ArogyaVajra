@@ -555,7 +555,7 @@ export default function PublicLandingPage() {
               id="security-heading"
               className="text-2xl font-bold tracking-tight text-navy sm:text-3xl"
             >
-              Security &amp; Architectural Foundations
+              {"Security & Trust: Architectural Foundations"}
             </h2>
             <p className="mt-2 text-sm text-app-muted">
               Built on transparent engineering principles ensuring transactional safety
