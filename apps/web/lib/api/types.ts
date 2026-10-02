@@ -159,3 +159,68 @@ export interface PatientSearchParams {
   page_size?: number;
 }
 
+export interface Doctor {
+  id: string;
+  user_id: string;
+  doctor_code: string;
+  first_name: string;
+  last_name: string;
+  specialization: string;
+  qualification?: string | null;
+  license_number?: string | null;
+  phone?: string | null;
+  consultation_fee: number;
+  bio?: string | null;
+  created_at: string;
+  updated_at: string;
+  email?: string | null;
+  is_active: boolean;
+}
+
+export interface DoctorCreateInput {
+  email?: string;
+  password?: string;
+  user_id?: string;
+  first_name: string;
+  last_name: string;
+  specialization: string;
+  qualification?: string | null;
+  license_number?: string | null;
+  phone?: string | null;
+  consultation_fee?: number;
+  bio?: string | null;
+}
+
+export interface DoctorUpdateInput {
+  first_name?: string;
+  last_name?: string;
+  specialization?: string;
+  qualification?: string | null;
+  license_number?: string | null;
+  phone?: string | null;
+  consultation_fee?: number;
+  bio?: string | null;
+  is_active?: boolean;
+}
+
+export interface DoctorListResponse {
+  data: Doctor[];
+  pagination: PaginationMeta;
+  message: string;
+}
+
+export interface DoctorDetailResponse {
+  data: Doctor;
+  message: string;
+}
+
+export interface DoctorSearchParams {
+  search?: string;
+  specialization?: string;
+  code?: string;
+  name?: string;
+  is_active?: boolean;
+  page?: number;
+  page_size?: number;
+}
+
