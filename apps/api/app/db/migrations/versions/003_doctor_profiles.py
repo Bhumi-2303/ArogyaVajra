@@ -125,13 +125,9 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_index(
-        op.f("ix_doctor_profiles_user_id"), table_name="doctor_profiles"
-    )
+    op.drop_index(op.f("ix_doctor_profiles_user_id"), table_name="doctor_profiles")
     op.drop_index(
         op.f("ix_doctor_profiles_specialization"), table_name="doctor_profiles"
     )
-    op.drop_index(
-        op.f("ix_doctor_profiles_doctor_code"), table_name="doctor_profiles"
-    )
+    op.drop_index(op.f("ix_doctor_profiles_doctor_code"), table_name="doctor_profiles")
     op.drop_table("doctor_profiles")
