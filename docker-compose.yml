@@ -1,0 +1,68 @@
+services:
+  # Database: PostgreSQL 16
+  db:
+    image: postgres:16-alpine
+    container_name: arogyavajra-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-arogyavajra}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-arogyavajra_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-arogyavajra}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-arogyavajra} -d ${POSTGRES_DB:-arogyavajra}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - arogyavajra-network
+
+  # Backend: FastAPI
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: arogyavajra-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      - ./apps/api:/app
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - arogyavajra-network
+
+  # Frontend: Next.js
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    container_name: arogyavajra-web
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - api
+    networks:
+      - arogyavajra-network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  arogyavajra-network:
+    driver: bridge
