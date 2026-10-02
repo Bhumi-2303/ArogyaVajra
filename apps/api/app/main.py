@@ -79,4 +79,3 @@ async def api_root():
         },
         "message": "Welcome to Arogyavajra Healthcare Management API",
     }
-

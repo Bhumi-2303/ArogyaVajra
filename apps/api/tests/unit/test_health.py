@@ -39,4 +39,3 @@ def test_api_v1_root(client):
     data = response.json()
     assert "data" in data
     assert data["data"]["name"] == "Arogyavajra API"
-

@@ -106,7 +106,9 @@ def test_check_db_connection_probe():
     """Verify check_db_connection probe returns boolean status."""
     with patch("app.db.session.get_engine") as mock_get_engine:
         mock_conn = MagicMock()
-        mock_get_engine.return_value.connect.return_value.__enter__.return_value = mock_conn
+        mock_get_engine.return_value.connect.return_value.__enter__.return_value = (
+            mock_conn
+        )
 
         assert check_db_connection() is True
 
@@ -119,7 +121,9 @@ def test_get_db_health_details_success():
     with patch("app.db.session.get_engine") as mock_get_engine:
         mock_conn = MagicMock()
         mock_conn.execute.return_value.scalar.return_value = "PostgreSQL 16.2 on x86_64"
-        mock_get_engine.return_value.connect.return_value.__enter__.return_value = mock_conn
+        mock_get_engine.return_value.connect.return_value.__enter__.return_value = (
+            mock_conn
+        )
 
         details = get_db_health_details()
         assert details["connected"] is True

@@ -17,9 +17,7 @@ class Settings(BaseSettings):
     APP_DEBUG: bool = True
 
     # Database
-    DATABASE_URL: str = (
-        "postgresql+psycopg://arogyavajra:arogyavajra_dev_password@localhost:5432/arogyavajra"
-    )
+    DATABASE_URL: str = "postgresql+psycopg://arogyavajra:arogyavajra_dev_password@localhost:5432/arogyavajra"
 
     # API Configuration
     API_PREFIX: str = "/api/v1"
@@ -38,7 +36,9 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self) -> list[str]:
         """Return CORS origins as a list of strings."""
-        return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+        return [
+            origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()
+        ]
 
 
 settings = Settings()
