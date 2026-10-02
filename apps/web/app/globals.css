@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-navy: #021C48;
+  --color-primary: #012C7D;
+  --color-royal: #0B5ED7;
+  --color-bright: #1677E8;
+  --color-soft: #E5F0FE;
+  --color-bg: #F6F9FD;
+  --color-surface: #FFFFFF;
+  --color-border: #DDE6F2;
+  --color-muted: #52658A;
+  --color-success: #16A765;
+  --color-success-light: #D7F5E3;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-card: 16px;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-navy);
+  font-feature-settings: "rlig" 1, "calt" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Accessible focus ring style */
+*:focus-visible {
+  outline: 2px solid var(--color-royal);
+  outline-offset: 2px;
+}

@@ -53,6 +53,7 @@ pnpm-debug.log*
 lerna-debug.log*
 .pnpm-debug.log*
 .vercel
+*.tsbuildinfo
 
 # Python & FastAPI Backend (apps/api)
 __pycache__/
