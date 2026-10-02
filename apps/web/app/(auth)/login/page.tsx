@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Mail, Lock, ArrowRight, ShieldCheck, LogOut, CheckCircle2 } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
@@ -11,7 +12,11 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 
-export default function LoginPage() {
+function LoginFormContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectParam = searchParams.get("redirect");
+
   const { user, login, logout, isLoading: sessionLoading, isAuthenticated } = useAuth();
 
   const [email, setEmail] = React.useState("");
@@ -48,6 +53,13 @@ export default function LoginPage() {
     try {
       await login({ email: email.trim(), password });
       setSuccessMessage("Authentication successful. Session active.");
+      if (
+        redirectParam &&
+        redirectParam.startsWith("/") &&
+        !redirectParam.startsWith("//")
+      ) {
+        router.push(redirectParam);
+      }
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -93,6 +105,15 @@ export default function LoginPage() {
           </p>
         </CardContent>
         <CardFooter className="flex flex-col gap-2">
+          {redirectParam && redirectParam.startsWith("/") && !redirectParam.startsWith("//") && (
+            <Button
+              variant="primary"
+              className="w-full justify-center"
+              onClick={() => router.push(redirectParam)}
+            >
+              Continue to Requested Resource
+            </Button>
+          )}
           <Button
             variant="outline"
             className="w-full justify-center"
@@ -126,6 +147,12 @@ export default function LoginPage() {
 
       <form onSubmit={handleSubmit} noValidate>
         <CardContent className="space-y-4">
+          {redirectParam && !error && !successMessage && (
+            <Alert variant="info" title="Authentication Required">
+              Please sign in to access the requested clinical resource.
+            </Alert>
+          )}
+
           {error && (
             <Alert variant="danger" title="Authentication Failed" onDismiss={() => setError(null)}>
               {error}
@@ -191,5 +218,20 @@ export default function LoginPage() {
         </CardFooter>
       </form>
     </Card>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <Card className="shadow-card p-6 text-center">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto mb-2" />
+          <p className="text-xs text-app-muted">Loading authentication form...</p>
+        </Card>
+      }
+    >
+      <LoginFormContent />
+    </React.Suspense>
   );
 }

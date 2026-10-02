@@ -30,6 +30,8 @@ const badgeVariants = cva(
           "border border-slate-200 bg-slate-100 text-slate-600",
         active:
           "border border-emerald-200 bg-emerald-50 text-emerald-700",
+        danger:
+          "border border-red-200 bg-danger-light text-danger-dark font-medium",
         outline:
           "border border-app-border text-navy bg-white",
       },
