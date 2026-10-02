@@ -11,6 +11,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
+    from app.models.doctor import DoctorProfile
     from app.models.patient import PatientProfile
 
 
@@ -69,6 +70,12 @@ class User(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     # Relationships
     patient_profile: Mapped["PatientProfile | None"] = relationship(
         "PatientProfile",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+    doctor_profile: Mapped["DoctorProfile | None"] = relationship(
+        "DoctorProfile",
         back_populates="user",
         uselist=False,
         cascade="all, delete-orphan",
