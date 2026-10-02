@@ -1,0 +1,66 @@
+"""User domain model and Role enumeration."""
+
+import enum
+from datetime import datetime
+
+from sqlalchemy import Boolean, DateTime, String, Text
+from sqlalchemy.dialects.postgresql import ENUM as PG_ENUM
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
+
+
+class UserRole(str, enum.Enum):
+    """Authoritative user roles across Arogyavajra platform."""
+
+    PATIENT = "PATIENT"
+    DOCTOR = "DOCTOR"
+    RECEPTIONIST = "RECEPTIONIST"
+    BILLING_STAFF = "BILLING_STAFF"
+    ADMIN = "ADMIN"
+
+
+# PostgreSQL enum type definition matching naming conventions
+UserRoleType = PG_ENUM(
+    UserRole,
+    name="user_role",
+    create_type=False,
+    values_callable=lambda x: [e.value for e in x],
+)
+
+
+class User(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """Core authentication, credentials, and role entity."""
+
+    __tablename__ = "users"
+
+    email: Mapped[str] = mapped_column(
+        String(255),
+        unique=True,
+        index=True,
+        nullable=False,
+    )
+    password_hash: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+    role: Mapped[UserRole] = mapped_column(
+        UserRoleType,
+        index=True,
+        nullable=False,
+        default=UserRole.PATIENT,
+    )
+    is_active: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        server_default="true",
+        nullable=False,
+    )
+    last_login_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        default=None,
+    )
+
+    def __repr__(self) -> str:
+        return f"<User id={self.id} email={self.email} role={self.role}>"
