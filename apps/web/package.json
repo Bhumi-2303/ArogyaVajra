@@ -13,7 +13,8 @@
     "verify:auth": "node scripts/verify-auth-experience.mjs",
     "verify:authz": "node scripts/verify-authorization-flow.mjs",
     "verify:patients": "node scripts/verify-patient-experience.mjs",
-    "verify:all": "npm run verify:shell && npm run verify:public && npm run verify:auth && npm run verify:authz && npm run verify:patients"
+    "verify:users": "node scripts/verify-admin-users.mjs",
+    "verify:all": "npm run verify:shell && npm run verify:public && npm run verify:auth && npm run verify:authz && npm run verify:patients && npm run verify:users"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.45.0",
