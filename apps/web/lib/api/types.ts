@@ -58,3 +58,79 @@ export interface ChangePasswordInput {
   current_password: string;
   new_password: string;
 }
+
+export interface Patient {
+  id: string;
+  user_id: string;
+  patient_code: string;
+  first_name: string;
+  last_name: string;
+  date_of_birth?: string | null;
+  gender?: string | null;
+  phone: string;
+  address?: string | null;
+  emergency_contact_name?: string | null;
+  emergency_contact_phone?: string | null;
+  created_at: string;
+  updated_at: string;
+  email?: string | null;
+}
+
+export interface PatientCreateInput {
+  email?: string;
+  password?: string;
+  user_id?: string;
+  first_name: string;
+  last_name: string;
+  date_of_birth?: string | null;
+  gender?: string | null;
+  phone: string;
+  address?: string | null;
+  emergency_contact_name?: string | null;
+  emergency_contact_phone?: string | null;
+}
+
+export interface PatientUpdateInput {
+  first_name?: string;
+  last_name?: string;
+  date_of_birth?: string | null;
+  gender?: string | null;
+  phone?: string;
+  address?: string | null;
+  emergency_contact_name?: string | null;
+  emergency_contact_phone?: string | null;
+}
+
+export interface PaginationMeta {
+  page: number;
+  page_size: number;
+  total: number;
+  total_pages: number;
+}
+
+export interface PatientListResponse {
+  data: Patient[];
+  pagination: PaginationMeta;
+  message: string;
+}
+
+export interface PatientDetailResponse {
+  data: Patient;
+  message: string;
+}
+
+export interface PatientSubresourceListResponse<T = unknown> {
+  data: T[];
+  message: string;
+}
+
+export interface PatientSearchParams {
+  search?: string;
+  code?: string;
+  name?: string;
+  phone?: string;
+  email?: string;
+  page?: number;
+  page_size?: number;
+}
+
