@@ -1,23 +1,27 @@
-"""Alembic environment configuration."""
+"""Alembic migration environment configuration.
+
+Configures offline and online migration execution, binding to the application's
+declarative base metadata and PostgreSQL engine with schema comparison conventions.
+"""
 
 import os
 import sys
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy import engine_from_config, pool
 
-# Ensure app package is in sys.path
+# Ensure the backend app package is importable
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
 from app.core.config import settings
-from app.db.session import Base
+from app.db.base import Base
+from app.db.session import get_engine
 
 # Alembic Config object
 config = context.config
 
-# Interpret the config file for Python logging
-if config.config_file_name is not None:
+# Interpret the config file for Python logging if present
+if config.config_file_name is not None and os.path.exists(config.config_file_name):
     fileConfig(config.config_file_name)
 
 # Model MetaData for 'autogenerate' support
@@ -30,14 +34,16 @@ config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
 
-    This configures the context with just a URL and not an Engine.
+    Generates SQL scripts directly against the configured URL without an active Engine.
     """
-    url = config.get_main_option("sqlalchemy.url")
+    url = settings.DATABASE_URL
     context.configure(
         url=url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        compare_type=True,
+        compare_server_default=True,
     )
 
     with context.begin_transaction():
@@ -47,18 +53,16 @@ def run_migrations_offline() -> None:
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode.
 
-    In this scenario an Engine is created and associated with a connection.
+    Executes transactional DDL directly against the live PostgreSQL database engine.
     """
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
+    connectable = get_engine()
 
     with connectable.connect() as connection:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
+            compare_type=True,
+            compare_server_default=True,
         )
 
         with context.begin_transaction():
