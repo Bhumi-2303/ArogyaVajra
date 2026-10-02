@@ -2,12 +2,16 @@
 
 import enum
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, String, Text
 from sqlalchemy.dialects.postgresql import ENUM as PG_ENUM
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
+
+if TYPE_CHECKING:
+    from app.models.patient import PatientProfile
 
 
 class UserRole(str, enum.Enum):
@@ -60,6 +64,14 @@ class User(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         DateTime(timezone=True),
         nullable=True,
         default=None,
+    )
+
+    # Relationships
+    patient_profile: Mapped["PatientProfile | None"] = relationship(
+        "PatientProfile",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan",
     )
 
     def __repr__(self) -> str:
