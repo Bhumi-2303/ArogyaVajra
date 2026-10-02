@@ -3,11 +3,22 @@
 import uuid
 
 import pytest
+from fastapi import Depends
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 
+from app.api.deps import require_roles
+from app.db.transaction import transactional_session
 from app.main import app
+from app.models.user import User, UserRole
 
 client = TestClient(app)
+
+
+# Dummy endpoint to test role authorization dependency
+@app.get("/api/v1/test-doctor-only", tags=["Testing"])
+def doctor_only_route(user: User = Depends(require_roles(UserRole.DOCTOR))):
+    return {"message": f"Welcome doctor {user.email}"}
 
 
 @pytest.mark.integration
@@ -147,3 +158,104 @@ def test_registration_validation_rules():
         json={"email": "not-an-email", "password": "ValidPassword123!"},
     )
     assert response_email.status_code == 422
+
+
+@pytest.mark.integration
+def test_change_password_invalid_cases():
+    unique_email = f"changepw_{uuid.uuid4().hex[:8]}@example.com"
+    password = "InitialPassword123!"
+
+    reg = client.post(
+        "/api/v1/auth/register",
+        json={"email": unique_email, "password": password},
+    )
+    token = reg.json()["data"]["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Case 1: Wrong current password
+    res_wrong = client.put(
+        "/api/v1/auth/change-password",
+        headers=headers,
+        json={
+            "current_password": "WrongPassword123!",
+            "new_password": "NewValidPassword456!",
+        },
+    )
+    assert res_wrong.status_code == 400
+    assert "Current password is incorrect" in res_wrong.json()["detail"]
+
+    # Case 2: Same new password as current
+    res_same = client.put(
+        "/api/v1/auth/change-password",
+        headers=headers,
+        json={"current_password": password, "new_password": password},
+    )
+    assert res_same.status_code == 400
+    assert "different from current password" in res_same.json()["detail"]
+
+
+@pytest.mark.integration
+def test_role_authorization_enforcement():
+    # Patient role attempting to access doctor-only endpoint
+    patient_email = f"patient_{uuid.uuid4().hex[:8]}@example.com"
+    reg_patient = client.post(
+        "/api/v1/auth/register",
+        json={"email": patient_email, "password": "Password123!", "role": "PATIENT"},
+    )
+    patient_token = reg_patient.json()["data"]["access_token"]
+
+    forbidden_res = client.get(
+        "/api/v1/test-doctor-only",
+        headers={"Authorization": f"Bearer {patient_token}"},
+    )
+    assert forbidden_res.status_code == 403
+    assert "Operation not permitted" in forbidden_res.json()["detail"]
+
+    # Doctor role accessing doctor-only endpoint
+    doctor_email = f"doctor_{uuid.uuid4().hex[:8]}@example.com"
+    reg_doctor = client.post(
+        "/api/v1/auth/register",
+        json={"email": doctor_email, "password": "Password123!", "role": "DOCTOR"},
+    )
+    doctor_token = reg_doctor.json()["data"]["access_token"]
+
+    allowed_res = client.get(
+        "/api/v1/test-doctor-only",
+        headers={"Authorization": f"Bearer {doctor_token}"},
+    )
+    assert allowed_res.status_code == 200
+    assert "Welcome doctor" in allowed_res.json()["message"]
+
+
+@pytest.mark.integration
+def test_inactive_user_access_rejection():
+    email = f"inactive_{uuid.uuid4().hex[:8]}@example.com"
+    password = "Password123!"
+
+    reg = client.post(
+        "/api/v1/auth/register",
+        json={"email": email, "password": password},
+    )
+    token = reg.json()["data"]["access_token"]
+
+    # Manually deactivate user in database
+    with transactional_session() as session:
+        user = session.scalar(select(User).where(User.email == email))
+        assert user is not None
+        user.is_active = False
+
+    # Login should be rejected
+    login_res = client.post(
+        "/api/v1/auth/login",
+        json={"email": email, "password": password},
+    )
+    assert login_res.status_code == 401
+    assert "deactivated" in login_res.json()["detail"]
+
+    # Accessing protected endpoint should be rejected
+    me_res = client.get(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert me_res.status_code == 401
+    assert "inactive" in me_res.json()["detail"]

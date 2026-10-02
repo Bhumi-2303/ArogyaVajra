@@ -10,7 +10,8 @@
     "type-check": "tsc --noEmit",
     "verify:shell": "node scripts/verify-responsive-shell.mjs",
     "verify:public": "node scripts/verify-public-experience.mjs",
-    "verify:all": "npm run verify:shell && npm run verify:public"
+    "verify:auth": "node scripts/verify-auth-experience.mjs",
+    "verify:all": "npm run verify:shell && npm run verify:public && npm run verify:auth"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.45.0",
