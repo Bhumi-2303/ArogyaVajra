@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Plus, Calendar, Edit, FileText } from "lucide-react";
+
 import {
   Table,
   TableBody,
@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/dialog";
 import { AppointmentForm } from "@/components/forms/appointment-form";
 import { MedicalRecordForm } from "@/components/forms/medical-record-form";
+import { PrescriptionForm } from "@/components/forms/prescription-form";
+import { Plus, Calendar, Edit, FileText, Pill } from "lucide-react";
 
 export default function AppointmentsPage() {
   const { user } = useAuth();
@@ -45,6 +47,7 @@ export default function AppointmentsPage() {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | undefined>();
 
   const [isConsultDialogOpen, setIsConsultDialogOpen] = useState(false);
+  const [isPrescribeDialogOpen, setIsPrescribeDialogOpen] = useState(false);
 
   const handleCreate = () => {
     setSelectedAppointment(undefined);
@@ -68,6 +71,16 @@ export default function AppointmentsPage() {
 
   const handleCloseConsultDialog = () => {
     setIsConsultDialogOpen(false);
+    setSelectedAppointment(undefined);
+  };
+
+  const handlePrescribe = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+    setIsPrescribeDialogOpen(true);
+  };
+
+  const handleClosePrescribeDialog = () => {
+    setIsPrescribeDialogOpen(false);
     setSelectedAppointment(undefined);
   };
 
@@ -214,14 +227,24 @@ export default function AppointmentsPage() {
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       {user.role === "DOCTOR" && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleConsult(appointment)}
-                        >
-                          <FileText className="h-4 w-4 mr-2" />
-                          Consult
-                        </Button>
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleConsult(appointment)}
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Consult
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handlePrescribe(appointment)}
+                          >
+                            <Pill className="h-4 w-4 mr-2" />
+                            Prescribe
+                          </Button>
+                        </>
                       )}
                       <Button
                         variant="ghost"
@@ -290,6 +313,23 @@ export default function AppointmentsPage() {
             onSuccess={handleCloseConsultDialog}
             onCancel={handleCloseConsultDialog}
           />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isPrescribeDialogOpen} onOpenChange={setIsPrescribeDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>New Prescription</DialogTitle>
+          </DialogHeader>
+          {selectedAppointment && (
+            <PrescriptionForm
+              patientId={selectedAppointment.patient_id}
+              doctorId={selectedAppointment.doctor_id}
+              appointmentId={selectedAppointment.id}
+              onSuccess={handleClosePrescribeDialog}
+              onCancel={handleClosePrescribeDialog}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

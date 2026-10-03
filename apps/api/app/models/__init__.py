@@ -6,6 +6,7 @@ from app.models.patient import PatientProfile
 from app.models.user import User, UserRole
 from app.models.appointment import Appointment, AppointmentStatus
 from app.models.medical_record import MedicalRecord
+from app.models.prescription import Prescription, PrescriptionItem, PrescriptionStatus
 
 __all__ = [
     "AuditLog",
@@ -17,4 +18,7 @@ __all__ = [
     "Appointment",
     "AppointmentStatus",
     "MedicalRecord",
+    "Prescription",
+    "PrescriptionItem",
+    "PrescriptionStatus",
 ]

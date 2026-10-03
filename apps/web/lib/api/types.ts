@@ -375,3 +375,72 @@ export interface MedicalRecordSearchParams {
   page_size?: number;
 }
 
+export type PrescriptionStatus = "ACTIVE" | "COMPLETED" | "CANCELLED";
+
+export interface PrescriptionItem {
+  id: string;
+  medicine_name: string;
+  dosage: string;
+  frequency: string;
+  duration: string;
+  route?: string | null;
+  instructions?: string | null;
+}
+
+export interface PrescriptionItemCreateInput {
+  medicine_name: string;
+  dosage: string;
+  frequency: string;
+  duration: string;
+  route?: string | null;
+  instructions?: string | null;
+}
+
+export interface Prescription {
+  id: string;
+  patient_id: string;
+  doctor_id: string;
+  appointment_id?: string | null;
+  prescription_date: string;
+  instructions?: string | null;
+  status: PrescriptionStatus;
+  created_at: string;
+  updated_at: string;
+  items: PrescriptionItem[];
+}
+
+export interface PrescriptionCreateInput {
+  patient_id: string;
+  doctor_id: string;
+  appointment_id?: string | null;
+  prescription_date: string;
+  instructions?: string | null;
+  status: PrescriptionStatus;
+  items: PrescriptionItemCreateInput[];
+}
+
+export interface PrescriptionUpdateInput {
+  instructions?: string | null;
+  status?: PrescriptionStatus;
+  items?: PrescriptionItemCreateInput[];
+}
+
+export interface PrescriptionListResponse {
+  data: Prescription[];
+  pagination: PaginationMeta;
+  message: string;
+}
+
+export interface PrescriptionDetailResponse {
+  data: Prescription;
+  message: string;
+}
+
+export interface PrescriptionSearchParams {
+  patient_id?: string;
+  doctor_id?: string;
+  appointment_id?: string;
+  page?: number;
+  page_size?: number;
+}
+
