@@ -122,3 +122,28 @@ def update_prescription(
     db.commit()
 
     return PrescriptionDetailResponse(data=prescription)
+
+
+@router.post("/{prescription_id}/cancel", response_model=PrescriptionDetailResponse, summary="Cancel a prescription")
+def cancel_prescription(
+    prescription_id: uuid.UUID,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    ip_address = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
+    
+    from app.schemas.prescription import PrescriptionUpdate
+    from app.models.prescription import PrescriptionStatus
+    
+    updated = PrescriptionService.update_prescription(
+        db=db,
+        prescription_id=prescription_id,
+        data=PrescriptionUpdate(status=PrescriptionStatus.CANCELLED),
+        current_user=current_user,
+        ip_address=ip_address,
+        user_agent=user_agent,
+    )
+    db.commit()
+    return PrescriptionDetailResponse(data=updated, message="Prescription cancelled.")

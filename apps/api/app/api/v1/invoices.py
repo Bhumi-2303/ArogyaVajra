@@ -154,3 +154,52 @@ def record_payment(
     db.commit()
 
     return PaymentResponse.model_validate(payment)
+
+
+@router.post("/{invoice_id}/issue", response_model=InvoiceDetailResponse, summary="Issue an invoice")
+def issue_invoice(
+    invoice_id: uuid.UUID,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    ip_address = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
+    
+    from app.schemas.invoice import InvoiceUpdate
+    from app.models.invoice import InvoiceStatus
+    
+    updated = InvoiceService.update_invoice(
+        db=db,
+        invoice_id=invoice_id,
+        data=InvoiceUpdate(status=InvoiceStatus.ISSUED),
+        current_user=current_user,
+        ip_address=ip_address,
+        user_agent=user_agent,
+    )
+    db.commit()
+    return InvoiceDetailResponse(data=updated, message="Invoice issued.")
+
+@router.post("/{invoice_id}/cancel", response_model=InvoiceDetailResponse, summary="Cancel an invoice")
+def cancel_invoice(
+    invoice_id: uuid.UUID,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    ip_address = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
+    
+    from app.schemas.invoice import InvoiceUpdate
+    from app.models.invoice import InvoiceStatus
+    
+    updated = InvoiceService.update_invoice(
+        db=db,
+        invoice_id=invoice_id,
+        data=InvoiceUpdate(status=InvoiceStatus.CANCELLED),
+        current_user=current_user,
+        ip_address=ip_address,
+        user_agent=user_agent,
+    )
+    db.commit()
+    return InvoiceDetailResponse(data=updated, message="Invoice cancelled.")

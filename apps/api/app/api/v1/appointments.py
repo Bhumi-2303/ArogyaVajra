@@ -125,3 +125,77 @@ def update_appointment(
     db.commit()
 
     return AppointmentDetailResponse(data=appointment)
+
+
+@router.post("/{appointment_id}/confirm", response_model=AppointmentDetailResponse, summary="Confirm an appointment")
+def confirm_appointment(
+    appointment_id: uuid.UUID,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    ip_address = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
+    
+    # Use update_appointment with status=CONFIRMED
+    from app.schemas.appointment import AppointmentUpdate
+    from app.models.appointment import AppointmentStatus
+    
+    updated = AppointmentService.update_appointment(
+        db=db,
+        appointment_id=appointment_id,
+        data=AppointmentUpdate(status=AppointmentStatus.CONFIRMED),
+        current_user=current_user,
+        ip_address=ip_address,
+        user_agent=user_agent,
+    )
+    db.commit()
+    return AppointmentDetailResponse(data=updated, message="Appointment confirmed.")
+
+@router.post("/{appointment_id}/cancel", response_model=AppointmentDetailResponse, summary="Cancel an appointment")
+def cancel_appointment(
+    appointment_id: uuid.UUID,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    ip_address = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
+    
+    from app.schemas.appointment import AppointmentUpdate
+    from app.models.appointment import AppointmentStatus
+    
+    updated = AppointmentService.update_appointment(
+        db=db,
+        appointment_id=appointment_id,
+        data=AppointmentUpdate(status=AppointmentStatus.CANCELLED),
+        current_user=current_user,
+        ip_address=ip_address,
+        user_agent=user_agent,
+    )
+    db.commit()
+    return AppointmentDetailResponse(data=updated, message="Appointment cancelled.")
+
+@router.post("/{appointment_id}/complete", response_model=AppointmentDetailResponse, summary="Complete an appointment")
+def complete_appointment(
+    appointment_id: uuid.UUID,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    ip_address = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
+    
+    from app.schemas.appointment import AppointmentUpdate
+    from app.models.appointment import AppointmentStatus
+    
+    updated = AppointmentService.update_appointment(
+        db=db,
+        appointment_id=appointment_id,
+        data=AppointmentUpdate(status=AppointmentStatus.COMPLETED),
+        current_user=current_user,
+        ip_address=ip_address,
+        user_agent=user_agent,
+    )
+    db.commit()
+    return AppointmentDetailResponse(data=updated, message="Appointment completed.")
