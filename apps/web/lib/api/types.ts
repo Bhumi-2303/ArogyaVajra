@@ -219,6 +219,7 @@ export interface DoctorSearchParams {
   specialization?: string;
   code?: string;
   name?: string;
+  email?: string;
   is_active?: boolean;
   page?: number;
   page_size?: number;
@@ -468,6 +469,7 @@ export interface PrescriptionSearchParams {
   patient_id?: string;
   doctor_id?: string;
   appointment_id?: string;
+  status?: string;
   page?: number;
   page_size?: number;
 }

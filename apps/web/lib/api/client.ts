@@ -102,15 +102,22 @@ export async function apiClient<T>(
     let errorData: unknown = null;
     try {
       errorData = await response.json();
-      if (typeof errorData === "object" && errorData !== null && "detail" in errorData) {
-        const detail = (errorData as { detail: unknown }).detail;
-        if (typeof detail === "string") {
-          errorMessage = detail;
-        } else if (Array.isArray(detail) && detail.length > 0 && detail[0].msg) {
-          errorMessage = detail[0].msg;
+      if (typeof errorData === "object" && errorData !== null) {
+        if ("error" in errorData) {
+          const errObj = (errorData as { error: unknown }).error;
+          if (typeof errObj === "object" && errObj !== null && "message" in errObj) {
+            errorMessage = String((errObj as { message: unknown }).message);
+          }
+        } else if ("detail" in errorData) {
+          const detail = (errorData as { detail: unknown }).detail;
+          if (typeof detail === "string") {
+            errorMessage = detail;
+          } else if (Array.isArray(detail) && detail.length > 0 && detail[0].msg) {
+            errorMessage = detail[0].msg;
+          }
+        } else if ("message" in errorData) {
+          errorMessage = String((errorData as { message: unknown }).message);
         }
-      } else if (typeof errorData === "object" && errorData !== null && "message" in errorData) {
-        errorMessage = String((errorData as { message: unknown }).message);
       }
     } catch {
       // Body not JSON

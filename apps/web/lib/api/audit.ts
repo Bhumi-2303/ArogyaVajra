@@ -3,9 +3,7 @@ import { AuditLogListResponse, AuditLogSearchParams } from "./types";
 
 export const auditApi = {
   list: async (params?: AuditLogSearchParams): Promise<AuditLogListResponse> => {
-    const { data } = await apiClient.get<AuditLogListResponse>("/audit-logs", {
-      params,
-    });
-    return data;
+    const qs = params ? new URLSearchParams(params as any).toString() : "";
+    return apiClient<AuditLogListResponse>(`/api/v1/audit-logs${qs ? `?${qs}` : ""}`);
   },
 };
