@@ -14,8 +14,8 @@ class InvoiceRepository:
 
     @staticmethod
     def get_next_invoice_number(db: Session) -> str:
-        count = db.query(func.count(Invoice.id)).scalar()
-        next_id = (count or 0) + 1
+        from sqlalchemy import text
+        next_id = db.execute(text("SELECT nextval('invoice_number_seq')")).scalar()
         return f"INV-{next_id:05d}"
 
     @staticmethod
