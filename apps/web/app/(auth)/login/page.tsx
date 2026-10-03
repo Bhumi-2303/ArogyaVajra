@@ -149,20 +149,22 @@ function LoginFormContent() {
         <CardContent className="space-y-4">
           {redirectParam && !error && !successMessage && (
             <Alert variant="info" title="Authentication Required">
-              Please sign in to access the requested clinical resource.
-            </Alert>
+Please sign in to access the requested clinical resource.
+</Alert>
           )}
 
           {error && (
-            <Alert variant="danger" title="Authentication Failed" onDismiss={() => setError(null)}>
+            <Alert variant="danger" title="Authentication Failed" onDismiss={() =>
+setError(null)}>
               {error}
-            </Alert>
+</Alert>
           )}
 
           {successMessage && (
-            <Alert variant="success" title="Success" onDismiss={() => setSuccessMessage(null)}>
+            <Alert variant="success" title="Success" onDismiss={() =>
+setSuccessMessage(null)}>
               {successMessage}
-            </Alert>
+</Alert>
           )}
 
           <Input

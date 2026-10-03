@@ -143,15 +143,17 @@ export default function RegisterPage() {
       <form onSubmit={handleSubmit} noValidate>
         <CardContent className="space-y-4">
           {error && (
-            <Alert variant="danger" title="Registration Failed" onDismiss={() => setError(null)}>
+            <Alert variant="danger" title="Registration Failed" onDismiss={() =>
+setError(null)}>
               {error}
-            </Alert>
+</Alert>
           )}
 
           {successMessage && (
-            <Alert variant="success" title="Success" onDismiss={() => setSuccessMessage(null)}>
+            <Alert variant="success" title="Success" onDismiss={() =>
+setSuccessMessage(null)}>
               {successMessage}
-            </Alert>
+</Alert>
           )}
 
           <Input

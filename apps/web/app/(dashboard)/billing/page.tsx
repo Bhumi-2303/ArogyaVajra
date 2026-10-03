@@ -5,7 +5,7 @@ import { usePatients } from "@/hooks/use-patients";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert } from "@/components/ui/alert";
 import { Receipt, CreditCard, Clock, AlertCircle, Plus, Search, DollarSign } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -35,12 +35,11 @@ export default function BillingDashboardPage() {
       </div>
 
       <Alert>
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Financial Policy</AlertTitle>
-        <AlertDescription>
+<>Financial Policy</>
+        <>
           All displayed monetary values (total, paid amount, and outstanding balance) are authoritative figures strictly fetched from the backend system.
-        </AlertDescription>
-      </Alert>
+        </>
+</Alert>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
         <TodayInvoicesSection />
@@ -77,7 +76,7 @@ function TodayInvoicesSection() {
   const { data: patientsData } = usePatients();
 
   // Filter for invoices issued today
-  const todayInvoices = invoices.filter(inv => inv.issue_date && inv.issue_date.startsWith(today));
+  const todayInvoices = invoices.filter(inv => inv.invoice_date && inv.invoice_date.startsWith(today));
 
   return (
     <Card>
@@ -100,10 +99,9 @@ function TodayInvoicesSection() {
             <Skeleton className="h-20 w-full" />
           </div>
         ) : error ? (
-          <Alert variant="destructive" className="mt-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Failed to load today's invoices.</AlertDescription>
-          </Alert>
+          <Alert variant="danger" className="mt-4">
+<>Failed to load today's invoices.</>
+</Alert>
         ) : todayInvoices.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground border rounded-md mt-4 bg-muted/20">
             No invoices generated today.
@@ -160,10 +158,9 @@ function PendingPaymentsSection() {
             <Skeleton className="h-20 w-full" />
           </div>
         ) : error ? (
-          <Alert variant="destructive" className="mt-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Failed to load pending payments.</AlertDescription>
-          </Alert>
+          <Alert variant="danger" className="mt-4">
+<>Failed to load pending payments.</>
+</Alert>
         ) : invoices.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground border rounded-md mt-4 bg-muted/20">
             No pending payments.
@@ -222,10 +219,9 @@ function PartiallyPaidSection() {
             <Skeleton className="h-20 w-full" />
           </div>
         ) : error ? (
-          <Alert variant="destructive" className="mt-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Failed to load invoices.</AlertDescription>
-          </Alert>
+          <Alert variant="danger" className="mt-4">
+<>Failed to load invoices.</>
+</Alert>
         ) : invoices.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground border rounded-md mt-4 bg-muted/20">
             No partially paid invoices.
@@ -288,10 +284,9 @@ function RecentlyPaidSection() {
             <Skeleton className="h-20 w-full" />
           </div>
         ) : error ? (
-          <Alert variant="destructive" className="mt-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Failed to load paid invoices.</AlertDescription>
-          </Alert>
+          <Alert variant="danger" className="mt-4">
+<>Failed to load paid invoices.</>
+</Alert>
         ) : invoices.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground border rounded-md mt-4 bg-muted/20">
             No paid invoices found.

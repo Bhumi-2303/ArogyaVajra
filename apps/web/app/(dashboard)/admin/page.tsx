@@ -7,7 +7,7 @@ import { useInvoices } from "@/hooks/use-invoices";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert } from "@/components/ui/alert";
 import { Users, UserCog, Calendar, Receipt, AlertCircle, Plus, ShieldAlert, Users as UsersIcon } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -47,12 +47,11 @@ export default function AdminDashboardPage() {
       </div>
 
       <Alert>
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Access Control Note</AlertTitle>
-        <AlertDescription>
+<>Access Control Note</>
+        <>
           Administrative access permits system and user management. It does not grant unrestricted rights to modify clinical records or prescriptions.
-        </AlertDescription>
-      </Alert>
+        </>
+</Alert>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
         <TotalPatientsSection />
@@ -102,10 +101,9 @@ function TotalPatientsSection() {
             <Skeleton className="h-16 w-full" />
           </div>
         ) : error ? (
-          <Alert variant="destructive" className="mt-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Failed to load patient metrics.</AlertDescription>
-          </Alert>
+          <Alert variant="danger" className="mt-4">
+<>Failed to load patient metrics.</>
+</Alert>
         ) : patients.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground border rounded-md mt-4 bg-muted/20">
             No patients registered in the system.
@@ -155,10 +153,9 @@ function ActiveDoctorsSection() {
             <Skeleton className="h-16 w-full" />
           </div>
         ) : error ? (
-          <Alert variant="destructive" className="mt-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Failed to load doctor metrics.</AlertDescription>
-          </Alert>
+          <Alert variant="danger" className="mt-4">
+<>Failed to load doctor metrics.</>
+</Alert>
         ) : doctors.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground border rounded-md mt-4 bg-muted/20">
             No active doctors in the system.
@@ -206,10 +203,9 @@ function TodayAppointmentsSection() {
             <Skeleton className="h-16 w-full" />
           </div>
         ) : error ? (
-          <Alert variant="destructive" className="mt-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Failed to load appointment metrics.</AlertDescription>
-          </Alert>
+          <Alert variant="danger" className="mt-4">
+<>Failed to load appointment metrics.</>
+</Alert>
         ) : appointments.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground border rounded-md mt-4 bg-muted/20">
             No appointments scheduled for today.
@@ -265,10 +261,9 @@ function OutstandingBillingSection() {
             <Skeleton className="h-16 w-full" />
           </div>
         ) : error ? (
-          <Alert variant="destructive" className="mt-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Failed to load billing metrics.</AlertDescription>
-          </Alert>
+          <Alert variant="danger" className="mt-4">
+<>Failed to load billing metrics.</>
+</Alert>
         ) : outstandingInvoices.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground border rounded-md mt-4 bg-muted/20">
             No outstanding balances found.

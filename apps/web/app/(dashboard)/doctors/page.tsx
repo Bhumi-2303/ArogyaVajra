@@ -159,7 +159,7 @@ export default function DoctorsPage() {
           id="doctor-success-banner"
           className="flex items-center justify-between"
         >
-          <span>{feedbackSuccess}</span>
+<span>{feedbackSuccess}</span>
           <button
             onClick={() => setFeedbackSuccess(null)}
             className="text-emerald-700 hover:text-emerald-900"
@@ -167,7 +167,7 @@ export default function DoctorsPage() {
           >
             <X className="h-4 w-4" />
           </button>
-        </Alert>
+</Alert>
       )}
 
       {/* Search and Filter Panel */}
@@ -305,7 +305,7 @@ export default function DoctorsPage() {
       {/* Main Content Area */}
       {isError && (
         <Alert variant="danger" id="doctors-fetch-error">
-          <div className="flex items-center justify-between">
+<div className="flex items-center justify-between">
             <span>
               Failed to load doctor directory:{" "}
               {error instanceof Error ? error.message : "Network error"}
@@ -314,7 +314,7 @@ export default function DoctorsPage() {
               Retry
             </Button>
           </div>
-        </Alert>
+</Alert>
       )}
 
       {isLoading ? (

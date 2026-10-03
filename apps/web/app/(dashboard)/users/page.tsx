@@ -205,8 +205,8 @@ export default function UsersManagementPage() {
           breadcrumbs={breadcrumbs}
         />
         <Alert variant="danger" title="Access Denied">
-          Only administrators have authorization to view and manage user accounts.
-        </Alert>
+Only administrators have authorization to view and manage user accounts.
+</Alert>
       </div>
     );
   }
@@ -223,20 +223,22 @@ export default function UsersManagementPage() {
         <Alert
           variant="success"
           title="Operation Completed"
-          onDismiss={() => setFeedbackSuccess(null)}
+          onDismiss={() =>
+setFeedbackSuccess(null)}
         >
           {feedbackSuccess}
-        </Alert>
+</Alert>
       )}
 
       {feedbackError && (
         <Alert
           variant="danger"
           title="Operation Failed"
-          onDismiss={() => setFeedbackError(null)}
+          onDismiss={() =>
+setFeedbackError(null)}
         >
           {feedbackError}
-        </Alert>
+</Alert>
       )}
 
       {/* Filter and Search Controls */}
@@ -318,7 +320,8 @@ export default function UsersManagementPage() {
           variant="danger"
           title="Failed to Load Users"
           action={
-            <Button size="sm" variant="outline" onClick={() => refetch()}>
+            <Button size="sm" variant="outline" onClick={() =>
+refetch()}>
               Retry
             </Button>
           }
@@ -326,7 +329,7 @@ export default function UsersManagementPage() {
           {error instanceof Error
             ? error.message
             : "Unable to retrieve users directory. Please check network connectivity."}
-        </Alert>
+</Alert>
       ) : users.length === 0 ? (
         <EmptyState
           icon={hasActiveFilters ? <Search className="h-7 w-7" /> : <Users className="h-7 w-7" />}

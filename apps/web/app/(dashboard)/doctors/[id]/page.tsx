@@ -59,7 +59,7 @@ export default function DoctorProfilePage() {
   const doctor = doctorResponse?.data;
 
   // Authorization checks
-  const isOwner = Boolean(user && doctor && user.id === doctor.user_id);
+  const isOwner = Boolean(user && doctor && user!.id === doctor.user_id);
   const canEdit = isAdmin || isOwner;
   const canDelete = isAdmin;
 
@@ -116,7 +116,8 @@ export default function DoctorProfilePage() {
           ]}
         />
         <EmptyState
-          icon={<AlertTriangle className="h-7 w-7" />}
+          icon={<AlertTriangle className="h-7 w-7" />
+}
           title="Doctor profile unavailable"
           description={
             error instanceof Error
@@ -201,7 +202,7 @@ export default function DoctorProfilePage() {
       {feedbackSuccess && (
         <Alert variant="success" id="doctor-profile-success-alert">
           {feedbackSuccess}
-        </Alert>
+</Alert>
       )}
 
       {/* Overview Cards Grid */}
@@ -362,7 +363,7 @@ export default function DoctorProfilePage() {
           <DialogHeader>
             <DialogTitle className="text-red-600 flex items-center space-x-2">
               <AlertTriangle className="h-5 w-5" />
-              <span>Confirm Doctor Profile Deletion</span>
+<span>Confirm Doctor Profile Deletion</span>
             </DialogTitle>
             <DialogDescription className="pt-2">
               Are you sure you want to permanently delete the profile for{" "}
@@ -379,7 +380,7 @@ export default function DoctorProfilePage() {
               {deleteMutation.error instanceof Error
                 ? deleteMutation.error.message
                 : "Failed to delete doctor profile."}
-            </Alert>
+</Alert>
           )}
 
           <DialogFooter className="mt-4">

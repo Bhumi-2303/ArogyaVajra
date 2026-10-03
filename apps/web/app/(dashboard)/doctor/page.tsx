@@ -8,7 +8,7 @@ import { usePatients } from "@/hooks/use-patients";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert } from "@/components/ui/alert";
 import { Calendar, Users, FileText, Activity, AlertCircle, Eye, Plus, FilePlus } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -38,17 +38,15 @@ export default function DoctorDashboardPage() {
           <Skeleton className="h-[300px]" />
         </div>
       ) : doctorError ? (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>Failed to load doctor profile.</AlertDescription>
-        </Alert>
+        <Alert variant="danger">
+<>Error</>
+          <>Failed to load doctor profile.</>
+</Alert>
       ) : !doctorId ? (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>No Profile Found</AlertTitle>
-          <AlertDescription>We could not find a doctor profile associated with your account.</AlertDescription>
-        </Alert>
+        <Alert variant="danger">
+<>No Profile Found</>
+          <>We could not find a doctor profile associated with your account.</>
+</Alert>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
           <TodayAppointmentsSection doctorId={doctorId} />
@@ -103,10 +101,9 @@ function TodayAppointmentsSection({ doctorId }: { doctorId: string }) {
             <Skeleton className="h-16 w-full" />
           </div>
         ) : error ? (
-          <Alert variant="destructive" className="mt-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Failed to load appointments.</AlertDescription>
-          </Alert>
+          <Alert variant="danger" className="mt-4">
+<>Failed to load appointments.</>
+</Alert>
         ) : appointments.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground border rounded-md mt-4 bg-muted/20">
             No appointments scheduled for today.
@@ -175,10 +172,9 @@ function UpcomingAppointmentsSection({ doctorId }: { doctorId: string }) {
             <Skeleton className="h-16 w-full" />
           </div>
         ) : error ? (
-          <Alert variant="destructive" className="mt-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Failed to load upcoming appointments.</AlertDescription>
-          </Alert>
+          <Alert variant="danger" className="mt-4">
+<>Failed to load upcoming appointments.</>
+</Alert>
         ) : upcoming.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground border rounded-md mt-4 bg-muted/20">
             No upcoming appointments found.
@@ -236,10 +232,9 @@ function AssignedPatientsSection({ doctorId }: { doctorId: string }) {
             <Skeleton className="h-16 w-full" />
           </div>
         ) : error ? (
-          <Alert variant="destructive" className="mt-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Failed to load patients.</AlertDescription>
-          </Alert>
+          <Alert variant="danger" className="mt-4">
+<>Failed to load patients.</>
+</Alert>
         ) : assignedPatients.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground border rounded-md mt-4 bg-muted/20">
             No assigned patients found.
@@ -299,10 +294,9 @@ function PendingFollowUpsSection({ doctorId }: { doctorId: string }) {
             <Skeleton className="h-16 w-full" />
           </div>
         ) : error ? (
-          <Alert variant="destructive" className="mt-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Failed to load follow-ups.</AlertDescription>
-          </Alert>
+          <Alert variant="danger" className="mt-4">
+<>Failed to load follow-ups.</>
+</Alert>
         ) : pendingFollowUps.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground border rounded-md mt-4 bg-muted/20">
             No pending follow-ups.

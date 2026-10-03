@@ -3,7 +3,7 @@
 import { useInvoice } from "@/hooks/use-invoices";
 import { RecordPaymentDialog } from "@/components/invoices/record-payment-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Receipt, ArrowLeft, Calendar, FileQuestion, User as UserIcon } from "lucide-react";
@@ -43,12 +43,12 @@ export default function InvoiceDetailPage({
             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Invoices
           </Link>
         </Button>
-        <Alert variant="destructive">
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>
+        <Alert variant="danger">
+<>Error</>
+          <>
             {error instanceof Error ? error.message : "Invoice not found."}
-          </AlertDescription>
-        </Alert>
+          </>
+</Alert>
       </div>
     );
   }
@@ -64,7 +64,7 @@ export default function InvoiceDetailPage({
       case "PAID":
         return <Badge className="bg-emerald-500 hover:bg-emerald-600 text-lg py-1 px-3">Paid</Badge>;
       case "CANCELLED":
-        return <Badge variant="destructive" className="text-lg py-1 px-3">Cancelled</Badge>;
+        return <Badge variant="danger" className="text-lg py-1 px-3">Cancelled</Badge>;
       default:
         return <Badge variant="outline" className="text-lg py-1 px-3">{status}</Badge>;
     }

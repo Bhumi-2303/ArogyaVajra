@@ -6,7 +6,7 @@ import { useUsers } from "@/hooks/use-users";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -26,12 +26,13 @@ export default function AuditLogsPage() {
   const { logs, pagination, isLoading, error } = useAuditLogs(searchParams);
   
   // Need users to map actor IDs to names/emails
-  const { users } = useUsers({ page_size: 100 });
+  const { data: usersData } = useUsers({ page_size: 100 });
+  const users = usersData?.data || [];
 
   const getActorInfo = (userId?: string | null) => {
     if (!userId) return "System";
-    const user = users.find(u => u.id === userId);
-    return user ? `${user.email} (${user.role})` : userId.slice(0, 8);
+    const user = users.find((u: any) => u.id === userId);
+    return user ? `${user.email} (${user!.role})` : userId.slice(0, 8);
   };
 
   const handleNextPage = () => {
@@ -53,12 +54,12 @@ export default function AuditLogsPage() {
         </p>
       </div>
 
-      <Alert variant="default" className="bg-amber-50 text-amber-900 border-amber-200">
-        <Server className="h-4 w-4" />
-        <AlertTitle>Compliance Notice</AlertTitle>
-        <AlertDescription>
-          These logs are immutable. No user, including administrators, has permission to modify or delete these records. Only non-sensitive resource identifiers and safe state diffs are retained.
-        </AlertDescription>
+      <Alert
+        variant="warning"
+        title="Compliance Notice"
+        className="bg-amber-50 text-amber-900 border-amber-200"
+      >
+        These logs are immutable. No user, including administrators, has permission to modify or delete these records. Only non-sensitive resource identifiers and safe state diffs are retained.
       </Alert>
 
       <Card>
@@ -114,10 +115,8 @@ export default function AuditLogsPage() {
             </div>
           ) : error ? (
             <div className="p-6">
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Access Denied</AlertTitle>
-                <AlertDescription>You do not have permission to view audit logs, or the service is unavailable.</AlertDescription>
+              <Alert variant="danger" title="Access Denied">
+                You do not have permission to view audit logs, or the service is unavailable.
               </Alert>
             </div>
           ) : logs.length === 0 ? (
@@ -130,11 +129,11 @@ export default function AuditLogsPage() {
               <table className="w-full text-sm text-left">
                 <thead className="text-xs text-muted-foreground bg-muted/50 uppercase border-b">
                   <tr>
-                    <th className="px-4 py-3">Timestamp</th>
-                    <th className="px-4 py-3">Action</th>
-                    <th className="px-4 py-3">Actor</th>
-                    <th className="px-4 py-3">Target Resource</th>
-                    <th className="px-4 py-3 text-right">Details</th>
+                    <th scope="col" className="px-4 py-3">Timestamp</th>
+                    <th scope="col" className="px-4 py-3">Action</th>
+                    <th scope="col" className="px-4 py-3">Actor</th>
+                    <th scope="col" className="px-4 py-3">Target Resource</th>
+                    <th scope="col" className="px-4 py-3 text-right">Details</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">

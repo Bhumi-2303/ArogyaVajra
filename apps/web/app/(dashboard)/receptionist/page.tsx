@@ -5,7 +5,7 @@ import { usePatients } from "@/hooks/use-patients";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert } from "@/components/ui/alert";
 import { Calendar, Users, Clock, CalendarCheck, AlertCircle, Plus, UserPlus, ListTodo } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -85,10 +85,9 @@ function TodayAppointmentsSection() {
             <Skeleton className="h-16 w-full" />
           </div>
         ) : error ? (
-          <Alert variant="destructive" className="mt-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Failed to load today's schedule.</AlertDescription>
-          </Alert>
+          <Alert variant="danger" className="mt-4">
+<>Failed to load today's schedule.</>
+</Alert>
         ) : appointments.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground border rounded-md mt-4 bg-muted/20">
             No appointments scheduled for today.
@@ -140,10 +139,9 @@ function PendingAppointmentsSection() {
             <Skeleton className="h-16 w-full" />
           </div>
         ) : error ? (
-          <Alert variant="destructive" className="mt-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Failed to load pending appointments.</AlertDescription>
-          </Alert>
+          <Alert variant="danger" className="mt-4">
+<>Failed to load pending appointments.</>
+</Alert>
         ) : appointments.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground border rounded-md mt-4 bg-muted/20">
             No pending appointments.
@@ -197,10 +195,9 @@ function UpcomingAppointmentsSection() {
             <Skeleton className="h-16 w-full" />
           </div>
         ) : error ? (
-          <Alert variant="destructive" className="mt-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Failed to load upcoming appointments.</AlertDescription>
-          </Alert>
+          <Alert variant="danger" className="mt-4">
+<>Failed to load upcoming appointments.</>
+</Alert>
         ) : upcoming.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground border rounded-md mt-4 bg-muted/20">
             No upcoming confirmed appointments.
@@ -250,10 +247,9 @@ function RecentPatientsSection() {
             <Skeleton className="h-16 w-full" />
           </div>
         ) : error ? (
-          <Alert variant="destructive" className="mt-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Failed to load patients.</AlertDescription>
-          </Alert>
+          <Alert variant="danger" className="mt-4">
+<>Failed to load patients.</>
+</Alert>
         ) : patients.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground border rounded-md mt-4 bg-muted/20">
             No patients found in the system.

@@ -3,7 +3,7 @@
 import { useMedicalRecord } from "@/hooks/use-medical-records";
 import { useAuth } from "@/hooks/use-auth";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Edit } from "lucide-react";
 import Link from "next/link";
@@ -50,14 +50,14 @@ export default function MedicalRecordDetailPage({
             Back to Records
           </Link>
         </Button>
-        <Alert variant="destructive">
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>
+        <Alert variant="danger">
+<>Error</>
+          <>
             {error instanceof Error
               ? error.message
               : "Medical record not found or you don't have permission to view it."}
-          </AlertDescription>
-        </Alert>
+          </>
+</Alert>
       </div>
     );
   }
@@ -79,7 +79,7 @@ export default function MedicalRecordDetailPage({
           </div>
         </div>
         <div className="flex gap-2">
-          {user.role === "DOCTOR" && (
+          {user!.role === "DOCTOR" && (
             <Button onClick={() => setIsEditDialogOpen(true)} className="gap-2">
               <Edit className="h-4 w-4" />
               Edit Record

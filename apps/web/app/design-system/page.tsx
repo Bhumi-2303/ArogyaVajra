@@ -144,10 +144,11 @@ export default function DesignSystemShowcasePage() {
             <Alert
               variant="info"
               title="Design System & Component Architecture Notice"
-              onDismiss={() => setAlertDismissed(true)}
+              onDismiss={() =>
+setAlertDismissed(true)}
             >
               All components are built using strict CSS variables, Tailwind tokens, WCAG 2.1 AA accessibility guidelines, and zero third-party UI libraries.
-            </Alert>
+</Alert>
           </div>
         )}
 

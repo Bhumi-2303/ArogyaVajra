@@ -2,7 +2,7 @@
 
 import { usePrescription } from "@/hooks/use-prescriptions";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Pill, FileText, ArrowLeft, Calendar, FileQuestion } from "lucide-react";
@@ -34,12 +34,12 @@ export default function PrescriptionDetailPage({
             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Prescriptions
           </Link>
         </Button>
-        <Alert variant="destructive">
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>
+        <Alert variant="danger">
+<>Error</>
+          <>
             {error instanceof Error ? error.message : "Prescription not found."}
-          </AlertDescription>
-        </Alert>
+          </>
+</Alert>
       </div>
     );
   }
@@ -51,7 +51,7 @@ export default function PrescriptionDetailPage({
       case "COMPLETED":
         return <Badge className="bg-gray-500 hover:bg-gray-600 text-lg py-1 px-3">Completed</Badge>;
       case "CANCELLED":
-        return <Badge variant="destructive" className="text-lg py-1 px-3">Cancelled</Badge>;
+        return <Badge variant="danger" className="text-lg py-1 px-3">Cancelled</Badge>;
       default:
         return <Badge variant="outline" className="text-lg py-1 px-3">{status}</Badge>;
     }

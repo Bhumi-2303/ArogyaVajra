@@ -6,7 +6,7 @@ import { usePrescriptions } from "@/hooks/use-prescriptions";
 import { Prescription } from "@/lib/api/types";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert } from "@/components/ui/alert";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Plus, Pill, FileSearch, Edit } from "lucide-react";
 import {
@@ -64,7 +64,7 @@ export default function PrescriptionsPage() {
       case "COMPLETED":
         return <Badge className="bg-gray-500 hover:bg-gray-600">Completed</Badge>;
       case "CANCELLED":
-        return <Badge variant="destructive">Cancelled</Badge>;
+        return <Badge variant="danger">Cancelled</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -80,7 +80,7 @@ export default function PrescriptionsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          {user.role === "DOCTOR" && (
+          {user!.role === "DOCTOR" && (
             <Button onClick={handleCreate} className="gap-2">
               <Plus className="h-4 w-4" />
               New Prescription
@@ -126,19 +126,19 @@ export default function PrescriptionsPage() {
           ))}
         </div>
       ) : error ? (
-        <Alert variant="destructive">
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>
+        <Alert variant="danger">
+<>Error</>
+          <>
             {error instanceof Error ? error.message : "Failed to load prescriptions."}
-          </AlertDescription>
-        </Alert>
+          </>
+</Alert>
       ) : prescriptions.length === 0 ? (
         <EmptyState
           icon={Pill}
           title="No prescriptions found"
           description="There are no prescriptions matching your criteria."
           action={
-            user.role === "DOCTOR" ? {
+            user!.role === "DOCTOR" ? {
               label: "Create Prescription",
               onClick: handleCreate,
             } : undefined
@@ -150,8 +150,8 @@ export default function PrescriptionsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Date</TableHead>
-                {user.role !== "PATIENT" && <TableHead>Patient</TableHead>}
-                {user.role !== "DOCTOR" && <TableHead>Doctor</TableHead>}
+                {user!.role !== "PATIENT" && <TableHead>Patient</TableHead>}
+                {user!.role !== "DOCTOR" && <TableHead>Doctor</TableHead>}
                 <TableHead>Medicines</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -163,12 +163,12 @@ export default function PrescriptionsPage() {
                   <TableCell className="font-medium whitespace-nowrap">
                     {prescription.prescription_date}
                   </TableCell>
-                  {user.role !== "PATIENT" && (
+                  {user!.role !== "PATIENT" && (
                     <TableCell className="text-sm">
                       ID: {prescription.patient_id.substring(0, 8)}...
                     </TableCell>
                   )}
-                  {user.role !== "DOCTOR" && (
+                  {user!.role !== "DOCTOR" && (
                     <TableCell className="text-sm">
                       ID: {prescription.doctor_id.substring(0, 8)}...
                     </TableCell>
@@ -191,7 +191,7 @@ export default function PrescriptionsPage() {
                           View
                         </Link>
                       </Button>
-                      {user.role === "DOCTOR" && (
+                      {user!.role === "DOCTOR" && (
                         <Button
                           variant="ghost"
                           size="sm"

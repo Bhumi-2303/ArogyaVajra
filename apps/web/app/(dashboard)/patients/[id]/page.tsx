@@ -125,7 +125,8 @@ export default function PatientProfilePage() {
           variant="danger"
           title="Patient Not Found"
           action={
-            <Button size="sm" variant="outline" onClick={() => refetch()}>
+            <Button size="sm" variant="outline" onClick={() =>
+refetch()}>
               Retry
             </Button>
           }
@@ -133,7 +134,7 @@ export default function PatientProfilePage() {
           {error instanceof Error
             ? error.message
             : "Unable to retrieve patient profile. The record may have been removed or you do not have permission to view it."}
-        </Alert>
+</Alert>
       </div>
     );
   }
@@ -212,10 +213,11 @@ export default function PatientProfilePage() {
         <Alert
           variant="success"
           title="Updated"
-          onDismiss={() => setFeedbackSuccess(null)}
+          onDismiss={() =>
+setFeedbackSuccess(null)}
         >
           {feedbackSuccess}
-        </Alert>
+</Alert>
       )}
 
       {/* Profile Information Cards */}
@@ -430,10 +432,10 @@ export default function PatientProfilePage() {
               variant="warning"
               title="Access Restricted or Unavailable"
             >
-              {subresourceQuery.error instanceof Error
+{subresourceQuery.error instanceof Error
                 ? subresourceQuery.error.message
                 : `Role ${role} does not have authorization to retrieve ${activeTab} for this patient, or the resource is restricted.`}
-            </Alert>
+</Alert>
           ) : (
             <EmptyState
               icon={
@@ -481,7 +483,7 @@ export default function PatientProfilePage() {
           <DialogHeader>
             <div className="flex items-center gap-2 text-danger">
               <AlertTriangle className="h-5 w-5" />
-              <DialogTitle>Delete Patient Record</DialogTitle>
+<DialogTitle>Delete Patient Record</DialogTitle>
             </div>
             <DialogDescription className="pt-2 text-sm text-app-muted">
               Are you sure you want to permanently delete patient profile{" "}
@@ -499,7 +501,7 @@ export default function PatientProfilePage() {
                 {deleteMutation.error instanceof Error
                   ? deleteMutation.error.message
                   : "Unable to delete patient."}
-              </Alert>
+</Alert>
             </div>
           )}
 

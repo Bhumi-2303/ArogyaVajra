@@ -6,7 +6,7 @@ import { useInvoices } from "@/hooks/use-invoices";
 import { Invoice } from "@/lib/api/types";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert } from "@/components/ui/alert";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Plus, Receipt, FileSearch, Edit } from "lucide-react";
 import {
@@ -68,7 +68,7 @@ export default function InvoicesPage() {
       case "PAID":
         return <Badge className="bg-emerald-500 hover:bg-emerald-600">Paid</Badge>;
       case "CANCELLED":
-        return <Badge variant="destructive">Cancelled</Badge>;
+        return <Badge variant="danger">Cancelled</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -84,7 +84,7 @@ export default function InvoicesPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          {["ADMIN", "RECEPTIONIST"].includes(user.role) && (
+          {["ADMIN", "RECEPTIONIST"].includes(user!.role) && (
             <Button onClick={handleCreate} className="gap-2">
               <Plus className="h-4 w-4" />
               New Invoice
@@ -132,19 +132,19 @@ export default function InvoicesPage() {
           ))}
         </div>
       ) : error ? (
-        <Alert variant="destructive">
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>
+        <Alert variant="danger">
+<>Error</>
+          <>
             {error instanceof Error ? error.message : "Failed to load invoices."}
-          </AlertDescription>
-        </Alert>
+          </>
+</Alert>
       ) : invoices.length === 0 ? (
         <EmptyState
           icon={Receipt}
           title="No invoices found"
           description="There are no invoices matching your criteria."
           action={
-            ["ADMIN", "RECEPTIONIST"].includes(user.role) ? {
+            ["ADMIN", "RECEPTIONIST"].includes(user!.role) ? {
               label: "Create Invoice",
               onClick: handleCreate,
             } : undefined
@@ -157,7 +157,7 @@ export default function InvoicesPage() {
               <TableRow>
                 <TableHead>Invoice No.</TableHead>
                 <TableHead>Date</TableHead>
-                {user.role !== "PATIENT" && <TableHead>Patient</TableHead>}
+                {user!.role !== "PATIENT" && <TableHead>Patient</TableHead>}
                 <TableHead>Amount</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -172,7 +172,7 @@ export default function InvoicesPage() {
                   <TableCell className="whitespace-nowrap">
                     {invoice.invoice_date}
                   </TableCell>
-                  {user.role !== "PATIENT" && (
+                  {user!.role !== "PATIENT" && (
                     <TableCell className="text-sm">
                       ID: {invoice.patient_id.substring(0, 8)}...
                     </TableCell>
@@ -195,7 +195,7 @@ export default function InvoicesPage() {
                           View
                         </Link>
                       </Button>
-                      {["ADMIN", "RECEPTIONIST"].includes(user.role) && 
+                      {["ADMIN", "RECEPTIONIST"].includes(user!.role) && 
                        !["PAID", "CANCELLED"].includes(invoice.status) && (
                         <Button
                           variant="ghost"

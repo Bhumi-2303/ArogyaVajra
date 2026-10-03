@@ -9,7 +9,7 @@ import { useInvoices } from "@/hooks/use-invoices";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert } from "@/components/ui/alert";
 import { Calendar, FileText, Pill, Receipt, AlertCircle, Plus } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -45,17 +45,15 @@ export default function PatientDashboardPage() {
           <Skeleton className="h-[300px]" />
         </div>
       ) : patientError ? (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>Failed to load patient profile.</AlertDescription>
-        </Alert>
+        <Alert variant="danger">
+<>Error</>
+          <>Failed to load patient profile.</>
+</Alert>
       ) : !patientId ? (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>No Profile Found</AlertTitle>
-          <AlertDescription>We could not find a patient profile associated with your account.</AlertDescription>
-        </Alert>
+        <Alert variant="danger">
+<>No Profile Found</>
+          <>We could not find a patient profile associated with your account.</>
+</Alert>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
           <AppointmentsSection patientId={patientId} />
@@ -92,10 +90,9 @@ function AppointmentsSection({ patientId }: { patientId: string }) {
             <Skeleton className="h-16 w-full" />
           </div>
         ) : error ? (
-          <Alert variant="destructive" className="mt-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Failed to load appointments.</AlertDescription>
-          </Alert>
+          <Alert variant="danger" className="mt-4">
+<>Failed to load appointments.</>
+</Alert>
         ) : appointments.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground border rounded-md mt-4 bg-muted/20">
             No upcoming appointments.
@@ -143,10 +140,9 @@ function PrescriptionsSection({ patientId }: { patientId: string }) {
             <Skeleton className="h-16 w-full" />
           </div>
         ) : error ? (
-          <Alert variant="destructive" className="mt-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Failed to load prescriptions.</AlertDescription>
-          </Alert>
+          <Alert variant="danger" className="mt-4">
+<>Failed to load prescriptions.</>
+</Alert>
         ) : activePrescriptions.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground border rounded-md mt-4 bg-muted/20">
             No active prescriptions.
@@ -200,10 +196,9 @@ function MedicalRecordsSection({ patientId }: { patientId: string }) {
             <Skeleton className="h-16 w-full" />
           </div>
         ) : error ? (
-          <Alert variant="destructive" className="mt-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Failed to load medical records.</AlertDescription>
-          </Alert>
+          <Alert variant="danger" className="mt-4">
+<>Failed to load medical records.</>
+</Alert>
         ) : records.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground border rounded-md mt-4 bg-muted/20">
             No medical records found.
@@ -252,10 +247,9 @@ function BillsSection({ patientId }: { patientId: string }) {
             <Skeleton className="h-16 w-full" />
           </div>
         ) : error ? (
-          <Alert variant="destructive" className="mt-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Failed to load bills.</AlertDescription>
-          </Alert>
+          <Alert variant="danger" className="mt-4">
+<>Failed to load bills.</>
+</Alert>
         ) : outstandingInvoices.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground border rounded-md mt-4 bg-muted/20">
             No outstanding bills.

@@ -160,10 +160,11 @@ export default function PatientsPage() {
         <Alert
           variant="success"
           title="Operation Completed"
-          onDismiss={() => setFeedbackSuccess(null)}
+          onDismiss={() =>
+setFeedbackSuccess(null)}
         >
           {feedbackSuccess}
-        </Alert>
+</Alert>
       )}
 
       {/* Search & Filter Bar */}
@@ -258,7 +259,8 @@ export default function PatientsPage() {
           variant="danger"
           title="Failed to Load Patients"
           action={
-            <Button size="sm" variant="outline" onClick={() => refetch()}>
+            <Button size="sm" variant="outline" onClick={() =>
+refetch()}>
               Retry
             </Button>
           }
@@ -266,7 +268,7 @@ export default function PatientsPage() {
           {error instanceof Error
             ? error.message
             : "Unable to retrieve patient directory. Please check network connectivity."}
-        </Alert>
+</Alert>
       ) : patients.length === 0 ? (
         <EmptyState
           icon={

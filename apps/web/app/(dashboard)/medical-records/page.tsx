@@ -6,7 +6,7 @@ import { useMedicalRecords } from "@/hooks/use-medical-records";
 import { MedicalRecord } from "@/lib/api/types";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert } from "@/components/ui/alert";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Plus, FileText, FileSearch, Calendar } from "lucide-react";
 import {
@@ -61,7 +61,7 @@ export default function MedicalRecordsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          {user.role === "DOCTOR" && (
+          {user!.role === "DOCTOR" && (
             <Button onClick={handleCreate} className="gap-2">
               <Plus className="h-4 w-4" />
               New Record
@@ -70,7 +70,7 @@ export default function MedicalRecordsPage() {
         </div>
       </div>
 
-      {(user.role === "ADMIN" || user.role === "RECEPTIONIST" || user.role === "DOCTOR") && (
+      {(user!.role === "ADMIN" || user!.role === "RECEPTIONIST" || user!.role === "DOCTOR") && (
         <div className="flex flex-col gap-4 sm:flex-row p-4 border rounded-md bg-muted/20">
           <div className="flex flex-col space-y-1.5 flex-1">
             <label className="text-sm font-medium">Filter by Patient ID</label>
@@ -106,19 +106,19 @@ export default function MedicalRecordsPage() {
           ))}
         </div>
       ) : error ? (
-        <Alert variant="destructive">
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>
+        <Alert variant="danger">
+<>Error</>
+          <>
             {error instanceof Error ? error.message : "Failed to load medical records."}
-          </AlertDescription>
-        </Alert>
+          </>
+</Alert>
       ) : records.length === 0 ? (
         <EmptyState
           icon={FileText}
           title="No medical records found"
           description="There are no consultation records matching your criteria."
           action={
-            user.role === "DOCTOR" ? {
+            user!.role === "DOCTOR" ? {
               label: "Create Record",
               onClick: handleCreate,
             } : undefined
@@ -130,8 +130,8 @@ export default function MedicalRecordsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Date</TableHead>
-                {user.role !== "PATIENT" && <TableHead>Patient</TableHead>}
-                {user.role !== "DOCTOR" && <TableHead>Doctor</TableHead>}
+                {user!.role !== "PATIENT" && <TableHead>Patient</TableHead>}
+                {user!.role !== "DOCTOR" && <TableHead>Doctor</TableHead>}
                 <TableHead>Diagnosis / Chief Complaint</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -142,12 +142,12 @@ export default function MedicalRecordsPage() {
                   <TableCell className="font-medium whitespace-nowrap">
                     {record.record_date}
                   </TableCell>
-                  {user.role !== "PATIENT" && (
+                  {user!.role !== "PATIENT" && (
                     <TableCell className="text-sm">
                       ID: {record.patient_id.substring(0, 8)}...
                     </TableCell>
                   )}
-                  {user.role !== "DOCTOR" && (
+                  {user!.role !== "DOCTOR" && (
                     <TableCell className="text-sm">
                       ID: {record.doctor_id.substring(0, 8)}...
                     </TableCell>

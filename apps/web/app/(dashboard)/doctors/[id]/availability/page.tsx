@@ -6,7 +6,7 @@ import { useAvailability } from "@/hooks/use-availability";
 import { DoctorAvailability } from "@/lib/api/types";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert } from "@/components/ui/alert";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Plus, Clock, Edit, Trash2 } from "lucide-react";
 import {
@@ -101,12 +101,12 @@ export default function DoctorAvailabilityPage({
           ))}
         </div>
       ) : error ? (
-        <Alert variant="destructive">
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>
+        <Alert variant="danger">
+<>Error</>
+          <>
             {error instanceof Error ? error.message : "Failed to load availability."}
-          </AlertDescription>
-        </Alert>
+          </>
+</Alert>
       ) : availability.length === 0 ? (
         <EmptyState
           icon={Clock}

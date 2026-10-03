@@ -6,7 +6,7 @@ import { useAppointments } from "@/hooks/use-appointments";
 import { Appointment } from "@/lib/api/types";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert } from "@/components/ui/alert";
 import { EmptyState } from "@/components/ui/empty-state";
 
 import {
@@ -93,7 +93,7 @@ export default function AppointmentsPage() {
       case "COMPLETED":
         return <Badge className="bg-gray-500 hover:bg-gray-600">Completed</Badge>;
       case "CANCELLED":
-        return <Badge variant="destructive">Cancelled</Badge>;
+        return <Badge variant="danger">Cancelled</Badge>;
       case "NO_SHOW":
         return <Badge className="bg-orange-500 hover:bg-orange-600">No Show</Badge>;
       default:
@@ -170,12 +170,12 @@ export default function AppointmentsPage() {
           ))}
         </div>
       ) : error ? (
-        <Alert variant="destructive">
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>
+        <Alert variant="danger">
+<>Error</>
+          <>
             {error instanceof Error ? error.message : "Failed to load appointments."}
-          </AlertDescription>
-        </Alert>
+          </>
+</Alert>
       ) : appointments.length === 0 ? (
         <EmptyState
           icon={Calendar}
@@ -193,8 +193,8 @@ export default function AppointmentsPage() {
               <TableRow>
                 <TableHead>Code</TableHead>
                 <TableHead>Date & Time</TableHead>
-                {user.role !== "PATIENT" && <TableHead>Patient</TableHead>}
-                {user.role !== "DOCTOR" && <TableHead>Doctor</TableHead>}
+                {user!.role !== "PATIENT" && <TableHead>Patient</TableHead>}
+                {user!.role !== "DOCTOR" && <TableHead>Doctor</TableHead>}
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -211,12 +211,12 @@ export default function AppointmentsPage() {
                       {appointment.start_time.substring(0, 5)} - {appointment.end_time.substring(0, 5)}
                     </span>
                   </TableCell>
-                  {user.role !== "PATIENT" && (
+                  {user!.role !== "PATIENT" && (
                     <TableCell className="text-sm">
                       ID: {appointment.patient_id.substring(0, 8)}...
                     </TableCell>
                   )}
-                  {user.role !== "DOCTOR" && (
+                  {user!.role !== "DOCTOR" && (
                     <TableCell className="text-sm">
                       ID: {appointment.doctor_id.substring(0, 8)}...
                     </TableCell>
@@ -226,7 +226,7 @@ export default function AppointmentsPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      {user.role === "DOCTOR" && (
+                      {user!.role === "DOCTOR" && (
                         <>
                           <Button
                             variant="ghost"
@@ -296,7 +296,7 @@ export default function AppointmentsPage() {
             initialData={selectedAppointment}
             onSuccess={handleCloseDialog}
             onCancel={handleCloseDialog}
-            userRole={user.role}
+            userRole={user!.role}
           />
         </DialogContent>
       </Dialog>
