@@ -224,3 +224,41 @@ export interface DoctorSearchParams {
   page_size?: number;
 }
 
+export interface DoctorAvailability {
+  id: string;
+  doctor_id: string;
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+  slot_duration_minutes: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DoctorAvailabilityCreateInput {
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+  slot_duration_minutes: number;
+  is_active?: boolean;
+}
+
+export interface DoctorAvailabilityUpdateInput {
+  day_of_week?: number;
+  start_time?: string;
+  end_time?: string;
+  slot_duration_minutes?: number;
+  is_active?: boolean;
+}
+
+export interface DoctorAvailabilityListResponse {
+  data: DoctorAvailability[];
+  message: string;
+}
+
+export interface DoctorAvailabilityDetailResponse {
+  data: DoctorAvailability;
+  message: string;
+}
+
