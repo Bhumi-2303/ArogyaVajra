@@ -262,3 +262,62 @@ export interface DoctorAvailabilityDetailResponse {
   message: string;
 }
 
+export type AppointmentStatus =
+  | "SCHEDULED"
+  | "CONFIRMED"
+  | "COMPLETED"
+  | "CANCELLED"
+  | "NO_SHOW";
+
+export interface Appointment {
+  id: string;
+  appointment_code: string;
+  patient_id: string;
+  doctor_id: string;
+  appointment_date: string;
+  start_time: string;
+  end_time: string;
+  reason?: string | null;
+  status: AppointmentStatus;
+  notes?: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AppointmentCreateInput {
+  patient_id: string;
+  doctor_id: string;
+  appointment_date: string;
+  start_time: string;
+  end_time: string;
+  reason?: string | null;
+  notes?: string | null;
+}
+
+export interface AppointmentUpdateInput {
+  status?: AppointmentStatus;
+  notes?: string | null;
+  reason?: string | null;
+}
+
+export interface AppointmentListResponse {
+  data: Appointment[];
+  pagination: PaginationMeta;
+  message: string;
+}
+
+export interface AppointmentDetailResponse {
+  data: Appointment;
+  message: string;
+}
+
+export interface AppointmentSearchParams {
+  patient_id?: string;
+  doctor_id?: string;
+  date?: string;
+  status?: AppointmentStatus;
+  page?: number;
+  page_size?: number;
+}
+
