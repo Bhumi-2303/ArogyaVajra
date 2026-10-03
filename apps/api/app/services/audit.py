@@ -36,3 +36,35 @@ def record_audit_event(
     db.add(log_entry)
     db.flush()
     return log_entry
+
+
+def list_audit_events(
+    db: Session,
+    user_id: uuid.UUID | None = None,
+    entity_type: str | None = None,
+    entity_id: str | None = None,
+    action: str | None = None,
+    page: int = 1,
+    page_size: int = 50,
+) -> tuple[list[AuditLog], int]:
+    query = db.query(AuditLog)
+    
+    if user_id:
+        query = query.filter(AuditLog.user_id == user_id)
+    if entity_type:
+        query = query.filter(AuditLog.entity_type == entity_type)
+    if entity_id:
+        query = query.filter(AuditLog.entity_id == entity_id)
+    if action:
+        query = query.filter(AuditLog.action == action)
+        
+    total = query.count()
+    
+    logs = (
+        query.order_by(AuditLog.created_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
+    
+    return logs, total
