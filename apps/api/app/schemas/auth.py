@@ -38,7 +38,11 @@ class UserResponse(BaseModel):
 
 
 class RegisterRequest(BaseModel):
-    """Payload for user registration."""
+    """Payload for user registration.
+    
+    Role is intentionally omitted from the schema to enforce PATIENT-only self-registration.
+    Administrative roles must be provisioned by an admin via /users endpoint.
+    """
 
     email: EmailStr
     password: str = Field(
@@ -46,10 +50,6 @@ class RegisterRequest(BaseModel):
         min_length=8,
         max_length=128,
         description="Password must contain at least 8 characters.",
-    )
-    role: UserRole = Field(
-        default=UserRole.PATIENT,
-        description="Requested initial role (defaults to PATIENT).",
     )
 
 

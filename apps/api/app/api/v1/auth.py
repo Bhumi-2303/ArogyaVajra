@@ -63,7 +63,7 @@ def register(
     user = User(
         email=normalized_email,
         password_hash=hashed,
-        role=payload.role,
+        role=UserRole.PATIENT,  # Enforce patient role for public registration
         is_active=True,
     )
     db.add(user)
