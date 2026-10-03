@@ -444,3 +444,68 @@ export interface PrescriptionSearchParams {
   page_size?: number;
 }
 
+export type InvoiceStatus = "DRAFT" | "ISSUED" | "PARTIALLY_PAID" | "PAID" | "CANCELLED";
+
+export interface InvoiceItem {
+  id: string;
+  description: string;
+  quantity: string | number;
+  unit_price: string | number;
+  amount: string | number;
+}
+
+export interface InvoiceItemCreateInput {
+  description: string;
+  quantity: number;
+  unit_price: number;
+}
+
+export interface Invoice {
+  id: string;
+  invoice_number: string;
+  patient_id: string;
+  appointment_id?: string | null;
+  invoice_date: string;
+  subtotal: string | number;
+  discount: string | number;
+  tax: string | number;
+  total: string | number;
+  status: InvoiceStatus;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  items: InvoiceItem[];
+}
+
+export interface InvoiceCreateInput {
+  patient_id: string;
+  appointment_id?: string | null;
+  invoice_date: string;
+  discount?: number;
+  tax?: number;
+  status: InvoiceStatus;
+  items: InvoiceItemCreateInput[];
+}
+
+export interface InvoiceUpdateInput {
+  status: InvoiceStatus;
+}
+
+export interface InvoiceListResponse {
+  data: Invoice[];
+  pagination: PaginationMeta;
+  message: string;
+}
+
+export interface InvoiceDetailResponse {
+  data: Invoice;
+  message: string;
+}
+
+export interface InvoiceSearchParams {
+  patient_id?: string;
+  status?: string;
+  page?: number;
+  page_size?: number;
+}
+

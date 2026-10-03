@@ -51,6 +51,7 @@ export const ROLE_NAV_CONFIG: Record<UserRole, NavItem[]> = {
     { label: "Patients", href: "/patients", icon: Users },
     { label: "Medical Records", href: "/medical-records", icon: FileText },
     { label: "Prescriptions", href: "/prescriptions", icon: Pill },
+    { label: "Invoices", href: "/invoices", icon: Receipt },
     { label: "Availability", href: "/availability", icon: Clock },
     { label: "Profile", href: "/profile", icon: User },
   ],
@@ -59,6 +60,7 @@ export const ROLE_NAV_CONFIG: Record<UserRole, NavItem[]> = {
     { label: "Patients", href: "/patients", icon: Users },
     { label: "Doctors", href: "/doctors", icon: Stethoscope },
     { label: "Appointments", href: "/appointments", icon: Calendar },
+    { label: "Invoices", href: "/invoices", icon: Receipt },
     { label: "Profile", href: "/profile", icon: User },
   ],
   BILLING_STAFF: [
@@ -76,6 +78,7 @@ export const ROLE_NAV_CONFIG: Record<UserRole, NavItem[]> = {
     { label: "Appointments", href: "/appointments", icon: Calendar },
     { label: "Medical Records", href: "/medical-records", icon: FileText },
     { label: "Prescriptions", href: "/prescriptions", icon: Pill },
+    { label: "Invoices", href: "/invoices", icon: Receipt },
     { label: "Billing", href: "/billing", icon: Receipt },
     { label: "Audit Logs", href: "/audit-logs", icon: Shield },
     { label: "Profile", href: "/profile", icon: User },
