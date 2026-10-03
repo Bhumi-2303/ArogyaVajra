@@ -53,7 +53,9 @@ def create_invoice(
 )
 def list_invoices(
     patient_id: Optional[uuid.UUID] = Query(None, description="Filter by patient ID"),
-    status: Optional[str] = Query(None, description="Filter by status"),
+    status: Optional[str] = Query(None, description="Filter by payment status"),
+    invoice_number: Optional[str] = Query(None, description="Filter by invoice number"),
+    date: Optional[str] = Query(None, description="Filter by invoice date"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
@@ -64,6 +66,8 @@ def list_invoices(
         current_user=current_user,
         patient_id=patient_id,
         status=status,
+        invoice_number=invoice_number,
+        date=date,
         page=page,
         page_size=page_size,
     )

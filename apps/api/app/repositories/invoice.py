@@ -29,6 +29,8 @@ class InvoiceRepository:
         db: Session,
         patient_id: Optional[uuid.UUID] = None,
         status: Optional[str] = None,
+        invoice_number: Optional[str] = None,
+        invoice_date: Optional[str] = None,
         skip: int = 0,
         limit: int = 20,
     ) -> tuple[list[Invoice], int]:
@@ -38,6 +40,10 @@ class InvoiceRepository:
             query = query.filter(Invoice.patient_id == patient_id)
         if status:
             query = query.filter(Invoice.status == status)
+        if invoice_number:
+            query = query.filter(Invoice.invoice_number.ilike(f"%{invoice_number}%"))
+        if invoice_date:
+            query = query.filter(Invoice.invoice_date == invoice_date)
 
         total = query.count()
         items = query.order_by(Invoice.invoice_date.desc(), Invoice.created_at.desc()).offset(skip).limit(limit).all()

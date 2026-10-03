@@ -6,8 +6,10 @@ import {
   AppointmentSearchParams,
 } from "@/lib/api/types";
 
+export const APPOINTMENTS_QUERY_KEY = ["appointments"];
+
 export function useAppointments(params: AppointmentSearchParams = {}) {
-  const queryKey = ["appointments", params];
+  const queryKey = [...APPOINTMENTS_QUERY_KEY, params];
 
   const { data, isLoading, error } = useQuery({
     queryKey,
@@ -24,7 +26,7 @@ export function useAppointments(params: AppointmentSearchParams = {}) {
 
 export function useAppointment(id: string) {
   const queryClient = useQueryClient();
-  const queryKey = ["appointments", id];
+  const queryKey = [...APPOINTMENTS_QUERY_KEY, id];
 
   const { data, isLoading, error } = useQuery({
     queryKey,
@@ -35,7 +37,8 @@ export function useAppointment(id: string) {
   const updateMutation = useMutation({
     mutationFn: (data: AppointmentUpdateInput) => appointmentsApi.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      queryClient.invalidateQueries({ queryKey: APPOINTMENTS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: [...APPOINTMENTS_QUERY_KEY, id] });
     },
   });
 
@@ -54,7 +57,7 @@ export function useCreateAppointment() {
   const createMutation = useMutation({
     mutationFn: (data: AppointmentCreateInput) => appointmentsApi.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      queryClient.invalidateQueries({ queryKey: APPOINTMENTS_QUERY_KEY });
     },
   });
 

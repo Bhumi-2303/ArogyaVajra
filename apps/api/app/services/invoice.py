@@ -189,6 +189,8 @@ class InvoiceService:
         current_user: User,
         patient_id: uuid.UUID | None = None,
         status: str | None = None,
+        invoice_number: str | None = None,
+        date: str | None = None,
         page: int = 1,
         page_size: int = 20,
     ) -> tuple[list[Invoice], int]:
@@ -205,6 +207,8 @@ class InvoiceService:
             db=db,
             patient_id=patient_id,
             status=status,
+            invoice_number=invoice_number,
+            invoice_date=date,
             skip=skip,
             limit=page_size
         )

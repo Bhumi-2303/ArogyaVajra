@@ -7,8 +7,10 @@ import {
   PaymentCreateInput,
 } from "@/lib/api/types";
 
+export const INVOICES_QUERY_KEY = ["invoices"];
+
 export function useInvoices(params: InvoiceSearchParams = {}) {
-  const queryKey = ["invoices", params];
+  const queryKey = [...INVOICES_QUERY_KEY, params];
 
   const { data, isLoading, error } = useQuery({
     queryKey,
@@ -25,7 +27,7 @@ export function useInvoices(params: InvoiceSearchParams = {}) {
 
 export function useInvoice(id: string) {
   const queryClient = useQueryClient();
-  const queryKey = ["invoices", id];
+  const queryKey = [...INVOICES_QUERY_KEY, id];
 
   const { data, isLoading, error } = useQuery({
     queryKey,
@@ -36,7 +38,8 @@ export function useInvoice(id: string) {
   const updateMutation = useMutation({
     mutationFn: (data: InvoiceUpdateInput) => invoicesApi.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      queryClient.invalidateQueries({ queryKey: INVOICES_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: [...INVOICES_QUERY_KEY, id] });
     },
   });
 
@@ -55,7 +58,7 @@ export function useCreateInvoice() {
   const createMutation = useMutation({
     mutationFn: (data: InvoiceCreateInput) => invoicesApi.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      queryClient.invalidateQueries({ queryKey: INVOICES_QUERY_KEY });
     },
   });
 
@@ -71,8 +74,8 @@ export function useRecordPayment(invoiceId: string) {
   const recordMutation = useMutation({
     mutationFn: (data: PaymentCreateInput) => invoicesApi.recordPayment(invoiceId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["invoices"] });
-      queryClient.invalidateQueries({ queryKey: ["invoices", invoiceId] });
+      queryClient.invalidateQueries({ queryKey: INVOICES_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: [...INVOICES_QUERY_KEY, invoiceId] });
     },
   });
 
