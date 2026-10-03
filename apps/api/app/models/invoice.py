@@ -28,6 +28,8 @@ class Invoice(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     discount = Column(Numeric(10, 2), nullable=False, default=0.00)
     tax = Column(Numeric(10, 2), nullable=False, default=0.00)
     total = Column(Numeric(10, 2), nullable=False)
+    paid_amount = Column(Numeric(10, 2), nullable=False, default=0.00)
+    balance = Column(Numeric(10, 2), nullable=False)
     status = Column(SQLAlchemyEnum(InvoiceStatus), nullable=False, default=InvoiceStatus.DRAFT)
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
 
@@ -37,6 +39,11 @@ class Invoice(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     items = relationship(
         "InvoiceItem",
         backref="invoice",
+        cascade="all, delete-orphan",
+    )
+    payments = relationship(
+        "Payment",
+        back_populates="invoice",
         cascade="all, delete-orphan",
     )
 

@@ -85,6 +85,8 @@ class InvoiceService:
             discount=discount,
             tax=tax,
             total=total,
+            paid_amount=Decimal("0.00"),
+            balance=total,
             status=data.status,
             created_by=current_user.id,
         )

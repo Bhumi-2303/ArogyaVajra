@@ -12,7 +12,9 @@ from app.schemas.invoice import (
     InvoiceListResponse,
     InvoiceDetailResponse,
 )
+from app.schemas.payment import PaymentCreate, PaymentResponse
 from app.services.invoice import InvoiceService
+from app.services.payment import PaymentService
 
 router = APIRouter(prefix="/invoices", tags=["Invoices"])
 
@@ -119,3 +121,32 @@ def update_invoice(
     db.commit()
 
     return InvoiceDetailResponse(data=invoice)
+
+
+@router.post(
+    "/{invoice_id}/payments",
+    response_model=PaymentResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Record a payment for an invoice",
+)
+def record_payment(
+    invoice_id: uuid.UUID,
+    data: PaymentCreate,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    ip_address = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
+
+    payment = PaymentService.record_payment(
+        db=db,
+        invoice_id=invoice_id,
+        data=data,
+        current_user=current_user,
+        ip_address=ip_address,
+        user_agent=user_agent,
+    )
+    db.commit()
+
+    return PaymentResponse.model_validate(payment)

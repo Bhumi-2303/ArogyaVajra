@@ -8,6 +8,7 @@ from app.models.appointment import Appointment, AppointmentStatus
 from app.models.medical_record import MedicalRecord
 from app.models.prescription import Prescription, PrescriptionItem, PrescriptionStatus
 from app.models.invoice import Invoice, InvoiceItem, InvoiceStatus
+from app.models.payment import Payment, PaymentMethod
 
 __all__ = [
     "AuditLog",
@@ -25,4 +26,6 @@ __all__ = [
     "Invoice",
     "InvoiceItem",
     "InvoiceStatus",
+    "Payment",
+    "PaymentMethod",
 ]

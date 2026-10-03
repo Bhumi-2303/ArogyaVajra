@@ -5,6 +5,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict
 from app.models.invoice import InvoiceStatus
+from app.schemas.payment import PaymentResponse
 
 
 class InvoiceItemBase(BaseModel):
@@ -46,10 +47,13 @@ class InvoiceResponse(InvoiceBase):
     invoice_number: str
     subtotal: Decimal
     total: Decimal
+    paid_amount: Decimal
+    balance: Decimal
     created_by: uuid.UUID
     created_at: datetime.datetime
     updated_at: datetime.datetime
     items: List[InvoiceItemResponse]
+    payments: List[PaymentResponse] = []
 
     model_config = ConfigDict(from_attributes=True)
 
