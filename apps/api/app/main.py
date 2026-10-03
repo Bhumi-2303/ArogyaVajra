@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -37,6 +38,74 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    errors = {}
+    for error in exc.errors():
+        loc = error.get("loc", [])
+        if len(loc) > 1 and loc[0] in ("body", "query", "path"):
+            field = ".".join(str(x) for x in loc[1:])
+        else:
+            field = ".".join(str(x) for x in loc)
+        errors[field] = error.get("msg")
+        
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={
+            "error": {
+                "code": "VALIDATION_ERROR",
+                "message": "Validation failed.",
+                "fields": errors
+            }
+        }
+    )
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    detail = exc.detail
+    code = "API_ERROR"
+    message = str(detail)
+    
+    if isinstance(detail, dict):
+        if "code" in detail:
+            code = detail["code"]
+        if "message" in detail:
+            message = detail["message"]
+    else:
+        if exc.status_code == 401:
+            code = "UNAUTHORIZED"
+        elif exc.status_code == 403:
+            code = "FORBIDDEN"
+        elif exc.status_code == 404:
+            code = "NOT_FOUND"
+        elif exc.status_code == 409:
+            code = "CONFLICT"
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "error": {
+                "code": code,
+                "message": message
+            }
+        }
+    )
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    import logging
+    logging.error(f"Unhandled exception: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={
+            "error": {
+                "code": "INTERNAL_SERVER_ERROR",
+                "message": "An unexpected error occurred."
+            }
+        }
+    )
 
 
 @app.get("/health", tags=["Health"])

@@ -4,8 +4,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, get_db, verify_admin_resource_access
-from app.models.user import User
+from app.api.deps import get_current_user, get_db, require_roles
+from app.models.user import User, UserRole
 from app.schemas.audit_log import AuditLogListResponse
 from app.services.audit import list_audit_events
 
@@ -16,7 +16,7 @@ router = APIRouter(prefix="/audit-logs", tags=["Audit Logs"])
     "",
     response_model=AuditLogListResponse,
     summary="List audit logs",
-    dependencies=[Depends(verify_admin_resource_access)],
+    dependencies=[Depends(require_roles(UserRole.ADMIN))],
 )
 def get_audit_logs(
     user_id: Optional[UUID] = Query(None, description="Filter by acting user ID"),
