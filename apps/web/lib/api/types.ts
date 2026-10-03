@@ -446,6 +446,24 @@ export interface PrescriptionSearchParams {
 
 export type InvoiceStatus = "DRAFT" | "ISSUED" | "PARTIALLY_PAID" | "PAID" | "CANCELLED";
 
+export type PaymentMethod = "CASH" | "UPI" | "CARD" | "BANK_TRANSFER";
+
+export interface Payment {
+  id: string;
+  invoice_id: string;
+  amount: string | number;
+  payment_method: PaymentMethod;
+  reference?: string | null;
+  created_by: string;
+  created_at: string;
+}
+
+export interface PaymentCreateInput {
+  amount: number;
+  payment_method: PaymentMethod;
+  reference?: string | null;
+}
+
 export interface InvoiceItem {
   id: string;
   description: string;
@@ -470,11 +488,14 @@ export interface Invoice {
   discount: string | number;
   tax: string | number;
   total: string | number;
+  paid_amount: string | number;
+  balance: string | number;
   status: InvoiceStatus;
   created_by: string;
   created_at: string;
   updated_at: string;
   items: InvoiceItem[];
+  payments: Payment[];
 }
 
 export interface InvoiceCreateInput {

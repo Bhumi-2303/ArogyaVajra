@@ -1,6 +1,7 @@
 "use client";
 
 import { useInvoice } from "@/hooks/use-invoices";
+import { RecordPaymentDialog } from "@/components/invoices/record-payment-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -84,6 +85,7 @@ export default function InvoiceDetailPage({
           </h1>
         </div>
         <div className="flex items-center gap-4">
+          <RecordPaymentDialog invoice={invoice} />
           <Button variant="outline" onClick={() => window.print()}>
             Print Invoice
           </Button>
@@ -196,8 +198,56 @@ export default function InvoiceDetailPage({
                 <span className="font-bold text-lg">Total:</span>
                 <span className="font-bold text-xl text-primary">${Number(invoice.total).toFixed(2)}</span>
               </div>
+              <div className="flex justify-between text-sm text-green-600">
+                <span>Paid Amount:</span>
+                <span>-${Number(invoice.paid_amount || 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center border-t pt-3 mt-3">
+                <span className="font-bold text-lg">Balance Due:</span>
+                <span className="font-bold text-xl">${Number(invoice.balance || 0).toFixed(2)}</span>
+              </div>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Payment History</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader className="bg-muted/50">
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Method</TableHead>
+                <TableHead>Reference</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(!invoice.payments || invoice.payments.length === 0) ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
+                    No payments recorded.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                invoice.payments.map((payment) => (
+                  <TableRow key={payment.id}>
+                    <TableCell>
+                      {new Date(payment.created_at).toLocaleDateString()} {new Date(payment.created_at).toLocaleTimeString()}
+                    </TableCell>
+                    <TableCell>{payment.payment_method}</TableCell>
+                    <TableCell className="font-mono text-xs">{payment.reference || "-"}</TableCell>
+                    <TableCell className="text-right font-semibold text-green-600">
+                      ${Number(payment.amount).toFixed(2)}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>

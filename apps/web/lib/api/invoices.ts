@@ -5,6 +5,8 @@ import {
   InvoiceCreateInput,
   InvoiceUpdateInput,
   InvoiceSearchParams,
+  PaymentCreateInput,
+  Payment,
 } from "./types";
 
 export const invoicesApi = {
@@ -31,6 +33,12 @@ export const invoicesApi = {
   update: (id: string, data: InvoiceUpdateInput) =>
     fetchAPI<InvoiceDetailResponse>(`/api/v1/invoices/${id}`, {
       method: "PUT",
+      body: JSON.stringify(data),
+    }),
+
+  recordPayment: (id: string, data: PaymentCreateInput) =>
+    fetchAPI<Payment>(`/api/v1/invoices/${id}/payments`, {
+      method: "POST",
       body: JSON.stringify(data),
     }),
 };

@@ -4,6 +4,7 @@ import {
   InvoiceCreateInput,
   InvoiceUpdateInput,
   InvoiceSearchParams,
+  PaymentCreateInput,
 } from "@/lib/api/types";
 
 export function useInvoices(params: InvoiceSearchParams = {}) {
@@ -61,5 +62,22 @@ export function useCreateInvoice() {
   return {
     createInvoice: createMutation.mutateAsync,
     isCreating: createMutation.isPending,
+  };
+}
+
+export function useRecordPayment(invoiceId: string) {
+  const queryClient = useQueryClient();
+
+  const recordMutation = useMutation({
+    mutationFn: (data: PaymentCreateInput) => invoicesApi.recordPayment(invoiceId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["invoices", invoiceId] });
+    },
+  });
+
+  return {
+    recordPayment: recordMutation.mutateAsync,
+    isRecording: recordMutation.isPending,
   };
 }
