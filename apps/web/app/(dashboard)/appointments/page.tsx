@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Plus, Calendar, Edit } from "lucide-react";
+import { Plus, Calendar, Edit, FileText } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -25,6 +25,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { AppointmentForm } from "@/components/forms/appointment-form";
+import { MedicalRecordForm } from "@/components/forms/medical-record-form";
 
 export default function AppointmentsPage() {
   const { user } = useAuth();
@@ -43,6 +44,8 @@ export default function AppointmentsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | undefined>();
 
+  const [isConsultDialogOpen, setIsConsultDialogOpen] = useState(false);
+
   const handleCreate = () => {
     setSelectedAppointment(undefined);
     setIsDialogOpen(true);
@@ -55,6 +58,16 @@ export default function AppointmentsPage() {
 
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
+    setSelectedAppointment(undefined);
+  };
+
+  const handleConsult = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+    setIsConsultDialogOpen(true);
+  };
+
+  const handleCloseConsultDialog = () => {
+    setIsConsultDialogOpen(false);
     setSelectedAppointment(undefined);
   };
 
@@ -199,14 +212,26 @@ export default function AppointmentsPage() {
                     {renderStatusBadge(appointment.status)}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEdit(appointment)}
-                    >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Manage
-                    </Button>
+                    <div className="flex justify-end gap-2">
+                      {user.role === "DOCTOR" && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleConsult(appointment)}
+                        >
+                          <FileText className="h-4 w-4 mr-2" />
+                          Consult
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEdit(appointment)}
+                      >
+                        <Edit className="h-4 w-4 mr-2" />
+                        Manage
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -249,6 +274,21 @@ export default function AppointmentsPage() {
             onSuccess={handleCloseDialog}
             onCancel={handleCloseDialog}
             userRole={user.role}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isConsultDialogOpen} onOpenChange={setIsConsultDialogOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Consultation Record</DialogTitle>
+          </DialogHeader>
+          <MedicalRecordForm
+            appointmentId={selectedAppointment?.id}
+            patientId={selectedAppointment?.patient_id}
+            doctorId={selectedAppointment?.doctor_id}
+            onSuccess={handleCloseConsultDialog}
+            onCancel={handleCloseConsultDialog}
           />
         </DialogContent>
       </Dialog>

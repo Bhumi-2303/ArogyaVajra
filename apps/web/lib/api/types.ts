@@ -321,3 +321,57 @@ export interface AppointmentSearchParams {
   page_size?: number;
 }
 
+export interface MedicalRecord {
+  id: string;
+  patient_id: string;
+  doctor_id: string;
+  appointment_id?: string | null;
+  record_date: string;
+  chief_complaint?: string | null;
+  clinical_notes?: string | null;
+  diagnosis?: string | null;
+  treatment_notes?: string | null;
+  follow_up_date?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MedicalRecordCreateInput {
+  patient_id: string;
+  doctor_id: string;
+  appointment_id?: string | null;
+  record_date: string;
+  chief_complaint?: string | null;
+  clinical_notes?: string | null;
+  diagnosis?: string | null;
+  treatment_notes?: string | null;
+  follow_up_date?: string | null;
+}
+
+export interface MedicalRecordUpdateInput {
+  chief_complaint?: string | null;
+  clinical_notes?: string | null;
+  diagnosis?: string | null;
+  treatment_notes?: string | null;
+  follow_up_date?: string | null;
+}
+
+export interface MedicalRecordListResponse {
+  data: MedicalRecord[];
+  pagination: PaginationMeta;
+  message: string;
+}
+
+export interface MedicalRecordDetailResponse {
+  data: MedicalRecord;
+  message: string;
+}
+
+export interface MedicalRecordSearchParams {
+  patient_id?: string;
+  doctor_id?: string;
+  appointment_id?: string;
+  page?: number;
+  page_size?: number;
+}
+
