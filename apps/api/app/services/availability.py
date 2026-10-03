@@ -38,7 +38,12 @@ class AvailabilityService:
         current_user: User,
     ) -> list[DoctorAvailability]:
         """List availability slots for a doctor."""
-        cls._authorize_doctor_access(db, doctor_id, current_user)
+        doctor = DoctorRepository.get_by_id(db, doctor_id)
+        if not doctor:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Doctor profile not found.",
+            )
         return AvailabilityRepository.get_by_doctor_id(db, doctor_id)
 
     @classmethod

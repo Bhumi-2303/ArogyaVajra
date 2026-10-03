@@ -22,10 +22,10 @@ class PaymentService:
         ip_address: str | None = None,
         user_agent: str | None = None,
     ) -> Payment:
-        if current_user.role not in [UserRole.ADMIN, UserRole.RECEPTIONIST]:
+        if current_user.role not in [UserRole.ADMIN, UserRole.BILLING_STAFF]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only admins and receptionists can record payments.",
+                detail="Only admins and billing staff can record payments.",
             )
 
         invoice = InvoiceRepository.get_by_id(db, invoice_id)

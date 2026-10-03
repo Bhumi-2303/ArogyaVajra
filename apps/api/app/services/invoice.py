@@ -22,10 +22,10 @@ class InvoiceService:
         ip_address: str | None = None,
         user_agent: str | None = None,
     ) -> Invoice:
-        if current_user.role not in [UserRole.ADMIN, UserRole.RECEPTIONIST]:
+        if current_user.role not in [UserRole.ADMIN, UserRole.BILLING_STAFF]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only admins and receptionists can create invoices.",
+                detail="Only admins and billing staff can create invoices.",
             )
 
         patient = PatientRepository.get_by_id(db, data.patient_id)
@@ -140,10 +140,10 @@ class InvoiceService:
         ip_address: str | None = None,
         user_agent: str | None = None,
     ) -> Invoice:
-        if current_user.role not in [UserRole.ADMIN, UserRole.RECEPTIONIST]:
+        if current_user.role not in [UserRole.ADMIN, UserRole.BILLING_STAFF]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only admins and receptionists can update invoices.",
+                detail="Only admins and billing staff can update invoices.",
             )
 
         invoice = cls.get_invoice(db, invoice_id, current_user)
