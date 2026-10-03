@@ -11,15 +11,43 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isLoading, isAuthenticated } = useAuth();
+  
+  const { isLoading, isAuthenticated, user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
   React.useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+      return;
     }
-  }, [isLoading, isAuthenticated, router, pathname]);
+    
+    if (!isLoading && isAuthenticated && user) {
+      const role = user!.role;
+      const roleGuards: Record<string, string[]> = {
+        "/admin": ["ADMIN"],
+        "/billing": ["ADMIN", "BILLING_STAFF"],
+        "/doctor": ["DOCTOR", "ADMIN"],
+        "/receptionist": ["RECEPTIONIST", "ADMIN"],
+        "/patient": ["PATIENT"],
+        "/users": ["ADMIN"],
+        "/audit-logs": ["ADMIN"],
+      };
+
+      for (const [path, allowedRoles] of Object.entries(roleGuards)) {
+        if (pathname.startsWith(path) && !allowedRoles.includes(role)) {
+          // Fallback to their own dashboard
+          const defaultDash = role === "ADMIN" ? "/admin" :
+                              role === "DOCTOR" ? "/doctor" :
+                              role === "RECEPTIONIST" ? "/receptionist" :
+                              role === "BILLING_STAFF" ? "/billing" : "/patient";
+          router.push(defaultDash);
+          return;
+        }
+      }
+    }
+  }, [isLoading, isAuthenticated, user, router, pathname]);
+
 
   if (isLoading) {
     return (
