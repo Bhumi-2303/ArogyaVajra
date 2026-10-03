@@ -14,7 +14,7 @@ import {
   useCreateInvoice,
   useInvoice,
 } from "@/hooks/use-invoices";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert } from "@/components/ui/alert";
 import { Plus, Trash2, CheckCircle2 } from "lucide-react";
 
 interface InvoiceFormProps {
@@ -174,17 +174,14 @@ export function InvoiceForm({
   if (showCancelConfirm) {
     return (
       <div className="space-y-4">
-        <Alert>
-          <AlertTitle>Discard Changes?</AlertTitle>
-          <AlertDescription>
-            Are you sure you want to cancel? Any unsaved work will be lost.
-          </AlertDescription>
+        <Alert title="Discard Changes?">
+          Are you sure you want to cancel? Any unsaved work will be lost.
         </Alert>
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={() => setShowCancelConfirm(false)}>
             No, keep editing
           </Button>
-          <Button variant="destructive" onClick={onCancel}>
+          <Button variant="danger" onClick={onCancel}>
             Yes, discard
           </Button>
         </div>
@@ -195,18 +192,14 @@ export function InvoiceForm({
   if (reviewMode) {
     return (
       <div className="space-y-6">
-        <Alert className="bg-blue-50 border-blue-200">
-          <CheckCircle2 className="h-4 w-4 text-blue-600" />
-          <AlertTitle className="text-blue-800">Review Invoice</AlertTitle>
-          <AlertDescription className="text-blue-700">
-            Please review the totals before issuing. Once an invoice is issued, items cannot be modified.
-          </AlertDescription>
+        <Alert className="bg-blue-50 border-blue-200" title="Review Invoice">
+          Please review the totals before issuing. Once an invoice is issued, items cannot be modified.
         </Alert>
 
         {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
+          <Alert variant="danger">
+          {error}
+        </Alert>
         )}
 
         <div className="rounded-md border p-4 space-y-4">
@@ -284,9 +277,9 @@ export function InvoiceForm({
     return (
       <div className="space-y-6">
         {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
+          <Alert variant="danger">
+          {error}
+        </Alert>
         )}
         <div className="space-y-2">
           <Label htmlFor="status">Status</Label>
@@ -319,8 +312,8 @@ export function InvoiceForm({
   return (
     <div className="space-y-6">
       {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
+        <Alert variant="danger">
+          {error}
         </Alert>
       )}
 

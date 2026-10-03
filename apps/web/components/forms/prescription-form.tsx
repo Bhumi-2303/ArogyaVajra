@@ -14,7 +14,7 @@ import {
   useCreatePrescription,
   usePrescription,
 } from "@/hooks/use-prescriptions";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2, CheckCircle2 } from "lucide-react";
 
@@ -174,17 +174,14 @@ export function PrescriptionForm({
   if (showCancelConfirm) {
     return (
       <div className="space-y-4">
-        <Alert>
-          <AlertTitle>Discard Changes?</AlertTitle>
-          <AlertDescription>
-            Are you sure you want to cancel? Any unsaved work will be lost.
-          </AlertDescription>
-        </Alert>
+        <Alert title="Discard Changes?" variant="danger">
+Are you sure you want to cancel? Any unsaved work will be lost.
+</Alert>
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={() => setShowCancelConfirm(false)}>
             No, keep editing
           </Button>
-          <Button variant="destructive" onClick={onCancel}>
+          <Button variant="danger" onClick={onCancel}>
             Yes, discard
           </Button>
         </div>
@@ -195,18 +192,14 @@ export function PrescriptionForm({
   if (reviewMode) {
     return (
       <div className="space-y-6">
-        <Alert className="bg-green-50 border-green-200">
-          <CheckCircle2 className="h-4 w-4 text-green-600" />
-          <AlertTitle className="text-green-800">Review Prescription</AlertTitle>
-          <AlertDescription className="text-green-700">
-            Please review the details below before saving.
-          </AlertDescription>
-        </Alert>
+        <Alert title="Review Prescription" variant="success" className="bg-green-50 border-green-200">
+Please review the details below before saving.
+</Alert>
         
         {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
+          <Alert variant="danger">
+{error}
+</Alert>
         )}
 
         <div className="rounded-md border p-4 space-y-4">
@@ -265,9 +258,9 @@ export function PrescriptionForm({
   return (
     <div className="space-y-6">
       {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+        <Alert variant="danger">
+{error}
+</Alert>
       )}
 
       {!initialData && (

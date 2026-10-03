@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DoctorAvailabilityCreateInput, DoctorAvailabilityUpdateInput, DoctorAvailability } from "@/lib/api/types";
 import { useAvailability } from "@/hooks/use-availability";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert } from "@/components/ui/alert";
 
 interface AvailabilityFormProps {
   doctorId: string;
@@ -91,9 +91,9 @@ export function AvailabilityForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+        <Alert variant="danger">
+<>{error}</>
+</Alert>
       )}
 
       <div className="space-y-2">

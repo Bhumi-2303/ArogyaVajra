@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AppointmentCreateInput, AppointmentUpdateInput, Appointment } from "@/lib/api/types";
 import { useCreateAppointment, useAppointment } from "@/hooks/use-appointments";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert } from "@/components/ui/alert";
 
 interface AppointmentFormProps {
   initialData?: Appointment;
@@ -84,9 +84,9 @@ export function AppointmentForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+        <Alert variant="danger">
+<>{error}</>
+</Alert>
       )}
 
       {!initialData && (

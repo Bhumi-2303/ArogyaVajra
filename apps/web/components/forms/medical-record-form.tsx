@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MedicalRecord, MedicalRecordCreateInput, MedicalRecordUpdateInput } from "@/lib/api/types";
 import { useCreateMedicalRecord, useMedicalRecord } from "@/hooks/use-medical-records";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
 
 interface MedicalRecordFormProps {
@@ -91,9 +91,9 @@ export function MedicalRecordForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+        <Alert variant="danger">
+<>{error}</>
+</Alert>
       )}
 
       {!initialData && (

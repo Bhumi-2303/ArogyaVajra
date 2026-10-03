@@ -141,8 +141,8 @@ export function DoctorForm({
     <form onSubmit={handleSubmit} className="space-y-6" noValidate>
       {errors.general && (
         <Alert variant="danger" id="doctor-form-error">
-          {errors.general}
-        </Alert>
+{errors.general}
+</Alert>
       )}
 
       {/* Basic Demographics */}
