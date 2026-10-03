@@ -18,6 +18,8 @@
     "verify:all": "npm run verify:shell && npm run verify:public && npm run verify:auth && npm run verify:authz && npm run verify:patients && npm run verify:users && npm run verify:doctors"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.9.1",
+    "@radix-ui/react-slot": "^1.3.3",
     "@tanstack/react-query": "^5.45.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
@@ -26,6 +28,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.52.0",
+    "sonner": "^2.0.8",
     "tailwind-merge": "^2.3.0",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^3.23.8"
