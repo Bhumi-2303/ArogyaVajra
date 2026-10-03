@@ -21,6 +21,16 @@ from app.schemas.patient import (
     PatientSubresourceListResponse,
     PatientUpdate,
 )
+
+from app.repositories.appointment import AppointmentRepository
+from app.repositories.medical_record import MedicalRecordRepository
+from app.repositories.prescription import PrescriptionRepository
+from app.repositories.invoice import InvoiceRepository
+from app.schemas.appointment import AppointmentResponse
+from app.schemas.medical_record import MedicalRecordResponse
+from app.schemas.prescription import PrescriptionResponse
+from app.schemas.invoice import InvoiceResponse
+
 from app.services.patient import PatientService
 
 router = APIRouter(prefix="/patients", tags=["Patients"])
@@ -199,8 +209,9 @@ def get_patient_appointments(
             UserRole.ADMIN,
         ),
     )
+    appointments, _ = AppointmentRepository.search(db=db, patient_id=patient_id, skip=0, limit=100)
     return PatientSubresourceListResponse(
-        data=[],
+        data=[AppointmentResponse.model_validate(a).model_dump(mode="json") for a in appointments],
         message="Patient appointments retrieved successfully.",
     )
 
@@ -229,8 +240,9 @@ def get_patient_medical_records(
             UserRole.ADMIN,
         ),
     )
+    records, _ = MedicalRecordRepository.search(db=db, patient_id=patient_id, skip=0, limit=100)
     return PatientSubresourceListResponse(
-        data=[],
+        data=[MedicalRecordResponse.model_validate(r).model_dump(mode="json") for r in records],
         message="Patient medical records retrieved successfully.",
     )
 
@@ -258,8 +270,9 @@ def get_patient_prescriptions(
             UserRole.ADMIN,
         ),
     )
+    prescriptions, _ = PrescriptionRepository.search(db=db, patient_id=patient_id, skip=0, limit=100)
     return PatientSubresourceListResponse(
-        data=[],
+        data=[PrescriptionResponse.model_validate(p).model_dump(mode="json") for p in prescriptions],
         message="Patient prescriptions retrieved successfully.",
     )
 
@@ -282,7 +295,8 @@ def get_patient_invoices(
         user=current_user,
         patient_user_id=patient.user_id,
     )
+    invoices, _ = InvoiceRepository.search(db=db, patient_id=patient_id, skip=0, limit=100)
     return PatientSubresourceListResponse(
-        data=[],
+        data=[InvoiceResponse.model_validate(i).model_dump(mode="json") for i in invoices],
         message="Patient invoices retrieved successfully.",
     )
