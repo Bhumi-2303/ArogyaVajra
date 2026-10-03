@@ -6,17 +6,41 @@ import { X, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
-export interface DialogProps {
+interface DialogContextType {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  setOpen: (open: boolean) => void;
+}
+
+const DialogContext = React.createContext<DialogContextType>({
+  open: false,
+  setOpen: () => {},
+});
+
+export interface DialogProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   children: React.ReactNode;
 }
 
-export function Dialog({ open, onOpenChange, children }: DialogProps) {
+export function Dialog({ open: controlledOpen, onOpenChange, children }: DialogProps) {
+  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : uncontrolledOpen;
+
+  const setOpen = React.useCallback(
+    (nextOpen: boolean) => {
+      if (!isControlled) {
+        setUncontrolledOpen(nextOpen);
+      }
+      onOpenChange?.(nextOpen);
+    },
+    [isControlled, onOpenChange]
+  );
+
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape" && open) {
-        onOpenChange(false);
+        setOpen(false);
       }
     };
     if (open) {
@@ -29,55 +53,96 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
       document.body.style.overflow = "";
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [open, onOpenChange]);
-
-  if (!open) return null;
+  }, [open, setOpen]);
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-8"
-      role="dialog"
-      aria-modal="true"
-    >
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-navy/40 backdrop-blur-sm transition-opacity animate-in fade-in-0 duration-200"
-        onClick={() => onOpenChange(false)}
-        aria-hidden="true"
-      />
+    <DialogContext.Provider value={{ open, setOpen }}>
       {children}
-    </div>
+    </DialogContext.Provider>
   );
 }
+
+export interface DialogTriggerProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  asChild?: boolean;
+}
+
+export const DialogTrigger = React.forwardRef<HTMLButtonElement, DialogTriggerProps>(
+  ({ children, asChild, onClick, ...props }, ref) => {
+    const { setOpen } = React.useContext(DialogContext);
+
+    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+      onClick?.(e);
+      setOpen(true);
+    };
+
+    if (asChild && React.isValidElement(children)) {
+      return React.cloneElement(children as React.ReactElement<any>, {
+        onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
+          (children as any).props?.onClick?.(e);
+          handleClick(e);
+        },
+      });
+    }
+
+    return (
+      <button ref={ref} type="button" onClick={handleClick} {...props}>
+        {children}
+      </button>
+    );
+  }
+);
+DialogTrigger.displayName = "DialogTrigger";
 
 export interface DialogContentProps extends React.HTMLAttributes<HTMLDivElement> {
   onClose?: () => void;
 }
 
 export const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
-  ({ className, children, onClose, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn(
-        "relative z-50 w-full max-w-lg rounded-xl border border-app-border bg-app-surface p-6 shadow-dialog animate-in fade-in-0 zoom-in-95 duration-200 focus:outline-none",
-        className
-      )}
-      onClick={(e) => e.stopPropagation()}
-      {...props}
-    >
-      {onClose && (
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute right-4 top-4 rounded-md p-1.5 text-app-muted hover:bg-slate-100 hover:text-navy focus:outline-none focus-visible:ring-2 focus-visible:ring-royal transition-colors"
-          aria-label="Close dialog"
+  ({ className, children, onClose, ...props }, ref) => {
+    const { open, setOpen } = React.useContext(DialogContext);
+
+    if (!open) return null;
+
+    const handleClose = () => {
+      onClose?.();
+      setOpen(false);
+    };
+
+    return (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-8"
+        role="dialog"
+        aria-modal="true"
+      >
+        {/* Backdrop */}
+        <div
+          className="fixed inset-0 bg-navy/40 backdrop-blur-sm transition-opacity animate-in fade-in-0 duration-200"
+          onClick={handleClose}
+          aria-hidden="true"
+        />
+        <div
+          ref={ref}
+          className={cn(
+            "relative z-50 w-full max-w-lg rounded-xl border border-app-border bg-app-surface p-6 shadow-dialog animate-in fade-in-0 zoom-in-95 duration-200 focus:outline-none",
+            className
+          )}
+          onClick={(e) => e.stopPropagation()}
+          {...props}
         >
-          <X className="h-4 w-4" aria-hidden="true" />
-        </button>
-      )}
-      {children}
-    </div>
-  )
+          <button
+            type="button"
+            onClick={handleClose}
+            className="absolute right-4 top-4 rounded-md p-1.5 text-app-muted hover:bg-slate-100 hover:text-navy focus:outline-none focus-visible:ring-2 focus-visible:ring-royal transition-colors"
+            aria-label="Close dialog"
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+          </button>
+          {children}
+        </div>
+      </div>
+    );
+  }
 );
 DialogContent.displayName = "DialogContent";
 
