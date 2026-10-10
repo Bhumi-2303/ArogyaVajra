@@ -19,8 +19,10 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.execute("CREATE SEQUENCE IF NOT EXISTS invoice_number_seq START 1;")
+    if op.get_bind().dialect.name == "postgresql":
+        op.execute("CREATE SEQUENCE IF NOT EXISTS invoice_number_seq START 1;")
 
 
 def downgrade() -> None:
-    op.execute("DROP SEQUENCE IF NOT EXISTS invoice_number_seq;")
+    if op.get_bind().dialect.name == "postgresql":
+        op.execute("DROP SEQUENCE IF NOT EXISTS invoice_number_seq;")

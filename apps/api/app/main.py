@@ -7,7 +7,9 @@ from fastapi.responses import JSONResponse
 
 from app.api.v1 import api_v1_router
 from app.core.config import settings
-from app.db.session import check_db_connection, close_db_engine
+from app.db.base import Base
+from app.db.session import check_db_connection, close_db_engine, get_engine
+import app.models  # noqa: F401
 
 
 @asynccontextmanager

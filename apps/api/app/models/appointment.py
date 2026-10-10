@@ -13,8 +13,8 @@ from sqlalchemy import (
     String,
     Text,
     Time,
+    Uuid as UUID,
 )
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin

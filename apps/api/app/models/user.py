@@ -4,8 +4,7 @@ import enum
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, String, Text
-from sqlalchemy.dialects.postgresql import ENUM as PG_ENUM
+from sqlalchemy import Boolean, DateTime, Enum, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
@@ -25,11 +24,11 @@ class UserRole(str, enum.Enum):
     ADMIN = "ADMIN"
 
 
-# PostgreSQL enum type definition matching naming conventions
-UserRoleType = PG_ENUM(
+# User role column definition with cross-database compatibility
+UserRoleType = Enum(
     UserRole,
     name="user_role",
-    create_type=False,
+    native_enum=False,
     values_callable=lambda x: [e.value for e in x],
 )
 

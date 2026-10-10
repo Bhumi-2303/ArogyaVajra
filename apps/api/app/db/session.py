@@ -29,15 +29,22 @@ def get_engine():
     """Get or create the singleton SQLAlchemy engine with optimized pooling."""
     global _engine
     if _engine is None:
-        _engine = create_engine(
-            settings.DATABASE_URL,
-            pool_pre_ping=True,
-            pool_recycle=3600,
-            pool_size=10,
-            max_overflow=20,
-            pool_timeout=30,
-            echo=settings.APP_DEBUG,
-        )
+        if settings.DATABASE_URL.startswith("sqlite"):
+            _engine = create_engine(
+                settings.DATABASE_URL,
+                connect_args={"check_same_thread": False},
+                echo=settings.APP_DEBUG,
+            )
+        else:
+            _engine = create_engine(
+                settings.DATABASE_URL,
+                pool_pre_ping=True,
+                pool_recycle=3600,
+                pool_size=10,
+                max_overflow=20,
+                pool_timeout=30,
+                echo=settings.APP_DEBUG,
+            )
     return _engine
 
 
