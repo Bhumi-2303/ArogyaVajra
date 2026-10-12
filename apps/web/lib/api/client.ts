@@ -40,13 +40,35 @@ export function clearStoredTokens(): void {
 }
 
 /**
+ * Resolve endpoint to full API URL ensuring /api/v1 is not duplicated.
+ */
+export function resolveApiUrl(endpoint: string): string {
+  const base = (
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"
+  ).replace(/\/+$/, "");
+  const normalizedEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+
+  if (
+    base.endsWith("/api/v1") &&
+    (normalizedEndpoint === "/api/v1" ||
+      normalizedEndpoint.startsWith("/api/v1/") ||
+      normalizedEndpoint.startsWith("/api/v1?"))
+  ) {
+    const stripped = normalizedEndpoint.slice("/api/v1".length);
+    return `${base}${stripped}`;
+  }
+
+  return `${base}${normalizedEndpoint}`;
+}
+
+/**
  * Execute an authenticated API request with automatic header injection and 401 handling.
  */
 export async function apiClient<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
+  const url = resolveApiUrl(endpoint);
   const token = getStoredAccessToken();
 
   const headers: Record<string, string> = {

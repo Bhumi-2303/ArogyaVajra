@@ -21,20 +21,20 @@ export const appointmentsApi = {
     if (params.status) query.append("status", params.status);
 
     const qs = query.toString();
-    const url = `/api/v1/appointments${qs ? `?${qs}` : ""}`;
+    const url = `/appointments${qs ? `?${qs}` : ""}`;
     return fetchAPI<AppointmentListResponse>(url);
   },
 
   /**
    * Get appointment details
    */
-  get: (id: string) => fetchAPI<AppointmentDetailResponse>(`/api/v1/appointments/${id}`),
+  get: (id: string) => fetchAPI<AppointmentDetailResponse>(`/appointments/${id}`),
 
   /**
    * Create an appointment
    */
   create: (data: AppointmentCreateInput) =>
-    fetchAPI<AppointmentDetailResponse>("/api/v1/appointments", {
+    fetchAPI<AppointmentDetailResponse>("/appointments", {
       method: "POST",
       body: JSON.stringify(data),
     }),
@@ -43,7 +43,7 @@ export const appointmentsApi = {
    * Update an appointment
    */
   update: (id: string, data: AppointmentUpdateInput) =>
-    fetchAPI<AppointmentDetailResponse>(`/api/v1/appointments/${id}`, {
+    fetchAPI<AppointmentDetailResponse>(`/appointments/${id}`, {
       method: "PUT",
       body: JSON.stringify(data),
     }),

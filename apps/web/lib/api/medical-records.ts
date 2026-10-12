@@ -17,20 +17,20 @@ export const medicalRecordsApi = {
     if (params.appointment_id) query.append("appointment_id", params.appointment_id);
 
     const qs = query.toString();
-    const url = `/api/v1/medical-records${qs ? `?${qs}` : ""}`;
+    const url = `/medical-records${qs ? `?${qs}` : ""}`;
     return fetchAPI<MedicalRecordListResponse>(url);
   },
 
-  get: (id: string) => fetchAPI<MedicalRecordDetailResponse>(`/api/v1/medical-records/${id}`),
+  get: (id: string) => fetchAPI<MedicalRecordDetailResponse>(`/medical-records/${id}`),
 
   create: (data: MedicalRecordCreateInput) =>
-    fetchAPI<MedicalRecordDetailResponse>("/api/v1/medical-records", {
+    fetchAPI<MedicalRecordDetailResponse>("/medical-records", {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
   update: (id: string, data: MedicalRecordUpdateInput) =>
-    fetchAPI<MedicalRecordDetailResponse>(`/api/v1/medical-records/${id}`, {
+    fetchAPI<MedicalRecordDetailResponse>(`/medical-records/${id}`, {
       method: "PUT",
       body: JSON.stringify(data),
     }),

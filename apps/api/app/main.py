@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request, status
@@ -8,6 +9,8 @@ from fastapi.responses import JSONResponse
 from app.api.v1 import api_v1_router
 from app.core.config import settings
 from app.db.session import check_db_connection, close_db_engine
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -86,6 +89,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     return JSONResponse(
         status_code=exc.status_code,
         content={
+            "detail": message,
             "error": {
                 "code": code,
                 "message": message
@@ -95,8 +99,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
-    import logging
-    logging.error(f"Unhandled exception: {exc}", exc_info=True)
+    logger.error("Unhandled exception: %s", exc, exc_info=exc)
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={

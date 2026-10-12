@@ -228,7 +228,7 @@ Please review the details below before saving.
                 </div>
                 {item.instructions && (
                   <div className="italic text-muted-foreground mt-1">
-                    "{item.instructions}"
+                    &quot;{item.instructions}&quot;
                   </div>
                 )}
               </li>
@@ -336,7 +336,7 @@ Please review the details below before saving.
 
         {items.length === 0 ? (
           <div className="p-8 text-center text-muted-foreground border rounded-md border-dashed">
-            No medications added yet. Click "Add Medicine" to begin.
+            No medications added yet. Click &quot;Add Medicine&quot; to begin.
           </div>
         ) : (
           <div className="space-y-4">

@@ -84,7 +84,7 @@ function TodayInvoicesSection() {
         <div className="space-y-1">
           <CardTitle className="text-lg flex items-center gap-2">
             <Receipt className="h-5 w-5 text-primary" />
-            Today's Invoices
+            Today&apos;s Invoices
           </CardTitle>
           <CardDescription>Invoices generated today</CardDescription>
         </div>
@@ -100,7 +100,7 @@ function TodayInvoicesSection() {
           </div>
         ) : error ? (
           <Alert variant="danger" className="mt-4">
-<>Failed to load today's invoices.</>
+<>Failed to load today&apos;s invoices.</>
 </Alert>
         ) : todayInvoices.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground border rounded-md mt-4 bg-muted/20">

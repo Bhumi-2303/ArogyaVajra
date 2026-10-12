@@ -1,0 +1,1178 @@
+[
+  {
+    "filename": "app/api/v1/__init__.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 3,
+    "column": 1
+  },
+  {
+    "filename": "app/api/v1/appointments.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 55,
+    "column": 17
+  },
+  {
+    "filename": "app/api/v1/appointments.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 56,
+    "column": 16
+  },
+  {
+    "filename": "app/api/v1/appointments.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 57,
+    "column": 11
+  },
+  {
+    "filename": "app/api/v1/appointments.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 58,
+    "column": 13
+  },
+  {
+    "filename": "app/api/v1/appointments.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 141,
+    "column": 5
+  },
+  {
+    "filename": "app/api/v1/appointments.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 165,
+    "column": 5
+  },
+  {
+    "filename": "app/api/v1/appointments.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 189,
+    "column": 5
+  },
+  {
+    "filename": "app/api/v1/audit_logs.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 22,
+    "column": 14
+  },
+  {
+    "filename": "app/api/v1/audit_logs.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 23,
+    "column": 18
+  },
+  {
+    "filename": "app/api/v1/audit_logs.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 24,
+    "column": 16
+  },
+  {
+    "filename": "app/api/v1/audit_logs.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 25,
+    "column": 13
+  },
+  {
+    "filename": "app/api/v1/availability.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 1,
+    "column": 1
+  },
+  {
+    "filename": "app/api/v1/invoices.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 1,
+    "column": 1
+  },
+  {
+    "filename": "app/api/v1/invoices.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 55,
+    "column": 17
+  },
+  {
+    "filename": "app/api/v1/invoices.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 56,
+    "column": 13
+  },
+  {
+    "filename": "app/api/v1/invoices.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 57,
+    "column": 21
+  },
+  {
+    "filename": "app/api/v1/invoices.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 58,
+    "column": 11
+  },
+  {
+    "filename": "app/api/v1/invoices.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 169,
+    "column": 5
+  },
+  {
+    "filename": "app/api/v1/invoices.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 193,
+    "column": 5
+  },
+  {
+    "filename": "app/api/v1/medical_records.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 1,
+    "column": 1
+  },
+  {
+    "filename": "app/api/v1/medical_records.py",
+    "code": "F401",
+    "message": "`app.schemas.medical_record.MedicalRecordResponse` imported but unused",
+    "line": 12,
+    "column": 5
+  },
+  {
+    "filename": "app/api/v1/medical_records.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 54,
+    "column": 17
+  },
+  {
+    "filename": "app/api/v1/medical_records.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 55,
+    "column": 16
+  },
+  {
+    "filename": "app/api/v1/medical_records.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 56,
+    "column": 21
+  },
+  {
+    "filename": "app/api/v1/patients.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 3,
+    "column": 1
+  },
+  {
+    "filename": "app/api/v1/prescriptions.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 1,
+    "column": 1
+  },
+  {
+    "filename": "app/api/v1/prescriptions.py",
+    "code": "F401",
+    "message": "`app.schemas.prescription.PrescriptionResponse` imported but unused",
+    "line": 12,
+    "column": 5
+  },
+  {
+    "filename": "app/api/v1/prescriptions.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 54,
+    "column": 17
+  },
+  {
+    "filename": "app/api/v1/prescriptions.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 55,
+    "column": 16
+  },
+  {
+    "filename": "app/api/v1/prescriptions.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 56,
+    "column": 21
+  },
+  {
+    "filename": "app/api/v1/prescriptions.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 137,
+    "column": 5
+  },
+  {
+    "filename": "app/db/migrations/versions/52038a6ed903_add_appointment_table.py",
+    "code": "UP035",
+    "message": "Import from `collections.abc` instead: `Sequence`",
+    "line": 8,
+    "column": 1
+  },
+  {
+    "filename": "app/db/migrations/versions/52038a6ed903_add_appointment_table.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 8,
+    "column": 1
+  },
+  {
+    "filename": "app/db/migrations/versions/52038a6ed903_add_appointment_table.py",
+    "code": "UP007",
+    "message": "Use `X | Y` for type annotations",
+    "line": 16,
+    "column": 16
+  },
+  {
+    "filename": "app/db/migrations/versions/52038a6ed903_add_appointment_table.py",
+    "code": "UP007",
+    "message": "Use `X | Y` for type annotations",
+    "line": 17,
+    "column": 16
+  },
+  {
+    "filename": "app/db/migrations/versions/52038a6ed903_add_appointment_table.py",
+    "code": "UP007",
+    "message": "Use `X | Y` for type annotations",
+    "line": 18,
+    "column": 13
+  },
+  {
+    "filename": "app/db/migrations/versions/6dacbefae31a_initial_schema.py",
+    "code": "UP035",
+    "message": "Import from `collections.abc` instead: `Sequence`",
+    "line": 8,
+    "column": 1
+  },
+  {
+    "filename": "app/db/migrations/versions/6dacbefae31a_initial_schema.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 8,
+    "column": 1
+  },
+  {
+    "filename": "app/db/migrations/versions/6dacbefae31a_initial_schema.py",
+    "code": "UP007",
+    "message": "Use `X | Y` for type annotations",
+    "line": 16,
+    "column": 16
+  },
+  {
+    "filename": "app/db/migrations/versions/6dacbefae31a_initial_schema.py",
+    "code": "UP007",
+    "message": "Use `X | Y` for type annotations",
+    "line": 17,
+    "column": 16
+  },
+  {
+    "filename": "app/db/migrations/versions/6dacbefae31a_initial_schema.py",
+    "code": "UP007",
+    "message": "Use `X | Y` for type annotations",
+    "line": 18,
+    "column": 13
+  },
+  {
+    "filename": "app/db/migrations/versions/6db372e959da_add_invoice_number_seq.py",
+    "code": "UP035",
+    "message": "Import from `collections.abc` instead: `Sequence`",
+    "line": 8,
+    "column": 1
+  },
+  {
+    "filename": "app/db/migrations/versions/6db372e959da_add_invoice_number_seq.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 8,
+    "column": 1
+  },
+  {
+    "filename": "app/db/migrations/versions/6db372e959da_add_invoice_number_seq.py",
+    "code": "F401",
+    "message": "`sqlalchemy` imported but unused",
+    "line": 11,
+    "column": 22
+  },
+  {
+    "filename": "app/db/migrations/versions/6db372e959da_add_invoice_number_seq.py",
+    "code": "UP007",
+    "message": "Use `X | Y` for type annotations",
+    "line": 16,
+    "column": 16
+  },
+  {
+    "filename": "app/db/migrations/versions/6db372e959da_add_invoice_number_seq.py",
+    "code": "UP007",
+    "message": "Use `X | Y` for type annotations",
+    "line": 17,
+    "column": 16
+  },
+  {
+    "filename": "app/db/migrations/versions/6db372e959da_add_invoice_number_seq.py",
+    "code": "UP007",
+    "message": "Use `X | Y` for type annotations",
+    "line": 18,
+    "column": 13
+  },
+  {
+    "filename": "app/db/migrations/versions/73419c810f00_add_medical_records_table.py",
+    "code": "UP035",
+    "message": "Import from `collections.abc` instead: `Sequence`",
+    "line": 8,
+    "column": 1
+  },
+  {
+    "filename": "app/db/migrations/versions/73419c810f00_add_medical_records_table.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 8,
+    "column": 1
+  },
+  {
+    "filename": "app/db/migrations/versions/73419c810f00_add_medical_records_table.py",
+    "code": "UP007",
+    "message": "Use `X | Y` for type annotations",
+    "line": 16,
+    "column": 16
+  },
+  {
+    "filename": "app/db/migrations/versions/73419c810f00_add_medical_records_table.py",
+    "code": "UP007",
+    "message": "Use `X | Y` for type annotations",
+    "line": 17,
+    "column": 16
+  },
+  {
+    "filename": "app/db/migrations/versions/73419c810f00_add_medical_records_table.py",
+    "code": "UP007",
+    "message": "Use `X | Y` for type annotations",
+    "line": 18,
+    "column": 13
+  },
+  {
+    "filename": "app/db/migrations/versions/8dc043cec914_add_invoices_table.py",
+    "code": "UP035",
+    "message": "Import from `collections.abc` instead: `Sequence`",
+    "line": 8,
+    "column": 1
+  },
+  {
+    "filename": "app/db/migrations/versions/8dc043cec914_add_invoices_table.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 8,
+    "column": 1
+  },
+  {
+    "filename": "app/db/migrations/versions/8dc043cec914_add_invoices_table.py",
+    "code": "UP007",
+    "message": "Use `X | Y` for type annotations",
+    "line": 16,
+    "column": 16
+  },
+  {
+    "filename": "app/db/migrations/versions/8dc043cec914_add_invoices_table.py",
+    "code": "UP007",
+    "message": "Use `X | Y` for type annotations",
+    "line": 17,
+    "column": 16
+  },
+  {
+    "filename": "app/db/migrations/versions/8dc043cec914_add_invoices_table.py",
+    "code": "UP007",
+    "message": "Use `X | Y` for type annotations",
+    "line": 18,
+    "column": 13
+  },
+  {
+    "filename": "app/db/migrations/versions/af124211702f_add_doctor_availability_table.py",
+    "code": "UP035",
+    "message": "Import from `collections.abc` instead: `Sequence`",
+    "line": 8,
+    "column": 1
+  },
+  {
+    "filename": "app/db/migrations/versions/af124211702f_add_doctor_availability_table.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 8,
+    "column": 1
+  },
+  {
+    "filename": "app/db/migrations/versions/af124211702f_add_doctor_availability_table.py",
+    "code": "UP007",
+    "message": "Use `X | Y` for type annotations",
+    "line": 16,
+    "column": 16
+  },
+  {
+    "filename": "app/db/migrations/versions/af124211702f_add_doctor_availability_table.py",
+    "code": "UP007",
+    "message": "Use `X | Y` for type annotations",
+    "line": 17,
+    "column": 16
+  },
+  {
+    "filename": "app/db/migrations/versions/af124211702f_add_doctor_availability_table.py",
+    "code": "UP007",
+    "message": "Use `X | Y` for type annotations",
+    "line": 18,
+    "column": 13
+  },
+  {
+    "filename": "app/db/migrations/versions/e8b5c3a67ee0_add_prescriptions_table.py",
+    "code": "UP035",
+    "message": "Import from `collections.abc` instead: `Sequence`",
+    "line": 8,
+    "column": 1
+  },
+  {
+    "filename": "app/db/migrations/versions/e8b5c3a67ee0_add_prescriptions_table.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 8,
+    "column": 1
+  },
+  {
+    "filename": "app/db/migrations/versions/e8b5c3a67ee0_add_prescriptions_table.py",
+    "code": "UP007",
+    "message": "Use `X | Y` for type annotations",
+    "line": 16,
+    "column": 16
+  },
+  {
+    "filename": "app/db/migrations/versions/e8b5c3a67ee0_add_prescriptions_table.py",
+    "code": "UP007",
+    "message": "Use `X | Y` for type annotations",
+    "line": 17,
+    "column": 16
+  },
+  {
+    "filename": "app/db/migrations/versions/e8b5c3a67ee0_add_prescriptions_table.py",
+    "code": "UP007",
+    "message": "Use `X | Y` for type annotations",
+    "line": 18,
+    "column": 13
+  },
+  {
+    "filename": "app/models/__init__.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 3,
+    "column": 1
+  },
+  {
+    "filename": "app/models/__init__.py",
+    "code": "RUF022",
+    "message": "`__all__` is not sorted",
+    "line": 13,
+    "column": 11
+  },
+  {
+    "filename": "app/models/appointment.py",
+    "code": "F401",
+    "message": "`datetime` imported but unused",
+    "line": 1,
+    "column": 8
+  },
+  {
+    "filename": "app/models/appointment.py",
+    "code": "F401",
+    "message": "`uuid` imported but unused",
+    "line": 3,
+    "column": 8
+  },
+  {
+    "filename": "app/models/appointment.py",
+    "code": "F401",
+    "message": "`sqlalchemy.Boolean` imported but unused",
+    "line": 6,
+    "column": 5
+  },
+  {
+    "filename": "app/models/appointment.py",
+    "code": "F401",
+    "message": "`sqlalchemy.Integer` imported but unused",
+    "line": 11,
+    "column": 5
+  },
+  {
+    "filename": "app/models/appointment.py",
+    "code": "F401",
+    "message": "`sqlalchemy.SmallInteger` imported but unused",
+    "line": 12,
+    "column": 5
+  },
+  {
+    "filename": "app/models/doctor.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 3,
+    "column": 1
+  },
+  {
+    "filename": "app/models/invoice.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 1,
+    "column": 1
+  },
+  {
+    "filename": "app/models/invoice.py",
+    "code": "F401",
+    "message": "`datetime` imported but unused",
+    "line": 1,
+    "column": 8
+  },
+  {
+    "filename": "app/models/invoice.py",
+    "code": "F401",
+    "message": "`uuid` imported but unused",
+    "line": 3,
+    "column": 8
+  },
+  {
+    "filename": "app/models/medical_record.py",
+    "code": "F401",
+    "message": "`datetime` imported but unused",
+    "line": 1,
+    "column": 8
+  },
+  {
+    "filename": "app/models/medical_record.py",
+    "code": "F401",
+    "message": "`uuid` imported but unused",
+    "line": 2,
+    "column": 8
+  },
+  {
+    "filename": "app/models/payment.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 1,
+    "column": 1
+  },
+  {
+    "filename": "app/models/payment.py",
+    "code": "F401",
+    "message": "`uuid` imported but unused",
+    "line": 2,
+    "column": 8
+  },
+  {
+    "filename": "app/models/prescription.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 1,
+    "column": 1
+  },
+  {
+    "filename": "app/models/prescription.py",
+    "code": "F401",
+    "message": "`datetime` imported but unused",
+    "line": 1,
+    "column": 8
+  },
+  {
+    "filename": "app/models/prescription.py",
+    "code": "F401",
+    "message": "`uuid` imported but unused",
+    "line": 3,
+    "column": 8
+  },
+  {
+    "filename": "app/repositories/appointment.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 1,
+    "column": 1
+  },
+  {
+    "filename": "app/repositories/appointment.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 13,
+    "column": 62
+  },
+  {
+    "filename": "app/repositories/appointment.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 23,
+    "column": 33
+  },
+  {
+    "filename": "app/repositories/appointment.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 48,
+    "column": 21
+  },
+  {
+    "filename": "app/repositories/appointment.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 49,
+    "column": 20
+  },
+  {
+    "filename": "app/repositories/appointment.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 50,
+    "column": 15
+  },
+  {
+    "filename": "app/repositories/appointment.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 51,
+    "column": 17
+  },
+  {
+    "filename": "app/repositories/availability.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 1,
+    "column": 1
+  },
+  {
+    "filename": "app/repositories/availability.py",
+    "code": "F401",
+    "message": "`app.models.doctor.DoctorProfile` imported but unused",
+    "line": 3,
+    "column": 51
+  },
+  {
+    "filename": "app/repositories/invoice.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 1,
+    "column": 1
+  },
+  {
+    "filename": "app/repositories/invoice.py",
+    "code": "F401",
+    "message": "`sqlalchemy.func` imported but unused",
+    "line": 5,
+    "column": 24
+  },
+  {
+    "filename": "app/repositories/invoice.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 12,
+    "column": 58
+  },
+  {
+    "filename": "app/repositories/invoice.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 30,
+    "column": 21
+  },
+  {
+    "filename": "app/repositories/invoice.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 31,
+    "column": 17
+  },
+  {
+    "filename": "app/repositories/invoice.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 32,
+    "column": 25
+  },
+  {
+    "filename": "app/repositories/invoice.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 33,
+    "column": 23
+  },
+  {
+    "filename": "app/repositories/medical_record.py",
+    "code": "F401",
+    "message": "`datetime` imported but unused",
+    "line": 1,
+    "column": 8
+  },
+  {
+    "filename": "app/repositories/medical_record.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 12,
+    "column": 57
+  },
+  {
+    "filename": "app/repositories/medical_record.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 24,
+    "column": 21
+  },
+  {
+    "filename": "app/repositories/medical_record.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 25,
+    "column": 20
+  },
+  {
+    "filename": "app/repositories/medical_record.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 26,
+    "column": 25
+  },
+  {
+    "filename": "app/repositories/prescription.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 11,
+    "column": 63
+  },
+  {
+    "filename": "app/repositories/prescription.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 23,
+    "column": 21
+  },
+  {
+    "filename": "app/repositories/prescription.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 24,
+    "column": 20
+  },
+  {
+    "filename": "app/repositories/prescription.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 25,
+    "column": 25
+  },
+  {
+    "filename": "app/schemas/appointment.py",
+    "code": "F401",
+    "message": "`pydantic.Field` imported but unused",
+    "line": 5,
+    "column": 45
+  },
+  {
+    "filename": "app/schemas/appointment.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 16,
+    "column": 13
+  },
+  {
+    "filename": "app/schemas/appointment.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 17,
+    "column": 12
+  },
+  {
+    "filename": "app/schemas/appointment.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 25,
+    "column": 13
+  },
+  {
+    "filename": "app/schemas/appointment.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 26,
+    "column": 12
+  },
+  {
+    "filename": "app/schemas/appointment.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 27,
+    "column": 13
+  },
+  {
+    "filename": "app/schemas/audit_log.py",
+    "code": "UP035",
+    "message": "`typing.Dict` is deprecated, use `dict` instead",
+    "line": 2,
+    "column": 1
+  },
+  {
+    "filename": "app/schemas/audit_log.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 10,
+    "column": 14
+  },
+  {
+    "filename": "app/schemas/audit_log.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 13,
+    "column": 16
+  },
+  {
+    "filename": "app/schemas/audit_log.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 14,
+    "column": 17
+  },
+  {
+    "filename": "app/schemas/audit_log.py",
+    "code": "UP006",
+    "message": "Use `dict` instead of `Dict` for type annotation",
+    "line": 14,
+    "column": 26
+  },
+  {
+    "filename": "app/schemas/audit_log.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 15,
+    "column": 17
+  },
+  {
+    "filename": "app/schemas/audit_log.py",
+    "code": "UP006",
+    "message": "Use `dict` instead of `Dict` for type annotation",
+    "line": 15,
+    "column": 26
+  },
+  {
+    "filename": "app/schemas/audit_log.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 16,
+    "column": 17
+  },
+  {
+    "filename": "app/schemas/audit_log.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 17,
+    "column": 17
+  },
+  {
+    "filename": "app/schemas/audit_log.py",
+    "code": "UP006",
+    "message": "Use `dict` instead of `Dict` for type annotation",
+    "line": 25,
+    "column": 17
+  },
+  {
+    "filename": "app/schemas/availability.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 1,
+    "column": 1
+  },
+  {
+    "filename": "app/schemas/availability.py",
+    "code": "SIM102",
+    "message": "Use a single `if` statement instead of nested `if` statements",
+    "line": 33,
+    "column": 9
+  },
+  {
+    "filename": "app/schemas/invoice.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 1,
+    "column": 1
+  },
+  {
+    "filename": "app/schemas/invoice.py",
+    "code": "UP035",
+    "message": "`typing.List` is deprecated, use `list` instead",
+    "line": 3,
+    "column": 1
+  },
+  {
+    "filename": "app/schemas/invoice.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 30,
+    "column": 21
+  },
+  {
+    "filename": "app/schemas/invoice.py",
+    "code": "UP006",
+    "message": "Use `list` instead of `List` for type annotation",
+    "line": 38,
+    "column": 12
+  },
+  {
+    "filename": "app/schemas/invoice.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 42,
+    "column": 13
+  },
+  {
+    "filename": "app/schemas/invoice.py",
+    "code": "UP006",
+    "message": "Use `list` instead of `List` for type annotation",
+    "line": 55,
+    "column": 12
+  },
+  {
+    "filename": "app/schemas/invoice.py",
+    "code": "UP006",
+    "message": "Use `list` instead of `List` for type annotation",
+    "line": 56,
+    "column": 15
+  },
+  {
+    "filename": "app/schemas/invoice.py",
+    "code": "UP006",
+    "message": "Use `list` instead of `List` for type annotation",
+    "line": 62,
+    "column": 11
+  },
+  {
+    "filename": "app/schemas/medical_record.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 11,
+    "column": 21
+  },
+  {
+    "filename": "app/schemas/medical_record.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 13,
+    "column": 22
+  },
+  {
+    "filename": "app/schemas/medical_record.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 14,
+    "column": 21
+  },
+  {
+    "filename": "app/schemas/medical_record.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 15,
+    "column": 16
+  },
+  {
+    "filename": "app/schemas/medical_record.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 16,
+    "column": 22
+  },
+  {
+    "filename": "app/schemas/medical_record.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 17,
+    "column": 21
+  },
+  {
+    "filename": "app/schemas/medical_record.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 25,
+    "column": 22
+  },
+  {
+    "filename": "app/schemas/medical_record.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 26,
+    "column": 21
+  },
+  {
+    "filename": "app/schemas/medical_record.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 27,
+    "column": 16
+  },
+  {
+    "filename": "app/schemas/medical_record.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 28,
+    "column": 22
+  },
+  {
+    "filename": "app/schemas/medical_record.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 29,
+    "column": 21
+  },
+  {
+    "filename": "app/schemas/payment.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 14,
+    "column": 16
+  },
+  {
+    "filename": "app/schemas/prescription.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 1,
+    "column": 1
+  },
+  {
+    "filename": "app/schemas/prescription.py",
+    "code": "UP035",
+    "message": "`typing.List` is deprecated, use `list` instead",
+    "line": 3,
+    "column": 1
+  },
+  {
+    "filename": "app/schemas/prescription.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 14,
+    "column": 12
+  },
+  {
+    "filename": "app/schemas/prescription.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 15,
+    "column": 19
+  },
+  {
+    "filename": "app/schemas/prescription.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 31,
+    "column": 21
+  },
+  {
+    "filename": "app/schemas/prescription.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 33,
+    "column": 19
+  },
+  {
+    "filename": "app/schemas/prescription.py",
+    "code": "UP006",
+    "message": "Use `list` instead of `List` for type annotation",
+    "line": 38,
+    "column": 12
+  },
+  {
+    "filename": "app/schemas/prescription.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 42,
+    "column": 19
+  },
+  {
+    "filename": "app/schemas/prescription.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 43,
+    "column": 13
+  },
+  {
+    "filename": "app/schemas/prescription.py",
+    "code": "UP045",
+    "message": "Use `X | None` for type annotations",
+    "line": 45,
+    "column": 12
+  },
+  {
+    "filename": "app/schemas/prescription.py",
+    "code": "UP006",
+    "message": "Use `list` instead of `List` for type annotation",
+    "line": 45,
+    "column": 21
+  },
+  {
+    "filename": "app/schemas/prescription.py",
+    "code": "UP006",
+    "message": "Use `list` instead of `List` for type annotation",
+    "line": 52,
+    "column": 12
+  },
+  {
+    "filename": "app/schemas/prescription.py",
+    "code": "UP006",
+    "message": "Use `list` instead of `List` for type annotation",
+    "line": 58,
+    "column": 11
+  },
+  {
+    "filename": "app/services/availability.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 1,
+    "column": 1
+  },
+  {
+    "filename": "app/services/invoice.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 1,
+    "column": 1
+  },
+  {
+    "filename": "app/services/medical_record.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 1,
+    "column": 1
+  },
+  {
+    "filename": "app/services/payment.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 1,
+    "column": 1
+  },
+  {
+    "filename": "app/services/payment.py",
+    "code": "F401",
+    "message": "`app.models.invoice.Invoice` imported but unused",
+    "line": 6,
+    "column": 32
+  },
+  {
+    "filename": "app/services/prescription.py",
+    "code": "I001",
+    "message": "Import block is un-sorted or un-formatted",
+    "line": 1,
+    "column": 1
+  }
+]

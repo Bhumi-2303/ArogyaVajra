@@ -134,14 +134,14 @@ export default function PrescriptionsPage() {
 </Alert>
       ) : prescriptions.length === 0 ? (
         <EmptyState
-          icon={Pill}
+          icon={<Pill className="h-7 w-7" />}
           title="No prescriptions found"
           description="There are no prescriptions matching your criteria."
-          action={
-            user!.role === "DOCTOR" ? {
-              label: "Create Prescription",
-              onClick: handleCreate,
-            } : undefined
+          actionLabel={
+            user!.role === "DOCTOR" ? "Create Prescription" : undefined
+          }
+          onAction={
+            user!.role === "DOCTOR" ? handleCreate : undefined
           }
         />
       ) : (

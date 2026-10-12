@@ -1,14 +1,15 @@
 import datetime
 import uuid
+
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.models.appointment import Appointment, AppointmentStatus
 from app.models.user import User, UserRole
 from app.repositories.appointment import AppointmentRepository
+from app.repositories.availability import AvailabilityRepository
 from app.repositories.doctor import DoctorRepository
 from app.repositories.patient import PatientRepository
-from app.repositories.availability import AvailabilityRepository
 from app.schemas.appointment import AppointmentCreate, AppointmentUpdate
 from app.services.audit import record_audit_event
 
@@ -34,10 +35,13 @@ class AppointmentService:
         for slot in availabilities:
             if not slot.is_active:
                 continue
-            if slot.day_of_week == day_of_week:
-                if slot.start_time <= start_time and slot.end_time >= end_time:
-                    valid_slot_found = True
-                    break
+            if (
+                slot.day_of_week == day_of_week
+                and slot.start_time <= start_time
+                and slot.end_time >= end_time
+            ):
+                valid_slot_found = True
+                break
 
         if not valid_slot_found:
             raise HTTPException(
@@ -86,7 +90,7 @@ class AppointmentService:
                 detail="Doctor not found.",
             )
 
-        if not doctor.is_active:
+        if doctor.user and not doctor.user.is_active:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Doctor is not currently active.",

@@ -374,7 +374,7 @@ export function InvoiceForm({
 
         {items.length === 0 ? (
           <div className="p-8 text-center text-muted-foreground border rounded-md border-dashed">
-            No items added yet. Click "Add Item" to begin.
+            No items added yet. Click &quot;Add Item&quot; to begin.
           </div>
         ) : (
           <div className="space-y-4">

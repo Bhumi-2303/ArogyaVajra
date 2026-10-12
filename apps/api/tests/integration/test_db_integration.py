@@ -66,7 +66,19 @@ def test_live_transactional_session(require_db):
 
 def test_live_alembic_heads_and_current(require_db):
     """Verify Alembic configuration and commands against the live PostgreSQL database."""
-    alembic_cfg = Config("alembic.ini")
+    from pathlib import Path
+
+    ini_candidates = [
+        Path("alembic.ini"),
+        Path("apps/api/alembic.ini"),
+        Path(__file__).resolve().parent.parent.parent / "alembic.ini",
+    ]
+    ini_path = next(p for p in ini_candidates if p.exists())
+    alembic_cfg = Config(str(ini_path))
+    alembic_cfg.set_main_option("script_location", str(ini_path.parent / "app" / "db" / "migrations"))
+    alembic_cfg.set_main_option("version_locations", str(ini_path.parent / "app" / "db" / "migrations" / "versions"))
     # Verify heads and current execute without throwing
     command.heads(alembic_cfg)
     command.current(alembic_cfg)
+
+

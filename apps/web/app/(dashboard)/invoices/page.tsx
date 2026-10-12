@@ -140,14 +140,14 @@ export default function InvoicesPage() {
 </Alert>
       ) : invoices.length === 0 ? (
         <EmptyState
-          icon={Receipt}
+          icon={<Receipt className="h-7 w-7" />}
           title="No invoices found"
           description="There are no invoices matching your criteria."
-          action={
-            ["ADMIN", "RECEPTIONIST"].includes(user!.role) ? {
-              label: "Create Invoice",
-              onClick: handleCreate,
-            } : undefined
+          actionLabel={
+            ["ADMIN", "RECEPTIONIST"].includes(user!.role) ? "Create Invoice" : undefined
+          }
+          onAction={
+            ["ADMIN", "RECEPTIONIST"].includes(user!.role) ? handleCreate : undefined
           }
         />
       ) : (

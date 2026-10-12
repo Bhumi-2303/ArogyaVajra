@@ -57,19 +57,33 @@ def create_access_token(
     )
 
 
+def hash_token(token: str) -> str:
+    """Compute deterministic SHA-256 hash of a token for secure database storage."""
+    import hashlib
+
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
 def create_refresh_token(
     subject: str | uuid.UUID,
+    token_id: uuid.UUID | None = None,
+    family_id: uuid.UUID | None = None,
     expires_delta: timedelta | None = None,
 ) -> str:
-    """Generate a signed JWT refresh token for extended session renewal."""
+    """Generate a signed JWT refresh token with unique jti and session family."""
     now = datetime.now(UTC)
     if expires_delta:
         expire = now + expires_delta
     else:
         expire = now + timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS)
 
+    jti = token_id or uuid.uuid4()
+    fam = family_id or uuid.uuid4()
+
     payload: dict[str, Any] = {
         "sub": str(subject),
+        "jti": str(jti),
+        "family": str(fam),
         "type": "refresh",
         "iat": now,
         "exp": expire,

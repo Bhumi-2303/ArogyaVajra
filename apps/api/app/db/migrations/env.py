@@ -28,8 +28,18 @@ if config.config_file_name is not None and os.path.exists(config.config_file_nam
 # Model MetaData for 'autogenerate' support
 target_metadata = Base.metadata
 
-# Inject database URL from application settings
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+# Deterministic Database URL Resolution:
+# 1. Command-line override via '-x db_url=...'
+# 2. Explicit programmatic override on Config object (e.g. disposable test database)
+# 3. Application runtime configuration via settings.DATABASE_URL
+x_args = context.get_x_argument(as_dictionary=True) if hasattr(context, "get_x_argument") else {}
+cmd_x_url = x_args.get("db_url")
+if cmd_x_url:
+    config.set_main_option("sqlalchemy.url", cmd_x_url)
+
+current_url = config.get_main_option("sqlalchemy.url")
+if not current_url or not current_url.strip():
+    config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
 
 def run_migrations_offline() -> None:
@@ -37,7 +47,7 @@ def run_migrations_offline() -> None:
 
     Generates SQL scripts directly against the configured URL without an active Engine.
     """
-    url = settings.DATABASE_URL
+    url = config.get_main_option("sqlalchemy.url") or settings.DATABASE_URL
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -56,9 +66,19 @@ def run_migrations_online() -> None:
 
     Executes transactional DDL directly against the live PostgreSQL database engine.
     """
-    connectable = get_engine()
+    target_url = config.get_main_option("sqlalchemy.url") or settings.DATABASE_URL
+    if target_url != settings.DATABASE_URL:
+        # Explicit disposable/test database URL supplied; create isolated engine
+        from sqlalchemy import create_engine
+
+        connectable = create_engine(target_url)
+    else:
+        # Standard operation: reuse application engine singleton
+        connectable = get_engine()
 
     with connectable.connect() as connection:
+
+
         context.configure(
             connection=connection,
             target_metadata=target_metadata,

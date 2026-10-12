@@ -68,7 +68,7 @@ function TodayAppointmentsSection() {
         <div className="space-y-1">
           <CardTitle className="text-lg flex items-center gap-2">
             <Calendar className="h-5 w-5 text-primary" />
-            Today's Schedule
+            Today&apos;s Schedule
           </CardTitle>
           <CardDescription>Appointments scheduled for today</CardDescription>
         </div>
@@ -86,7 +86,7 @@ function TodayAppointmentsSection() {
           </div>
         ) : error ? (
           <Alert variant="danger" className="mt-4">
-<>Failed to load today's schedule.</>
+<>Failed to load today&apos;s schedule.</>
 </Alert>
         ) : appointments.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground border rounded-md mt-4 bg-muted/20">
@@ -104,7 +104,7 @@ function TodayAppointmentsSection() {
                 </div>
                 <div className="flex flex-col items-end gap-1">
                   <Badge>{apt.status}</Badge>
-                  <Button size="sm" variant="link" className="h-auto p-0 text-xs" asChild>
+                  <Button size="sm" variant="ghost" className="h-auto p-0 text-xs" asChild>
                     <Link href={`/appointments/${apt.id}`}>View Details</Link>
                   </Button>
                 </div>

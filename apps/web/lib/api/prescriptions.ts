@@ -17,20 +17,20 @@ export const prescriptionsApi = {
     if (params.appointment_id) query.append("appointment_id", params.appointment_id);
 
     const qs = query.toString();
-    const url = `/api/v1/prescriptions${qs ? `?${qs}` : ""}`;
+    const url = `/prescriptions${qs ? `?${qs}` : ""}`;
     return fetchAPI<PrescriptionListResponse>(url);
   },
 
-  get: (id: string) => fetchAPI<PrescriptionDetailResponse>(`/api/v1/prescriptions/${id}`),
+  get: (id: string) => fetchAPI<PrescriptionDetailResponse>(`/prescriptions/${id}`),
 
   create: (data: PrescriptionCreateInput) =>
-    fetchAPI<PrescriptionDetailResponse>("/api/v1/prescriptions", {
+    fetchAPI<PrescriptionDetailResponse>("/prescriptions", {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
   update: (id: string, data: PrescriptionUpdateInput) =>
-    fetchAPI<PrescriptionDetailResponse>(`/api/v1/prescriptions/${id}`, {
+    fetchAPI<PrescriptionDetailResponse>(`/prescriptions/${id}`, {
       method: "PUT",
       body: JSON.stringify(data),
     }),

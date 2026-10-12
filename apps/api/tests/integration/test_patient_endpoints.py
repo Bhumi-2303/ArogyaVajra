@@ -9,7 +9,7 @@ from sqlalchemy import select
 from app.db.transaction import transactional_session
 from app.main import app
 from app.models.audit_log import AuditLog
-from app.models.user import UserRole
+from app.models.user import User, UserRole
 
 client = TestClient(app)
 
@@ -21,9 +21,23 @@ def create_authenticated_user(role: UserRole) -> tuple[str, str]:
 
     reg = client.post(
         "/api/v1/auth/register",
-        json={"email": email, "password": password, "role": role.value},
+        json={"email": email, "password": password},
     )
     assert reg.status_code == 201
+
+    if role != UserRole.PATIENT:
+        with transactional_session() as session:
+            user = session.scalar(select(User).where(User.email == email))
+            assert user is not None
+            user.role = role
+
+        login_res = client.post(
+            "/api/v1/auth/login",
+            json={"email": email, "password": password},
+        )
+        assert login_res.status_code == 200
+        return email, login_res.json()["data"]["access_token"]
+
     return email, reg.json()["data"]["access_token"]
 
 

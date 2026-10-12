@@ -8,11 +8,33 @@ on:
 
 jobs:
   backend-qa:
-    name: Backend Lint & Tests
+    name: Backend Lint, Migrations & Tests
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: arogyavajra
+          POSTGRES_PASSWORD: arogyavajra_dev_password
+          POSTGRES_DB: arogyavajra
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql+psycopg://arogyavajra:arogyavajra_dev_password@localhost:5432/arogyavajra
+      JWT_SECRET_KEY: dev-secret-key-change-in-production
+      APP_ENV: test
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -27,10 +49,31 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run Ruff Linter
+      - name: Run Enforceable Ruff Lint Gate
         run: |
           cd apps/api
-          ruff check .
+          python scripts/lint_gate.py
+
+      - name: Wait for PostgreSQL Readiness
+        run: |
+          python -c "
+          import time, psycopg
+          for i in range(30):
+              try:
+                  with psycopg.connect('postgresql://arogyavajra:arogyavajra_dev_password@localhost:5432/arogyavajra') as conn:
+                      print('PostgreSQL is ready and accepting connections.')
+                      break
+              except Exception as e:
+                  print(f'Waiting for PostgreSQL... ({e})')
+                  time.sleep(1)
+          else:
+              raise SystemExit('PostgreSQL did not become ready within 30 seconds.')
+          "
+
+      - name: Run Database Migrations
+        run: |
+          cd apps/api
+          alembic upgrade head
 
       - name: Run Pytest Suite
         run: |
@@ -38,8 +81,10 @@ jobs:
           pytest -v
 
   frontend-qa:
-    name: Frontend Lint & Type Check
+    name: Frontend Lint, Type Check & Build
     runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -65,3 +110,19 @@ jobs:
         run: |
           cd apps/web
           npm run type-check
+
+      - name: Run API URL Regression Suite
+        run: |
+          cd apps/web
+          node scripts/verify-api-url-construction.mjs
+
+      - name: Run Security Headers & CSP Regression Suite
+        run: |
+          cd apps/web
+          node scripts/verify-security-headers.mjs
+
+      - name: Run Next.js Build
+        run: |
+          cd apps/web
+          npm run build
+

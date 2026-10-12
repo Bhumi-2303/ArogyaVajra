@@ -86,7 +86,7 @@ function TodayAppointmentsSection({ doctorId }: { doctorId: string }) {
         <div className="space-y-1">
           <CardTitle className="text-lg flex items-center gap-2">
             <Calendar className="h-5 w-5 text-primary" />
-            Today's Appointments
+            Today&apos;s Appointments
           </CardTitle>
           <CardDescription>Your schedule for today</CardDescription>
         </div>

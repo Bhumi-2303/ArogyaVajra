@@ -114,14 +114,14 @@ export default function MedicalRecordsPage() {
 </Alert>
       ) : records.length === 0 ? (
         <EmptyState
-          icon={FileText}
+          icon={<FileText className="h-7 w-7" />}
           title="No medical records found"
           description="There are no consultation records matching your criteria."
-          action={
-            user!.role === "DOCTOR" ? {
-              label: "Create Record",
-              onClick: handleCreate,
-            } : undefined
+          actionLabel={
+            user!.role === "DOCTOR" ? "Create Record" : undefined
+          }
+          onAction={
+            user!.role === "DOCTOR" ? handleCreate : undefined
           }
         />
       ) : (

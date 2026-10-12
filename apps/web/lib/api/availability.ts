@@ -12,13 +12,13 @@ export const availabilityApi = {
    * List all availability slots for a doctor.
    */
   list: (doctorId: string) =>
-    fetchAPI<DoctorAvailabilityListResponse>(`/api/v1/doctors/${doctorId}/availability`),
+    fetchAPI<DoctorAvailabilityListResponse>(`/doctors/${doctorId}/availability`),
 
   /**
    * Create a new availability slot.
    */
   create: (doctorId: string, data: DoctorAvailabilityCreateInput) =>
-    fetchAPI<DoctorAvailabilityDetailResponse>(`/api/v1/doctors/${doctorId}/availability`, {
+    fetchAPI<DoctorAvailabilityDetailResponse>(`/doctors/${doctorId}/availability`, {
       method: "POST",
       body: JSON.stringify(data),
     }),
@@ -28,7 +28,7 @@ export const availabilityApi = {
    */
   update: (doctorId: string, slotId: string, data: DoctorAvailabilityUpdateInput) =>
     fetchAPI<DoctorAvailabilityDetailResponse>(
-      `/api/v1/doctors/${doctorId}/availability/${slotId}`,
+      `/doctors/${doctorId}/availability/${slotId}`,
       {
         method: "PUT",
         body: JSON.stringify(data),
@@ -39,7 +39,7 @@ export const availabilityApi = {
    * Delete an availability slot.
    */
   delete: (doctorId: string, slotId: string) =>
-    fetchAPI<SimpleMessageResponse>(`/api/v1/doctors/${doctorId}/availability/${slotId}`, {
+    fetchAPI<SimpleMessageResponse>(`/doctors/${doctorId}/availability/${slotId}`, {
       method: "DELETE",
     }),
 };

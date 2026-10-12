@@ -109,13 +109,11 @@ export default function DoctorAvailabilityPage({
 </Alert>
       ) : availability.length === 0 ? (
         <EmptyState
-          icon={Clock}
+          icon={<Clock className="h-7 w-7" />}
           title="No availability slots"
           description="Add your first availability slot to start scheduling appointments."
-          action={{
-            label: "Add Slot",
-            onClick: handleCreate,
-          }}
+          actionLabel="Add Slot"
+          onAction={handleCreate}
         />
       ) : (
         <div className="rounded-md border">
@@ -145,7 +143,7 @@ export default function DoctorAvailabilityPage({
                         Active
                       </Badge>
                     ) : (
-                      <Badge variant="secondary">Inactive</Badge>
+                      <Badge variant="outline">Inactive</Badge>
                     )}
                   </TableCell>
                   <TableCell className="text-right">

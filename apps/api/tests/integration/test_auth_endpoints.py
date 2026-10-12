@@ -215,9 +215,20 @@ def test_role_authorization_enforcement():
     doctor_email = f"doctor_{uuid.uuid4().hex[:8]}@example.com"
     reg_doctor = client.post(
         "/api/v1/auth/register",
-        json={"email": doctor_email, "password": "Password123!", "role": "DOCTOR"},
+        json={"email": doctor_email, "password": "Password123!"},
     )
-    doctor_token = reg_doctor.json()["data"]["access_token"]
+    assert reg_doctor.status_code == 201
+
+    with transactional_session() as session:
+        user = session.scalar(select(User).where(User.email == doctor_email))
+        assert user is not None
+        user.role = UserRole.DOCTOR
+
+    login_doctor = client.post(
+        "/api/v1/auth/login",
+        json={"email": doctor_email, "password": "Password123!"},
+    )
+    doctor_token = login_doctor.json()["data"]["access_token"]
 
     allowed_res = client.get(
         "/api/v1/test-doctor-only",

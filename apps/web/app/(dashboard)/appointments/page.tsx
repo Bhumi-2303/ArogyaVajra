@@ -178,13 +178,11 @@ export default function AppointmentsPage() {
 </Alert>
       ) : appointments.length === 0 ? (
         <EmptyState
-          icon={Calendar}
+          icon={<Calendar className="h-7 w-7" />}
           title="No appointments found"
           description="There are no appointments matching your criteria."
-          action={{
-            label: "Book Appointment",
-            onClick: handleCreate,
-          }}
+          actionLabel="Book Appointment"
+          onAction={handleCreate}
         />
       ) : (
         <div className="rounded-md border bg-card">
