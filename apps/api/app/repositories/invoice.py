@@ -14,9 +14,9 @@ class InvoiceRepository:
 
     @staticmethod
     def get_next_invoice_number(db: Session) -> str:
-        from sqlalchemy import text
-        next_id = db.execute(text("SELECT nextval('invoice_number_seq')")).scalar()
-        return f"INV-{next_id:05d}"
+        # Use max(id) for SQLite compatibility since it lacks sequences
+        next_id = db.query(func.max(Invoice.id)).scalar() or 0
+        return f"INV-{(next_id + 1):05d}"
 
     @staticmethod
     def create(db: Session, invoice: Invoice) -> Invoice:

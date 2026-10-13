@@ -2,8 +2,7 @@ import datetime
 import enum
 import uuid
 
-from sqlalchemy import Column, Date, Enum as SQLAlchemyEnum, ForeignKey, String, Text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, Date, Enum as SQLAlchemyEnum, ForeignKey, String, Text, Uuid as UUID
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin

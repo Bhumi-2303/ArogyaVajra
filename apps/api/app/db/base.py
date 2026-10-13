@@ -4,8 +4,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import DateTime, MetaData, Numeric, func, text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import DateTime, MetaData, Numeric, Uuid, func, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 # Authoritative naming convention for PostgreSQL constraints and indexes.
@@ -28,13 +27,12 @@ class Base(DeclarativeBase):
 
 
 class UUIDPrimaryKeyMixin:
-    """Universal primary key mixin using UUIDv4 for PostgreSQL."""
+    """Universal primary key mixin using UUIDv4."""
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        Uuid(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
-        server_default=text("gen_random_uuid()"),
         sort_order=-100,
     )
 

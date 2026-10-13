@@ -4,9 +4,8 @@ import uuid
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import DateTime, ForeignKey, Index, String, Text
+from sqlalchemy import DateTime, ForeignKey, Index, JSON, String, Text, Uuid as PG_UUID
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, UUIDPrimaryKeyMixin
@@ -39,11 +38,11 @@ class AuditLog(Base, UUIDPrimaryKeyMixin):
         nullable=True,
     )
     old_values: Mapped[dict[str, Any] | None] = mapped_column(
-        JSONB,
+        JSON().with_variant(JSONB, "postgresql"),
         nullable=True,
     )
     new_values: Mapped[dict[str, Any] | None] = mapped_column(
-        JSONB,
+        JSON().with_variant(JSONB, "postgresql"),
         nullable=True,
     )
     ip_address: Mapped[str | None] = mapped_column(
@@ -68,7 +67,6 @@ class AuditLog(Base, UUIDPrimaryKeyMixin):
 
     __table_args__ = (
         Index("ix_audit_logs_entity", "entity_type", "entity_id"),
-        Index("ix_audit_logs_user_id", "user_id"),
     )
 
     def __repr__(self) -> str:
