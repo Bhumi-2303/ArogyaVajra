@@ -1,7 +1,7 @@
 """Authentication and user session management endpoints."""
 
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from jose import JWTError
@@ -20,8 +20,10 @@ from app.core.security import (
     verify_password,
 )
 from app.db.session import get_db
+from app.models.patient import PatientProfile
 from app.models.refresh_token import RefreshToken
 from app.models.user import User, UserRole
+from app.repositories.patient import PatientRepository
 from app.schemas.auth import (
     APIResponse,
     AuthData,
@@ -115,6 +117,38 @@ def register(
         is_active=True,
     )
     db.add(user)
+    db.flush()
+
+    # Derive first_name and last_name from payload.full_name or email
+    if payload.full_name and payload.full_name.strip():
+        name_parts = payload.full_name.strip().split(maxsplit=1)
+        first_name = name_parts[0]
+        last_name = name_parts[1] if len(name_parts) > 1 else "Patient"
+    else:
+        email_prefix = normalized_email.split("@")[0].replace(".", " ").replace("_", " ")
+        name_parts = email_prefix.split(maxsplit=1)
+        first_name = name_parts[0].capitalize()
+        last_name = name_parts[1].capitalize() if len(name_parts) > 1 else "Patient"
+
+    # Derive date of birth from age if provided
+    dob: date | None = None
+    if payload.age is not None:
+        today = datetime.now(UTC).date()
+        birth_year = today.year - payload.age
+        try:
+            dob = date(birth_year, today.month, today.day)
+        except ValueError:
+            dob = date(birth_year, today.month, 28)
+
+    patient_code = PatientRepository.generate_patient_code(db)
+    patient_profile = PatientProfile(
+        user_id=user.id,
+        patient_code=patient_code,
+        first_name=first_name,
+        last_name=last_name,
+        date_of_birth=dob,
+    )
+    db.add(patient_profile)
     db.commit()
     db.refresh(user)
 

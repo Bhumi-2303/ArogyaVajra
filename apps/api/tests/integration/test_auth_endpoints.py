@@ -1,6 +1,7 @@
 """Integration tests for authentication API endpoints with real database session."""
 
 import uuid
+from datetime import UTC, datetime
 
 import pytest
 from fastapi import Depends
@@ -10,6 +11,7 @@ from sqlalchemy import select
 from app.api.deps import require_roles
 from app.db.transaction import transactional_session
 from app.main import app
+from app.models.patient import PatientProfile
 from app.models.user import User, UserRole
 
 client = TestClient(app)
@@ -270,3 +272,65 @@ def test_inactive_user_access_rejection():
     )
     assert me_res.status_code == 401
     assert "inactive" in me_res.json()["detail"]
+
+
+@pytest.mark.integration
+def test_register_with_profile_and_age():
+    """Verify that registering with full_name, age, and requested_role provisions PatientProfile."""
+    unique_email = f"patient_{uuid.uuid4().hex[:8]}@example.com"
+    password = "SecurePassword123!"
+    full_name = "Arjun Varma"
+    age = 35
+
+    reg_response = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": unique_email,
+            "password": password,
+            "full_name": full_name,
+            "age": age,
+            "requested_role": "DOCTOR",  # Public registration should NOT grant DOCTOR
+        },
+    )
+    assert reg_response.status_code == 201
+    data = reg_response.json()
+    assert data["data"]["user"]["role"] == "PATIENT"
+    user_id = uuid.UUID(data["data"]["user"]["id"])
+
+    # Verify PatientProfile was created in the database atomically
+    with transactional_session() as session:
+        profile = session.scalar(select(PatientProfile).where(PatientProfile.user_id == user_id))
+        assert profile is not None
+        assert profile.first_name == "Arjun"
+        assert profile.last_name == "Varma"
+        assert profile.patient_code.startswith("PAT-")
+        assert profile.date_of_birth is not None
+        assert profile.date_of_birth.year == datetime.now(UTC).date().year - age
+
+
+@pytest.mark.integration
+def test_register_age_validation():
+    """Verify invalid age values are rejected with 422 Unprocessable Entity."""
+    unique_email = f"patient_{uuid.uuid4().hex[:8]}@example.com"
+    password = "SecurePassword123!"
+
+    # Age 0
+    res_zero = client.post(
+        "/api/v1/auth/register",
+        json={"email": unique_email, "password": password, "age": 0},
+    )
+    assert res_zero.status_code == 422
+
+    # Negative age
+    res_neg = client.post(
+        "/api/v1/auth/register",
+        json={"email": unique_email, "password": password, "age": -5},
+    )
+    assert res_neg.status_code == 422
+
+    # Excessive age (>125)
+    res_high = client.post(
+        "/api/v1/auth/register",
+        json={"email": unique_email, "password": password, "age": 150},
+    )
+    assert res_high.status_code == 422

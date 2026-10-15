@@ -39,9 +39,10 @@ class UserResponse(BaseModel):
 
 class RegisterRequest(BaseModel):
     """Payload for user registration.
-    
-    Role is intentionally omitted from the schema to enforce PATIENT-only self-registration.
-    Administrative roles must be provisioned by an admin via /users endpoint.
+
+    Self-registration strictly provisions PATIENT accounts.
+    Requested role can be submitted for administrative intake auditing,
+    but cannot grant immediate privileged access.
     """
 
     email: EmailStr
@@ -51,6 +52,23 @@ class RegisterRequest(BaseModel):
         max_length=128,
         description="Password must contain at least 8 characters.",
     )
+    full_name: str | None = Field(
+        default=None,
+        max_length=200,
+        description="Full legal name of the user.",
+    )
+    age: int | None = Field(
+        default=None,
+        ge=1,
+        le=125,
+        description="Age in years (positive integer between 1 and 125).",
+    )
+    requested_role: str | None = Field(
+        default=None,
+        max_length=50,
+        description="Optional role requested by applicant for administrative review.",
+    )
+
 
 
 class LoginRequest(BaseModel):

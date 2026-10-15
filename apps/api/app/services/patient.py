@@ -84,10 +84,36 @@ class PatientService:
         # Check if user already has a profile
         existing_profile = PatientRepository.get_by_user_id(db, target_user_id)
         if existing_profile:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Patient profile already exists for this user account.",
+            existing_profile.first_name = data.first_name.strip()
+            existing_profile.last_name = data.last_name.strip()
+            if data.date_of_birth is not None:
+                existing_profile.date_of_birth = data.date_of_birth
+            if data.gender is not None:
+                existing_profile.gender = data.gender
+            if data.phone:
+                existing_profile.phone = data.phone.strip()
+            if data.address:
+                existing_profile.address = data.address.strip()
+            if data.emergency_contact_name:
+                existing_profile.emergency_contact_name = data.emergency_contact_name.strip()
+            if data.emergency_contact_phone:
+                existing_profile.emergency_contact_phone = data.emergency_contact_phone.strip()
+            db.flush()
+            record_audit_event(
+                db=db,
+                action="PATIENT_UPDATE",
+                entity_type="patient_profile",
+                entity_id=str(existing_profile.id),
+                user_id=current_user.id,
+                new_values={
+                    "patient_code": existing_profile.patient_code,
+                    "first_name": existing_profile.first_name,
+                    "last_name": existing_profile.last_name,
+                },
+                ip_address=ip_address,
+                user_agent=user_agent,
             )
+            return existing_profile
 
         # 3. Generate sequential human-readable code (e.g. PAT-00001)
         patient_code = PatientRepository.generate_patient_code(db)
