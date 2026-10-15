@@ -328,3 +328,35 @@ def test_doctor_delete_admin_only():
             )
         )
         assert audit is not None
+
+
+@pytest.mark.integration
+def test_doctor_email_query_filter():
+    """Verify that GET /api/v1/doctors?email=... filters accurately by user email."""
+    _, _, admin_token = create_authenticated_user(UserRole.ADMIN)
+    suffix = uuid.uuid4().hex[:6]
+    target_email = f"filter_target_{suffix}@example.com"
+
+    # Provision target doctor
+    res = client.post(
+        "/api/v1/doctors",
+        headers={"Authorization": f"Bearer {admin_token}"},
+        json={
+            "email": target_email,
+            "first_name": "Target",
+            "last_name": f"Doctor_{suffix}",
+            "specialization": "Neurology",
+        },
+    )
+    assert res.status_code == 201
+
+    # Query with exact email filter
+    list_res = client.get(
+        f"/api/v1/doctors?email={target_email}",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert list_res.status_code == 200
+    data = list_res.json()["data"]
+    assert len(data) == 1
+    assert data[0]["email"] == target_email
+    assert data[0]["first_name"] == "Target"

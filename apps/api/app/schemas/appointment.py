@@ -8,11 +8,11 @@ from app.models.appointment import AppointmentStatus
 
 
 class AppointmentBase(BaseModel):
-    patient_id: uuid.UUID
     doctor_id: uuid.UUID
     appointment_date: datetime.date
     start_time: datetime.time
     end_time: datetime.time
+    patient_id: Optional[uuid.UUID] = None
     reason: Optional[str] = None
     notes: Optional[str] = None
 
@@ -30,7 +30,12 @@ class AppointmentUpdate(BaseModel):
 class AppointmentResponse(AppointmentBase):
     id: uuid.UUID
     appointment_code: str
+    patient_id: uuid.UUID
     status: AppointmentStatus
+    doctor_name: Optional[str] = None
+    doctor_specialization: Optional[str] = None
+    patient_name: Optional[str] = None
+    patient_code_display: Optional[str] = None
     created_by: uuid.UUID
     created_at: datetime.datetime
     updated_at: datetime.datetime

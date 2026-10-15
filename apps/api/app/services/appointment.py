@@ -70,18 +70,42 @@ class AppointmentService:
                 detail="end_time must be after start_time",
             )
 
-        patient = PatientRepository.get_by_id(db, data.patient_id)
-        if not patient:
+        now_utc = datetime.datetime.now(datetime.UTC)
+        today_utc = now_utc.date()
+
+        if data.appointment_date < today_utc:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Patient not found.",
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot book appointments in the past.",
             )
 
-        if current_user.role == UserRole.PATIENT and patient.user_id != current_user.id:
+        if data.appointment_date == today_utc and data.start_time <= now_utc.time():
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You can only create appointments for yourself.",
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot book past time slots for today.",
             )
+
+        if current_user.role == UserRole.PATIENT:
+            patient = PatientRepository.get_by_user_id(db, current_user.id)
+            if not patient:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Patient profile not found for authenticated user.",
+                )
+            target_patient_id = patient.id
+        else:
+            if not data.patient_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="patient_id is required when booking as staff or admin.",
+                )
+            patient = PatientRepository.get_by_id(db, data.patient_id)
+            if not patient:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Patient not found.",
+                )
+            target_patient_id = patient.id
 
         doctor = DoctorRepository.get_by_id(db, data.doctor_id)
         if not doctor:
@@ -111,7 +135,7 @@ class AppointmentService:
         appointment = Appointment(
             id=uuid.uuid4(),
             appointment_code=appointment_code,
-            patient_id=data.patient_id,
+            patient_id=target_patient_id,
             doctor_id=data.doctor_id,
             appointment_date=data.appointment_date,
             start_time=data.start_time,

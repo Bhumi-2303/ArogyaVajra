@@ -1,7 +1,7 @@
 """Pydantic schemas for doctor management domain."""
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
@@ -130,3 +130,24 @@ class DoctorListResponse(BaseModel):
     data: list[DoctorResponse]
     pagination: PaginationMeta
     message: str = "Doctors retrieved successfully."
+
+
+class TimeSlot(BaseModel):
+    """Discrete clinical consultation time slot with availability status."""
+
+    start_time: str
+    end_time: str
+    is_available: bool
+
+
+class DoctorSlotsResponse(BaseModel):
+    """Response envelope for doctor available appointment slots on a given date."""
+
+    doctor_id: uuid.UUID
+    doctor_name: str
+    specialization: str
+    date: date
+    day_of_week: int
+    slots: list[TimeSlot]
+    message: str = "Available slots retrieved successfully."
+

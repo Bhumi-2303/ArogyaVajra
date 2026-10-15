@@ -1,5 +1,6 @@
 """Service layer for doctor management domain workflows and audit compliance."""
 
+import datetime
 import secrets
 import uuid
 
@@ -7,6 +8,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.security import hash_password
+from app.models.appointment import Appointment, AppointmentStatus
 from app.models.doctor import DoctorProfile
 from app.models.user import User, UserRole
 from app.repositories.doctor import DoctorRepository
@@ -26,6 +28,7 @@ class DoctorService:
         specialization: str | None = None,
         code: str | None = None,
         is_active: bool | None = None,
+        email: str | None = None,
         page: int = 1,
         page_size: int = 20,
     ) -> tuple[list[DoctorProfile], int, int]:
@@ -37,6 +40,7 @@ class DoctorService:
             specialization=specialization,
             code=code,
             is_active=is_active,
+            email=email,
             page=page,
             page_size=page_size,
         )
@@ -289,3 +293,74 @@ class DoctorService:
             ip_address=ip_address,
             user_agent=user_agent,
         )
+
+    @classmethod
+    def get_available_slots(
+        cls,
+        db: Session,
+        doctor_id: uuid.UUID,
+        slot_date: datetime.date,
+        current_user: User,
+    ) -> tuple[DoctorProfile, list[dict]]:
+        """Calculate discrete availability time slots and overlap status for a given date."""
+        doctor = cls.get_doctor(db, doctor_id, current_user)
+        if doctor.user and not doctor.user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Doctor is not currently active.",
+            )
+
+        day_of_week = slot_date.isoweekday() % 7
+        active_availabilities = [
+            a
+            for a in doctor.availabilities
+            if a.is_active and a.day_of_week == day_of_week
+        ]
+
+        if not active_availabilities:
+            return doctor, []
+
+        booked_appts = (
+            db.query(Appointment)
+            .filter(
+                Appointment.doctor_id == doctor_id,
+                Appointment.appointment_date == slot_date,
+                Appointment.status.in_([
+                    AppointmentStatus.SCHEDULED,
+                    AppointmentStatus.CONFIRMED,
+                ]),
+            )
+            .all()
+        )
+
+        now_utc = datetime.datetime.now(datetime.UTC)
+        today_utc = now_utc.date()
+        current_time = now_utc.time()
+
+        slots: list[dict] = []
+        for a in sorted(active_availabilities, key=lambda x: x.start_time):
+            duration = datetime.timedelta(minutes=a.slot_duration_minutes)
+            curr = datetime.datetime.combine(slot_date, a.start_time)
+            end_limit = datetime.datetime.combine(slot_date, a.end_time)
+
+            while curr + duration <= end_limit:
+                slot_start = curr.time()
+                slot_end = (curr + duration).time()
+
+                has_overlap = any(
+                    apt.start_time < slot_end and apt.end_time > slot_start
+                    for apt in booked_appts
+                )
+                is_past = (slot_date < today_utc) or (
+                    slot_date == today_utc and slot_start <= current_time
+                )
+
+                slots.append({
+                    "start_time": slot_start.strftime("%H:%M"),
+                    "end_time": slot_end.strftime("%H:%M"),
+                    "is_available": (not has_overlap) and (not is_past),
+                })
+                curr += duration
+
+        return doctor, slots
+

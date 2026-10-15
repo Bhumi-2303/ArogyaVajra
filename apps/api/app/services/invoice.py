@@ -1,6 +1,6 @@
 import uuid
 from decimal import Decimal
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status as http_status
 from sqlalchemy.orm import Session
 
 from app.models.invoice import Invoice, InvoiceItem, InvoiceStatus
@@ -24,14 +24,14 @@ class InvoiceService:
     ) -> Invoice:
         if current_user.role not in [UserRole.ADMIN, UserRole.BILLING_STAFF]:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=http_status.HTTP_403_FORBIDDEN,
                 detail="Only admins and billing staff can create invoices.",
             )
 
         patient = PatientRepository.get_by_id(db, data.patient_id)
         if not patient:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Patient not found.",
             )
 
@@ -39,12 +39,12 @@ class InvoiceService:
             appointment = AppointmentRepository.get_by_id(db, data.appointment_id)
             if not appointment:
                 raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
+                    status_code=http_status.HTTP_404_NOT_FOUND,
                     detail="Appointment not found.",
                 )
             if appointment.patient_id != patient.id:
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
+                    status_code=http_status.HTTP_400_BAD_REQUEST,
                     detail="Appointment does not belong to the patient.",
                 )
 
@@ -71,7 +71,7 @@ class InvoiceService:
 
         if total < Decimal("0.00"):
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail="Total cannot be negative.",
             )
 
@@ -119,14 +119,20 @@ class InvoiceService:
         invoice = InvoiceRepository.get_by_id(db, invoice_id)
         if not invoice:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Invoice not found.",
+            )
+
+        if current_user.role not in [UserRole.ADMIN, UserRole.BILLING_STAFF, UserRole.PATIENT]:
+            raise HTTPException(
+                status_code=http_status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to access billing invoices.",
             )
 
         if current_user.role == UserRole.PATIENT:
             patient = PatientRepository.get_by_user_id(db, current_user.id)
             if not patient or patient.id != invoice.patient_id:
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized.")
+                raise HTTPException(status_code=http_status.HTTP_403_FORBIDDEN, detail="Not authorized.")
         
         return invoice
 
@@ -142,7 +148,7 @@ class InvoiceService:
     ) -> Invoice:
         if current_user.role not in [UserRole.ADMIN, UserRole.BILLING_STAFF]:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=http_status.HTTP_403_FORBIDDEN,
                 detail="Only admins and billing staff can update invoices.",
             )
 
@@ -150,7 +156,7 @@ class InvoiceService:
         
         if invoice.status in [InvoiceStatus.PAID, InvoiceStatus.CANCELLED]:
              raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail="Cannot modify a paid or cancelled invoice.",
             )
 
@@ -194,12 +200,18 @@ class InvoiceService:
         page: int = 1,
         page_size: int = 20,
     ) -> tuple[list[Invoice], int]:
+        if current_user.role not in [UserRole.ADMIN, UserRole.BILLING_STAFF, UserRole.PATIENT]:
+            raise HTTPException(
+                status_code=http_status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to access billing invoices.",
+            )
+
         if current_user.role == UserRole.PATIENT:
             patient = PatientRepository.get_by_user_id(db, current_user.id)
             if not patient:
                 return [], 0
             if patient_id and patient_id != patient.id:
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized.")
+                raise HTTPException(status_code=http_status.HTTP_403_FORBIDDEN, detail="Not authorized.")
             patient_id = patient.id
 
         skip = (page - 1) * page_size

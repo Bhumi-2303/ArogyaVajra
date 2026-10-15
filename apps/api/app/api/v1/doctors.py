@@ -1,5 +1,6 @@
 """Doctor management API routes conforming to FRONTEND-BACKEND-CONTRACT and PRD."""
 
+import datetime
 import uuid
 
 from fastapi import APIRouter, Depends, Query, Request, status
@@ -16,8 +17,10 @@ from app.schemas.doctor import (
     DoctorDetailResponse,
     DoctorListResponse,
     DoctorResponse,
+    DoctorSlotsResponse,
     DoctorUpdate,
     PaginationMeta,
+    TimeSlot,
 )
 from app.services.doctor import DoctorService
 
@@ -37,12 +40,13 @@ def list_doctors(
     ),
     name: str | None = Query(None, description="Search by doctor first or last name"),
     is_active: bool | None = Query(None, description="Filter by active status"),
+    email: str | None = Query(None, description="Search by doctor user email"),
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(20, ge=1, le=100, description="Page size"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Retrieve paginated doctor profiles with search filtering across name, specialization, code."""
+    """Retrieve paginated doctor profiles with search filtering across name, specialization, code, email."""
     items, total, total_pages = DoctorService.list_doctors(
         db=db,
         current_user=current_user,
@@ -51,6 +55,7 @@ def list_doctors(
         specialization=specialization,
         code=code,
         is_active=is_active,
+        email=email,
         page=page,
         page_size=page_size,
     )
@@ -116,6 +121,35 @@ def get_doctor(
     return DoctorDetailResponse(
         data=DoctorResponse.from_orm_model(doctor),
         message="Doctor profile retrieved successfully.",
+    )
+
+
+@router.get(
+    "/{doctor_id}/slots",
+    response_model=DoctorSlotsResponse,
+    summary="Get doctor available appointment slots for a specific date",
+)
+def get_doctor_slots(
+    doctor_id: uuid.UUID,
+    date: datetime.date = Query(..., description="Date formatted as YYYY-MM-DD"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Calculate and return available appointment slots for a doctor on a given date."""
+    doctor, slots = DoctorService.get_available_slots(
+        db=db,
+        doctor_id=doctor_id,
+        slot_date=date,
+        current_user=current_user,
+    )
+    return DoctorSlotsResponse(
+        doctor_id=doctor.id,
+        doctor_name=f"Dr. {doctor.first_name} {doctor.last_name}",
+        specialization=doctor.specialization,
+        date=date,
+        day_of_week=date.isoweekday() % 7,
+        slots=[TimeSlot(**s) for s in slots],
+        message=f"Retrieved {len([s for s in slots if s['is_available']])} available slot(s).",
     )
 
 
