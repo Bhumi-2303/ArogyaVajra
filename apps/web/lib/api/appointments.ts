@@ -47,4 +47,28 @@ export const appointmentsApi = {
       method: "PUT",
       body: JSON.stringify(data),
     }),
+
+  /**
+   * Confirm an appointment (doctor / staff)
+   */
+  confirm: (id: string) =>
+    fetchAPI<AppointmentDetailResponse>(`/appointments/${id}/confirm`, {
+      method: "POST",
+    }),
+
+  /**
+   * Complete an appointment (doctor)
+   */
+  complete: (id: string) =>
+    fetchAPI<AppointmentDetailResponse>(`/appointments/${id}/complete`, {
+      method: "POST",
+    }),
+
+  /**
+   * Cancel an appointment
+   */
+  cancel: (id: string) =>
+    fetchAPI<AppointmentDetailResponse>(`/appointments/${id}/cancel`, {
+      method: "POST",
+    }),
 };

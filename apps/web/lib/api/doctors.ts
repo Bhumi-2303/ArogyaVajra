@@ -8,6 +8,7 @@ import {
   DoctorDetailResponse,
   DoctorListResponse,
   DoctorSearchParams,
+  DoctorSlotsResponse,
   DoctorUpdateInput,
   SimpleMessageResponse,
 } from "./types";
@@ -57,6 +58,18 @@ export async function getDoctorApi(
   doctorId: string
 ): Promise<DoctorDetailResponse> {
   return apiClient<DoctorDetailResponse>(`/doctors/${doctorId}`, {
+    method: "GET",
+  });
+}
+
+/**
+ * Fetch available time slots for a doctor on a specific date.
+ */
+export async function getDoctorSlotsApi(
+  doctorId: string,
+  date: string
+): Promise<DoctorSlotsResponse> {
+  return apiClient<DoctorSlotsResponse>(`/doctors/${doctorId}/slots?date=${encodeURIComponent(date)}`, {
     method: "GET",
   });
 }

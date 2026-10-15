@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { useAppointments } from "@/hooks/use-appointments";
+import {
+  useAppointments,
+  useConfirmAppointment,
+  useCompleteAppointment,
+  useCancelAppointment,
+} from "@/hooks/use-appointments";
 import { Appointment } from "@/lib/api/types";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,7 +32,7 @@ import {
 import { AppointmentForm } from "@/components/forms/appointment-form";
 import { MedicalRecordForm } from "@/components/forms/medical-record-form";
 import { PrescriptionForm } from "@/components/forms/prescription-form";
-import { Plus, Calendar, Edit, FileText, Pill } from "lucide-react";
+import { Plus, Calendar, Edit, FileText, Pill, CheckCircle, Check, XCircle } from "lucide-react";
 
 export default function AppointmentsPage() {
   const { user } = useAuth();
@@ -43,11 +48,51 @@ export default function AppointmentsPage() {
     date: dateFilter || undefined,
   });
 
+  const { confirmAppointment, isConfirming } = useConfirmAppointment();
+  const { completeAppointment, isCompleting } = useCompleteAppointment();
+  const { cancelAppointment, isCancelling } = useCancelAppointment();
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | undefined>();
 
   const [isConsultDialogOpen, setIsConsultDialogOpen] = useState(false);
   const [isPrescribeDialogOpen, setIsPrescribeDialogOpen] = useState(false);
+
+  const handleConfirm = async (id: string) => {
+    setActionError(null);
+    setActionSuccess(null);
+    try {
+      await confirmAppointment(id);
+      setActionSuccess("Appointment confirmed successfully.");
+    } catch (err: any) {
+      setActionError(err.message || "Failed to confirm appointment.");
+    }
+  };
+
+  const handleComplete = async (id: string) => {
+    setActionError(null);
+    setActionSuccess(null);
+    try {
+      await completeAppointment(id);
+      setActionSuccess("Appointment marked as completed.");
+    } catch (err: any) {
+      setActionError(err.message || "Failed to complete appointment.");
+    }
+  };
+
+  const handleCancel = async (id: string) => {
+    if (!confirm("Are you sure you want to cancel this appointment?")) return;
+    setActionError(null);
+    setActionSuccess(null);
+    try {
+      await cancelAppointment(id);
+      setActionSuccess("Appointment cancelled.");
+    } catch (err: any) {
+      setActionError(err.message || "Failed to cancel appointment.");
+    }
+  };
 
   const handleCreate = () => {
     setSelectedAppointment(undefined);
@@ -105,18 +150,35 @@ export default function AppointmentsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Appointments</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {user?.role === "DOCTOR" ? "Clinical Appointments" : "Appointments"}
+          </h1>
           <p className="text-muted-foreground">
-            Manage consultations and bookings.
+            {user?.role === "DOCTOR"
+              ? "Review and manage your clinical schedule and consultations."
+              : "Manage consultations and bookings."}
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={handleCreate} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Book Appointment
-          </Button>
-        </div>
+        {user?.role !== "DOCTOR" && user?.role !== "BILLING_STAFF" && (
+          <div className="flex gap-2">
+            <Button onClick={handleCreate} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Book Appointment
+            </Button>
+          </div>
+        )}
       </div>
+
+      {actionSuccess && (
+        <Alert variant="success" className="py-2.5">
+          {actionSuccess}
+        </Alert>
+      )}
+      {actionError && (
+        <Alert variant="danger" className="py-2.5">
+          {actionError}
+        </Alert>
+      )}
 
       <div className="flex flex-col gap-4 sm:flex-row p-4 border rounded-md bg-muted/20">
         <div className="flex flex-col space-y-1.5 flex-1">
@@ -171,18 +233,30 @@ export default function AppointmentsPage() {
         </div>
       ) : error ? (
         <Alert variant="danger">
-<>Error</>
-          <>
+          <div>Error</div>
+          <div>
             {error instanceof Error ? error.message : "Failed to load appointments."}
-          </>
-</Alert>
+          </div>
+        </Alert>
       ) : appointments.length === 0 ? (
         <EmptyState
           icon={<Calendar className="h-7 w-7" />}
-          title="No appointments found"
-          description="There are no appointments matching your criteria."
-          actionLabel="Book Appointment"
-          onAction={handleCreate}
+          title={user?.role === "DOCTOR" ? "No appointments scheduled" : "No appointments found"}
+          description={
+            user?.role === "DOCTOR"
+              ? "You have no appointments scheduled matching your criteria."
+              : "There are no appointments matching your criteria."
+          }
+          actionLabel={
+            user?.role === "DOCTOR" || user?.role === "BILLING_STAFF"
+              ? undefined
+              : "Book Appointment"
+          }
+          onAction={
+            user?.role === "DOCTOR" || user?.role === "BILLING_STAFF"
+              ? undefined
+              : handleCreate
+          }
         />
       ) : (
         <div className="rounded-md border bg-card">
@@ -193,6 +267,7 @@ export default function AppointmentsPage() {
                 <TableHead>Date & Time</TableHead>
                 {user!.role !== "PATIENT" && <TableHead>Patient</TableHead>}
                 {user!.role !== "DOCTOR" && <TableHead>Doctor</TableHead>}
+                <TableHead>Reason</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -211,45 +286,117 @@ export default function AppointmentsPage() {
                   </TableCell>
                   {user!.role !== "PATIENT" && (
                     <TableCell className="text-sm">
-                      ID: {appointment.patient_id.substring(0, 8)}...
+                      <div className="font-medium text-navy">
+                        {appointment.patient_name || `Patient (${appointment.patient_id.substring(0, 8)}...)`}
+                      </div>
+                      {appointment.patient_code_display && (
+                        <div className="text-[11px] text-muted-foreground font-mono">
+                          {appointment.patient_code_display}
+                        </div>
+                      )}
                     </TableCell>
                   )}
                   {user!.role !== "DOCTOR" && (
                     <TableCell className="text-sm">
-                      ID: {appointment.doctor_id.substring(0, 8)}...
+                      <div className="font-medium text-navy">
+                        {appointment.doctor_name || `Doctor (${appointment.doctor_id.substring(0, 8)}...)`}
+                      </div>
+                      {appointment.doctor_specialization && (
+                        <div className="text-[11px] text-muted-foreground">
+                          {appointment.doctor_specialization}
+                        </div>
+                      )}
                     </TableCell>
                   )}
+                  <TableCell className="max-w-[180px] truncate text-sm">
+                    {appointment.reason ? (
+                      <span title={appointment.reason}>{appointment.reason}</span>
+                    ) : (
+                      <span className="text-muted-foreground text-xs italic">General consultation</span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     {renderStatusBadge(appointment.status)}
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
+                    <div className="flex justify-end items-center gap-1.5 flex-wrap">
                       {user!.role === "DOCTOR" && (
                         <>
+                          {appointment.status === "SCHEDULED" && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 h-8 px-2 text-xs"
+                              disabled={isConfirming}
+                              onClick={() => handleConfirm(appointment.id)}
+                            >
+                              <CheckCircle className="h-3.5 w-3.5 mr-1 text-emerald-600" />
+                              Confirm
+                            </Button>
+                          )}
+                          {appointment.status === "CONFIRMED" && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-blue-700 hover:text-blue-800 hover:bg-blue-50 h-8 px-2 text-xs"
+                              disabled={isCompleting}
+                              onClick={() => handleComplete(appointment.id)}
+                            >
+                              <Check className="h-3.5 w-3.5 mr-1 text-blue-600" />
+                              Complete
+                            </Button>
+                          )}
+                          {appointment.status !== "CANCELLED" && appointment.status !== "COMPLETED" && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 h-8 px-2 text-xs"
+                              disabled={isCancelling}
+                              onClick={() => handleCancel(appointment.id)}
+                            >
+                              <XCircle className="h-3.5 w-3.5 mr-1" />
+                              Cancel
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"
+                            className="h-8 px-2 text-xs"
                             onClick={() => handleConsult(appointment)}
                           >
-                            <FileText className="h-4 w-4 mr-2" />
-                            Consult
+                            <FileText className="h-3.5 w-3.5 mr-1 text-primary" />
+                            Record
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
+                            className="h-8 px-2 text-xs"
                             onClick={() => handlePrescribe(appointment)}
                           >
-                            <Pill className="h-4 w-4 mr-2" />
-                            Prescribe
+                            <Pill className="h-3.5 w-3.5 mr-1 text-teal-600" />
+                            Rx
                           </Button>
                         </>
+                      )}
+                      {user!.role === "PATIENT" && appointment.status !== "CANCELLED" && appointment.status !== "COMPLETED" && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 h-8 px-2 text-xs"
+                          disabled={isCancelling}
+                          onClick={() => handleCancel(appointment.id)}
+                        >
+                          <XCircle className="h-3.5 w-3.5 mr-1" />
+                          Cancel
+                        </Button>
                       )}
                       <Button
                         variant="ghost"
                         size="sm"
+                        className="h-8 px-2 text-xs"
                         onClick={() => handleEdit(appointment)}
                       >
-                        <Edit className="h-4 w-4 mr-2" />
+                        <Edit className="h-3.5 w-3.5 mr-1" />
                         Manage
                       </Button>
                     </div>

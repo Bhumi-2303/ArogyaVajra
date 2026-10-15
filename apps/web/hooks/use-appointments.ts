@@ -66,3 +66,51 @@ export function useCreateAppointment() {
     isCreating: createMutation.isPending,
   };
 }
+
+export function useConfirmAppointment() {
+  const queryClient = useQueryClient();
+
+  const confirmMutation = useMutation({
+    mutationFn: (id: string) => appointmentsApi.confirm(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: APPOINTMENTS_QUERY_KEY });
+    },
+  });
+
+  return {
+    confirmAppointment: confirmMutation.mutateAsync,
+    isConfirming: confirmMutation.isPending,
+  };
+}
+
+export function useCompleteAppointment() {
+  const queryClient = useQueryClient();
+
+  const completeMutation = useMutation({
+    mutationFn: (id: string) => appointmentsApi.complete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: APPOINTMENTS_QUERY_KEY });
+    },
+  });
+
+  return {
+    completeAppointment: completeMutation.mutateAsync,
+    isCompleting: completeMutation.isPending,
+  };
+}
+
+export function useCancelAppointment() {
+  const queryClient = useQueryClient();
+
+  const cancelMutation = useMutation({
+    mutationFn: (id: string) => appointmentsApi.cancel(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: APPOINTMENTS_QUERY_KEY });
+    },
+  });
+
+  return {
+    cancelAppointment: cancelMutation.mutateAsync,
+    isCancelling: cancelMutation.isPending,
+  };
+}

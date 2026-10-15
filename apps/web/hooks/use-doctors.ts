@@ -6,6 +6,7 @@ import {
   deleteDoctorApi,
   getDoctorApi,
   getDoctorsApi,
+  getDoctorSlotsApi,
   updateDoctorApi,
 } from "@/lib/api/doctors";
 import {
@@ -31,6 +32,20 @@ export function useDoctor(doctorId: string | null | undefined) {
       return getDoctorApi(doctorId);
     },
     enabled: Boolean(doctorId),
+  });
+}
+
+export function useDoctorSlots(
+  doctorId: string | null | undefined,
+  date: string | null | undefined
+) {
+  return useQuery({
+    queryKey: [...DOCTORS_QUERY_KEY, doctorId, "slots", date],
+    queryFn: () => {
+      if (!doctorId || !date) throw new Error("Doctor ID and date are required");
+      return getDoctorSlotsApi(doctorId, date);
+    },
+    enabled: Boolean(doctorId && date),
   });
 }
 

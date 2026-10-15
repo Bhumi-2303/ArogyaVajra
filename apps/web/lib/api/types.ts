@@ -77,6 +77,9 @@ export interface RegisterInput {
   email: string;
   password: string;
   role?: UserRole;
+  full_name?: string;
+  age?: number;
+  requested_role?: string;
 }
 
 export interface ChangePasswordInput {
@@ -275,6 +278,10 @@ export interface Appointment {
   appointment_code: string;
   patient_id: string;
   doctor_id: string;
+  doctor_name?: string | null;
+  doctor_specialization?: string | null;
+  patient_name?: string | null;
+  patient_code_display?: string | null;
   appointment_date: string;
   start_time: string;
   end_time: string;
@@ -284,6 +291,22 @@ export interface Appointment {
   created_by: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface TimeSlot {
+  start_time: string;
+  end_time: string;
+  is_available: boolean;
+}
+
+export interface DoctorSlotsResponse {
+  doctor_id: string;
+  doctor_name: string;
+  specialization: string;
+  date: string;
+  day_of_week: number;
+  slots: TimeSlot[];
+  message: string;
 }
 
 export interface AuditLog {
@@ -315,11 +338,11 @@ export interface AuditLogListResponse {
 }
 
 export interface AppointmentCreateInput {
-  patient_id: string;
   doctor_id: string;
   appointment_date: string;
   start_time: string;
   end_time: string;
+  patient_id?: string;
   reason?: string | null;
   notes?: string | null;
 }
