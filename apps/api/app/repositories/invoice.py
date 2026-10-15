@@ -1,22 +1,26 @@
 import uuid
-from typing import Optional
 
-from sqlalchemy.orm import Session
 from sqlalchemy import func
+from sqlalchemy.orm import Session
 
 from app.models.invoice import Invoice
 
 
 class InvoiceRepository:
     @staticmethod
-    def get_by_id(db: Session, invoice_id: uuid.UUID) -> Optional[Invoice]:
+    def get_by_id(db: Session, invoice_id: uuid.UUID) -> Invoice | None:
         return db.query(Invoice).filter(Invoice.id == invoice_id).first()
 
     @staticmethod
     def get_next_invoice_number(db: Session) -> str:
-        # Use max(id) for SQLite compatibility since it lacks sequences
-        next_id = db.query(func.max(Invoice.id)).scalar() or 0
-        return f"INV-{(next_id + 1):05d}"
+        bind = db.get_bind()
+        if bind.dialect.name == "postgresql":
+            from sqlalchemy import text
+
+            next_id = db.execute(text("SELECT nextval('invoice_number_seq')")).scalar()
+            return f"INV-{next_id:05d}"
+        count = db.query(func.count(Invoice.id)).scalar() or 0
+        return f"INV-{(count + 1):05d}"
 
     @staticmethod
     def create(db: Session, invoice: Invoice) -> Invoice:
@@ -27,10 +31,10 @@ class InvoiceRepository:
     @staticmethod
     def search(
         db: Session,
-        patient_id: Optional[uuid.UUID] = None,
-        status: Optional[str] = None,
-        invoice_number: Optional[str] = None,
-        invoice_date: Optional[str] = None,
+        patient_id: uuid.UUID | None = None,
+        status: str | None = None,
+        invoice_number: str | None = None,
+        invoice_date: str | None = None,
         skip: int = 0,
         limit: int = 20,
     ) -> tuple[list[Invoice], int]:

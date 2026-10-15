@@ -1,11 +1,21 @@
 """DoctorProfile entity model according to DATABASE-SCHEMA.md Section 2.3."""
 
-import uuid
 import datetime
+import uuid
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from sqlalchemy import CheckConstraint, ForeignKey, Numeric, SmallInteger, String, Text, Time, Boolean, Uuid as PG_UUID
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    ForeignKey,
+    Numeric,
+    SmallInteger,
+    String,
+    Text,
+    Time,
+)
+from sqlalchemy import Uuid as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin

@@ -1,8 +1,8 @@
-import datetime
 import enum
-import uuid
 
-from sqlalchemy import Column, Date, Enum as SQLAlchemyEnum, ForeignKey, String, Text, Uuid as UUID
+from sqlalchemy import Column, Date, ForeignKey, String, Text
+from sqlalchemy import Enum as SQLAlchemyEnum
+from sqlalchemy import Uuid as UUID
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin

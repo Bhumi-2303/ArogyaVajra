@@ -1,6 +1,4 @@
-import datetime
 import uuid
-from typing import Optional
 
 from sqlalchemy.orm import Session
 
@@ -9,7 +7,7 @@ from app.models.medical_record import MedicalRecord
 
 class MedicalRecordRepository:
     @staticmethod
-    def get_by_id(db: Session, record_id: uuid.UUID) -> Optional[MedicalRecord]:
+    def get_by_id(db: Session, record_id: uuid.UUID) -> MedicalRecord | None:
         return db.query(MedicalRecord).filter(MedicalRecord.id == record_id).first()
 
     @staticmethod
@@ -21,9 +19,9 @@ class MedicalRecordRepository:
     @staticmethod
     def search(
         db: Session,
-        patient_id: Optional[uuid.UUID] = None,
-        doctor_id: Optional[uuid.UUID] = None,
-        appointment_id: Optional[uuid.UUID] = None,
+        patient_id: uuid.UUID | None = None,
+        doctor_id: uuid.UUID | None = None,
+        appointment_id: uuid.UUID | None = None,
         skip: int = 0,
         limit: int = 20,
     ) -> tuple[list[MedicalRecord], int]:

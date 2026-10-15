@@ -72,6 +72,7 @@ class DoctorRepository:
         specialization: str | None = None,
         code: str | None = None,
         is_active: bool | None = None,
+        email: str | None = None,
         page: int = 1,
         page_size: int = 20,
     ) -> tuple[list[DoctorProfile], int, int]:
@@ -129,6 +130,10 @@ class DoctorRepository:
         # Active status filter
         if is_active is not None:
             query = query.where(User.is_active.is_(is_active))
+
+        # Email filter
+        if email:
+            query = query.where(func.lower(User.email) == email.strip().lower())
 
         # Total count
         total_stmt = select(func.count()).select_from(query.subquery())

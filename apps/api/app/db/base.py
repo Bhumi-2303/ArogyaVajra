@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import DateTime, MetaData, Numeric, Uuid, func, text
+from sqlalchemy import DateTime, MetaData, Numeric, Uuid, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 # Authoritative naming convention for PostgreSQL constraints and indexes.

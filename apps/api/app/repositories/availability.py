@@ -1,6 +1,9 @@
 import uuid
+
 from sqlalchemy.orm import Session
-from app.models.doctor import DoctorAvailability, DoctorProfile
+
+from app.models.doctor import DoctorAvailability
+
 
 class AvailabilityRepository:
     """Repository for managing doctor availability slots."""

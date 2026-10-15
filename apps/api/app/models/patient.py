@@ -4,7 +4,8 @@ import uuid
 from datetime import date
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Date, ForeignKey, Index, String, Text, Uuid as PG_UUID
+from sqlalchemy import Date, ForeignKey, Index, String, Text
+from sqlalchemy import Uuid as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin

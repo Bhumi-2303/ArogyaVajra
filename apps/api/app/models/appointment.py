@@ -1,18 +1,15 @@
-import datetime
 import enum
-import uuid
 
 from sqlalchemy import (
-    Boolean,
     Column,
     Date,
     Enum,
     ForeignKey,
-    Integer,
-    SmallInteger,
     String,
     Text,
     Time,
+)
+from sqlalchemy import (
     Uuid as UUID,
 )
 from sqlalchemy.orm import relationship
@@ -45,3 +42,27 @@ class Appointment(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     patient = relationship("PatientProfile", backref="appointments")
     doctor = relationship("DoctorProfile", backref="appointments")
     creator = relationship("User", foreign_keys=[created_by])
+
+    @property
+    def doctor_name(self) -> str | None:
+        if self.doctor:
+            return f"Dr. {self.doctor.first_name} {self.doctor.last_name}"
+        return None
+
+    @property
+    def doctor_specialization(self) -> str | None:
+        if self.doctor:
+            return self.doctor.specialization
+        return None
+
+    @property
+    def patient_name(self) -> str | None:
+        if self.patient:
+            return f"{self.patient.first_name} {self.patient.last_name}"
+        return None
+
+    @property
+    def patient_code_display(self) -> str | None:
+        if self.patient:
+            return self.patient.patient_code
+        return None

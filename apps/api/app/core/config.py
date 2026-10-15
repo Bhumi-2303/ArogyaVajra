@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     APP_DEBUG: bool = True
 
     # Database
-    DATABASE_URL: str = "sqlite:///./arogyavajra.db"
+    DATABASE_URL: str = "postgresql+psycopg://arogyavajra:arogyavajra_dev_password@localhost:5434/arogyavajra"
 
     # API Configuration
     API_PREFIX: str = "/api/v1"

@@ -1,17 +1,21 @@
 import datetime
 import uuid
-from typing import Optional
 
-from sqlalchemy import or_, and_
-from sqlalchemy.orm import Session
+from sqlalchemy import and_, or_
+from sqlalchemy.orm import Session, joinedload
 
 from app.models.appointment import Appointment, AppointmentStatus
 
 
 class AppointmentRepository:
     @staticmethod
-    def get_by_id(db: Session, appointment_id: uuid.UUID) -> Optional[Appointment]:
-        return db.query(Appointment).filter(Appointment.id == appointment_id).first()
+    def get_by_id(db: Session, appointment_id: uuid.UUID) -> Appointment | None:
+        return (
+            db.query(Appointment)
+            .options(joinedload(Appointment.doctor), joinedload(Appointment.patient))
+            .filter(Appointment.id == appointment_id)
+            .first()
+        )
 
     @staticmethod
     def check_overlap(
@@ -20,7 +24,7 @@ class AppointmentRepository:
         appointment_date: datetime.date,
         start_time: datetime.time,
         end_time: datetime.time,
-        exclude_appointment_id: Optional[uuid.UUID] = None,
+        exclude_appointment_id: uuid.UUID | None = None,
     ) -> bool:
         """Check if an active appointment overlaps with the given time slot."""
         query = db.query(Appointment).filter(
@@ -45,14 +49,17 @@ class AppointmentRepository:
     @staticmethod
     def search(
         db: Session,
-        patient_id: Optional[uuid.UUID] = None,
-        doctor_id: Optional[uuid.UUID] = None,
-        date: Optional[datetime.date] = None,
-        status: Optional[AppointmentStatus] = None,
+        patient_id: uuid.UUID | None = None,
+        doctor_id: uuid.UUID | None = None,
+        date: datetime.date | None = None,
+        status: AppointmentStatus | None = None,
         skip: int = 0,
         limit: int = 20,
     ) -> tuple[list[Appointment], int]:
-        query = db.query(Appointment)
+        query = db.query(Appointment).options(
+            joinedload(Appointment.doctor),
+            joinedload(Appointment.patient),
+        )
 
         if patient_id:
             query = query.filter(Appointment.patient_id == patient_id)

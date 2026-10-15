@@ -3,7 +3,7 @@
 import uuid
 from decimal import Decimal
 
-from sqlalchemy import DateTime, Numeric
+from sqlalchemy import DateTime, Numeric, Uuid
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -41,7 +41,7 @@ def test_uuid_primary_key_mixin():
     id_col = table.c.id
 
     assert id_col.primary_key is True
-    assert isinstance(id_col.type, UUID)
+    assert isinstance(id_col.type, (UUID, Uuid))
     assert id_col.type.as_uuid is True
 
 
