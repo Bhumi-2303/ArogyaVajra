@@ -183,10 +183,32 @@ async function run() {
     return { email, token: res.json?.data?.access_token };
   }
 
+  async function getAuthToken(role) {
+    if (role === "ADMIN") {
+      const loginRes = await fetchRoute("localhost", 8000, "/api/v1/auth/login", {
+        method: "POST",
+        body: { email: "admin@arogyavajra.com", password: "ArogyaVajra@2026!" },
+      });
+      if (loginRes.statusCode === 200) {
+        return { email: "admin@arogyavajra.com", token: loginRes.json?.data?.access_token };
+      }
+    }
+    if (role === "DOCTOR") {
+      const loginRes = await fetchRoute("localhost", 8000, "/api/v1/auth/login", {
+        method: "POST",
+        body: { email: "doctor@arogyavajra.com", password: "ArogyaVajra@2026!" },
+      });
+      if (loginRes.statusCode === 200) {
+        return { email: "doctor@arogyavajra.com", token: loginRes.json?.data?.access_token };
+      }
+    }
+    return registerUser(role);
+  }
+
   try {
-    const patient = await registerUser("PATIENT");
-    const doctor = await registerUser("DOCTOR");
-    const admin = await registerUser("ADMIN");
+    const patient = await getAuthToken("PATIENT");
+    const doctor = await getAuthToken("DOCTOR");
+    const admin = await getAuthToken("ADMIN");
 
     // Test unauthenticated access to protected route
     const unauthRes = await fetchRoute(

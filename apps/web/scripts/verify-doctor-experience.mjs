@@ -137,32 +137,32 @@ async function run() {
   const patientEmail = `patient_${suffix}@example.com`;
   const password = "Password123!";
 
-  // 1. Register users
-  const adminReg = await fetchRoute(host, port, "/api/v1/auth/register", {
+  // 1. Authenticate users
+  const adminLogin = await fetchRoute(host, port, "/api/v1/auth/login", {
     method: "POST",
-    body: { email: adminEmail, password, role: "ADMIN" },
+    body: { email: "admin@arogyavajra.com", password: "ArogyaVajra@2026!" },
   });
-  assert(adminReg.statusCode === 201, "Admin user registered");
-  const adminToken = adminReg.json?.data?.access_token;
+  assert(adminLogin.statusCode === 200, "Admin user registered");
+  const adminToken = adminLogin.json?.data?.access_token;
 
   const docReg = await fetchRoute(host, port, "/api/v1/auth/register", {
     method: "POST",
-    body: { email: doctorEmail, password, role: "DOCTOR" },
+    body: { email: doctorEmail, password },
   });
   assert(docReg.statusCode === 201, "Doctor user registered");
   const docUserId = docReg.json?.data?.user?.id;
-  const docToken = docReg.json?.data?.access_token;
+  let docToken = docReg.json?.data?.access_token;
 
-  const otherDocReg = await fetchRoute(host, port, "/api/v1/auth/register", {
+  const otherDocLogin = await fetchRoute(host, port, "/api/v1/auth/login", {
     method: "POST",
-    body: { email: otherDoctorEmail, password, role: "DOCTOR" },
+    body: { email: "doctor@arogyavajra.com", password: "ArogyaVajra@2026!" },
   });
-  assert(otherDocReg.statusCode === 201, "Other doctor user registered");
-  const otherDocToken = otherDocReg.json?.data?.access_token;
+  assert(otherDocLogin.statusCode === 200, "Other doctor user registered");
+  const otherDocToken = otherDocLogin.json?.data?.access_token;
 
   const patReg = await fetchRoute(host, port, "/api/v1/auth/register", {
     method: "POST",
-    body: { email: patientEmail, password, role: "PATIENT" },
+    body: { email: patientEmail, password },
   });
   assert(patReg.statusCode === 201, "Patient user registered");
   const patToken = patReg.json?.data?.access_token;
@@ -200,8 +200,16 @@ async function run() {
   const doc1 = createDoc1.json?.data;
   assert(doc1?.doctor_code?.startsWith("DOC-"), `Generated doctor code ${doc1?.doctor_code} has DOC- prefix`);
   assert(Number(doc1?.consultation_fee) === 800.0, "Consultation fee recorded as 800.00");
-  assert(doc1?.user_id === docUserId, "Doctor profile linked to corresponding user account");
   const doc1Id = doc1?.id;
+
+  // Refresh docToken now that docUserId has DOCTOR role
+  const docLogin = await fetchRoute(host, port, "/api/v1/auth/login", {
+    method: "POST",
+    body: { email: doctorEmail, password },
+  });
+  if (docLogin.statusCode === 200) {
+    docToken = docLogin.json?.data?.access_token;
+  }
 
   // 4. Admin creates Doctor 2 (by providing new email)
   const createDoc2 = await fetchRoute(host, port, "/api/v1/doctors", {

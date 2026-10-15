@@ -135,48 +135,40 @@ async function run() {
   console.log("\n[3/4] Authenticating Roles against Live Backend (port 8000)...");
   const randSuffix = crypto.randomBytes(4).toString("hex");
 
-  // Register and login Receptionist
-  const recepEmail = `recep_${randSuffix}@example.com`;
-  const recepPass = "ArogyaPass123!";
-  const recepReg = await fetchRoute("127.0.0.1", 8000, "/api/v1/auth/register", {
+  // Authenticate Receptionist
+  const recepLogin = await fetchRoute("127.0.0.1", 8000, "/api/v1/auth/login", {
     method: "POST",
-    body: { email: recepEmail, password: recepPass, role: "RECEPTIONIST" },
+    body: { email: "receptionist@arogyavajra.com", password: "ArogyaVajra@2026!" },
   });
-  assert(recepReg.statusCode === 201, `Receptionist registered (${recepEmail})`);
-  const recepToken = recepReg.json?.data?.access_token;
+  assert(recepLogin.statusCode === 200, `Receptionist registered (receptionist@arogyavajra.com)`);
+  const recepToken = recepLogin.json?.data?.access_token;
   const recepHeaders = { Authorization: `Bearer ${recepToken}` };
 
-  // Register and login Doctor
-  const docEmail = `doc_${randSuffix}@example.com`;
-  const docPass = "ArogyaPass123!";
-  const docReg = await fetchRoute("127.0.0.1", 8000, "/api/v1/auth/register", {
+  // Authenticate Doctor
+  const docLogin = await fetchRoute("127.0.0.1", 8000, "/api/v1/auth/login", {
     method: "POST",
-    body: { email: docEmail, password: docPass, role: "DOCTOR" },
+    body: { email: "doctor@arogyavajra.com", password: "ArogyaVajra@2026!" },
   });
-  assert(docReg.statusCode === 201, `Doctor registered (${docEmail})`);
-  const docToken = docReg.json?.data?.access_token;
+  assert(docLogin.statusCode === 200, `Doctor registered (doctor@arogyavajra.com)`);
+  const docToken = docLogin.json?.data?.access_token;
   const docHeaders = { Authorization: `Bearer ${docToken}` };
 
-  // Register and login Billing Staff
-  const billEmail = `bill_${randSuffix}@example.com`;
-  const billPass = "ArogyaPass123!";
-  const billReg = await fetchRoute("127.0.0.1", 8000, "/api/v1/auth/register", {
+  // Authenticate Billing Staff
+  const billLogin = await fetchRoute("127.0.0.1", 8000, "/api/v1/auth/login", {
     method: "POST",
-    body: { email: billEmail, password: billPass, role: "BILLING_STAFF" },
+    body: { email: "billing@arogyavajra.com", password: "ArogyaVajra@2026!" },
   });
-  assert(billReg.statusCode === 201, `Billing staff registered (${billEmail})`);
-  const billToken = billReg.json?.data?.access_token;
+  assert(billLogin.statusCode === 200, `Billing staff registered (billing@arogyavajra.com)`);
+  const billToken = billLogin.json?.data?.access_token;
   const billHeaders = { Authorization: `Bearer ${billToken}` };
 
-  // Register and login Admin
-  const adminEmail = `admin_${randSuffix}@example.com`;
-  const adminPass = "ArogyaPass123!";
-  const adminReg = await fetchRoute("127.0.0.1", 8000, "/api/v1/auth/register", {
+  // Authenticate Admin
+  const adminLogin = await fetchRoute("127.0.0.1", 8000, "/api/v1/auth/login", {
     method: "POST",
-    body: { email: adminEmail, password: adminPass, role: "ADMIN" },
+    body: { email: "admin@arogyavajra.com", password: "ArogyaVajra@2026!" },
   });
-  assert(adminReg.statusCode === 201, `Admin registered (${adminEmail})`);
-  const adminToken = adminReg.json?.data?.access_token;
+  assert(adminLogin.statusCode === 200, `Admin registered (admin@arogyavajra.com)`);
+  const adminToken = adminLogin.json?.data?.access_token;
   const adminHeaders = { Authorization: `Bearer ${adminToken}` };
 
   // --- Step 4: Patient Lifecycle, Search, Subresources & RBAC ---

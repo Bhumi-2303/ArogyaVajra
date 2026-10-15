@@ -128,28 +128,39 @@ async function run() {
   console.log("\n[3/4] Authenticating Roles against Live Backend (port 8000)...");
   const randSuffix = crypto.randomBytes(4).toString("hex");
 
-  // Register Admin
-  const adminEmail = `admin_mgr_${randSuffix}@example.com`;
-  const adminPass = "ArogyaPass123!";
-  const adminReg = await fetchRoute("127.0.0.1", 8000, "/api/v1/auth/register", {
+  // Authenticate Admin
+  const adminLogin = await fetchRoute("127.0.0.1", 8000, "/api/v1/auth/login", {
     method: "POST",
-    body: { email: adminEmail, password: adminPass, role: "ADMIN" },
+    body: { email: "admin@arogyavajra.com", password: "ArogyaVajra@2026!" },
   });
-  assert(adminReg.statusCode === 201, `Admin registered (${adminEmail})`);
-  const adminToken = adminReg.json?.data?.access_token;
-  const adminId = adminReg.json?.data?.user?.id;
+  assert(adminLogin.statusCode === 200, `Admin registered (admin@arogyavajra.com)`);
+  const adminToken = adminLogin.json?.data?.access_token;
+  const adminId = adminLogin.json?.data?.user?.id;
   const adminHeaders = { Authorization: `Bearer ${adminToken}` };
 
-  // Register Doctor (non-admin)
+  // Register Candidate user (non-admin)
   const docEmail = `doctor_mgr_${randSuffix}@example.com`;
   const docPass = "ArogyaPass123!";
   const docReg = await fetchRoute("127.0.0.1", 8000, "/api/v1/auth/register", {
     method: "POST",
-    body: { email: docEmail, password: docPass, role: "DOCTOR" },
+    body: { email: docEmail, password: docPass },
   });
   assert(docReg.statusCode === 201, `Doctor registered (${docEmail})`);
-  const docToken = docReg.json?.data?.access_token;
   const docId = docReg.json?.data?.user?.id;
+
+  // Admin assigns initial DOCTOR role
+  await fetchRoute("127.0.0.1", 8000, `/api/v1/users/${docId}`, {
+    method: "PUT",
+    headers: adminHeaders,
+    body: { role: "DOCTOR" },
+  });
+
+  // Login as doctor to get fresh token with DOCTOR claims
+  const docLogin = await fetchRoute("127.0.0.1", 8000, "/api/v1/auth/login", {
+    method: "POST",
+    body: { email: docEmail, password: docPass },
+  });
+  const docToken = docLogin.json?.data?.access_token;
   const docHeaders = { Authorization: `Bearer ${docToken}` };
 
   // --- Step 4: RBAC, Listing, Filtering, Role Editing, Activation ---
