@@ -51,7 +51,6 @@ export const ROLE_NAV_CONFIG: Record<UserRole, NavItem[]> = {
     { label: "Patients", href: "/patients", icon: Users },
     { label: "Medical Records", href: "/medical-records", icon: FileText },
     { label: "Prescriptions", href: "/prescriptions", icon: Pill },
-    { label: "Invoices", href: "/invoices", icon: Receipt },
     { label: "Availability", href: "/availability", icon: Clock },
     { label: "Profile", href: "/profile", icon: User },
   ],

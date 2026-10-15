@@ -24,8 +24,8 @@ export interface AuthContextType {
   permissions: readonly Permission[];
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (credentials: LoginInput) => Promise<void>;
-  register: (data: RegisterInput) => Promise<void>;
+  login: (credentials: LoginInput) => Promise<User>;
+  register: (data: RegisterInput) => Promise<User>;
   logout: () => Promise<void>;
   refreshSession: () => Promise<void>;
   hasRole: (roles: UserRole | readonly UserRole[]) => boolean;
@@ -69,25 +69,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initSession();
   }, [initSession]);
 
-  const login = async (credentials: LoginInput) => {
+  const login = async (credentials: LoginInput): Promise<User> => {
     setIsLoading(true);
     try {
       const authData = await loginApi(credentials);
       setStoredTokens(authData.access_token, authData.refresh_token);
       setUser(authData.user);
       setToken(authData.access_token);
+      return authData.user;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const register = async (data: RegisterInput) => {
+  const register = async (data: RegisterInput): Promise<User> => {
     setIsLoading(true);
     try {
       const authData = await registerApi(data);
       setStoredTokens(authData.access_token, authData.refresh_token);
       setUser(authData.user);
       setToken(authData.access_token);
+      return authData.user;
     } finally {
       setIsLoading(false);
     }

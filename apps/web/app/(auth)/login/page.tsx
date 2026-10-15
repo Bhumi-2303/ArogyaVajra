@@ -51,14 +51,29 @@ function LoginFormContent() {
 
     setIsSubmitting(true);
     try {
-      await login({ email: email.trim(), password });
+      const loggedInUser = await login({ email: email.trim(), password });
       setSuccessMessage("Authentication successful. Session active.");
+      
+      const role = loggedInUser.role;
+      const targetDashboard =
+        role === "ADMIN"
+          ? "/admin"
+          : role === "DOCTOR"
+          ? "/doctor"
+          : role === "RECEPTIONIST"
+          ? "/receptionist"
+          : role === "BILLING_STAFF"
+          ? "/billing"
+          : "/patient";
+
       if (
         redirectParam &&
         redirectParam.startsWith("/") &&
         !redirectParam.startsWith("//")
       ) {
         router.push(redirectParam);
+      } else {
+        router.push(targetDashboard);
       }
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -73,6 +88,18 @@ function LoginFormContent() {
 
   // If user is already authenticated in session
   if (isAuthenticated && user) {
+    const role = user.role;
+    const targetDashboard =
+      role === "ADMIN"
+        ? "/admin"
+        : role === "DOCTOR"
+        ? "/doctor"
+        : role === "RECEPTIONIST"
+        ? "/receptionist"
+        : role === "BILLING_STAFF"
+        ? "/billing"
+        : "/patient";
+
     return (
       <Card className="shadow-card">
         <CardHeader className="text-center pb-4">
@@ -99,15 +126,19 @@ function LoginFormContent() {
               <span className="text-xs font-medium text-success">Active &bull; Verified</span>
             </div>
           </div>
-
-          <p className="text-xs text-app-muted text-center leading-relaxed">
-            Role-specific dashboards will be unlocked in subsequent feature modules.
-          </p>
         </CardContent>
         <CardFooter className="flex flex-col gap-2">
+          <Button
+            variant="primary"
+            className="w-full justify-center"
+            rightIcon={<ArrowRight className="h-4 w-4" />}
+            onClick={() => router.push(targetDashboard)}
+          >
+            Go to {user.role === "ADMIN" ? "Admin" : user.role === "DOCTOR" ? "Doctor" : user.role === "RECEPTIONIST" ? "Receptionist" : user.role === "BILLING_STAFF" ? "Billing" : "Patient"} Dashboard
+          </Button>
           {redirectParam && redirectParam.startsWith("/") && !redirectParam.startsWith("//") && (
             <Button
-              variant="primary"
+              variant="outline"
               className="w-full justify-center"
               onClick={() => router.push(redirectParam)}
             >
@@ -194,6 +225,35 @@ setSuccessMessage(null)}>
             autoComplete="current-password"
             disabled={isSubmitting}
           />
+
+          {/* Demo Testing Accounts Quick-Fill */}
+          <div className="pt-2 border-t border-app-border">
+            <span className="text-xs font-semibold text-app-muted uppercase tracking-wider block mb-2">
+              Demo Credentials (Dev / Testing):
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {[
+                { role: "Patient", email: "patient@arogyavajra.com" },
+                { role: "Doctor", email: "doctor@arogyavajra.com" },
+                { role: "Receptionist", email: "receptionist@arogyavajra.com" },
+                { role: "Billing", email: "billing@arogyavajra.com" },
+                { role: "Admin", email: "admin@arogyavajra.com" },
+              ].map((acc) => (
+                <button
+                  key={acc.role}
+                  type="button"
+                  onClick={() => {
+                    setEmail(acc.email);
+                    setPassword("ArogyaVajra@2026!");
+                    setFieldErrors({});
+                  }}
+                  className="text-xs px-2.5 py-1 rounded-md bg-app-bg hover:bg-slate-200 border border-app-border text-navy transition-colors font-medium"
+                >
+                  {acc.role}
+                </button>
+              ))}
+            </div>
+          </div>
         </CardContent>
 
         <CardFooter className="flex flex-col space-y-4">

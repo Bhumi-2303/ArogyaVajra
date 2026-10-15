@@ -32,6 +32,9 @@ export default function DashboardLayout({
         "/patient": ["PATIENT"],
         "/users": ["ADMIN"],
         "/audit-logs": ["ADMIN"],
+        "/invoices": ["ADMIN", "BILLING_STAFF", "PATIENT"],
+        "/appointments/new": ["PATIENT", "RECEPTIONIST", "ADMIN"],
+        "/availability": ["DOCTOR", "ADMIN"],
       };
 
       for (const [path, allowedRoles] of Object.entries(roleGuards)) {
