@@ -73,6 +73,11 @@ async function run() {
     assert(!prodCsp.includes("script-src *"), "Must not include wildcard in script-src");
   });
 
+  test("Prod CSP: script-src permits 'unsafe-inline' for Next.js App Router RSC hydration scripts", () => {
+    const scriptDirective = prodCsp.split(";").find((d) => d.trim().startsWith("script-src")) || "";
+    assert(scriptDirective.includes("'unsafe-inline'"), "Must permit 'unsafe-inline' in script-src for Next.js App Router streaming hydration scripts");
+  });
+
   test("Prod CSP: connect-src does NOT permit insecure localhost:8000", () => {
     assert(!prodCsp.includes("http://localhost:8000"), "Production must not allow localhost in connect-src");
     assert(!prodCsp.includes("http://127.0.0.1:8000"), "Production must not allow 127.0.0.1 in connect-src");

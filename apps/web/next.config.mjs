@@ -27,10 +27,10 @@ if (isProd) {
   }
 }
 
-const scriptSources = ["'self'"];
+const scriptSources = ["'self'", "'unsafe-inline'"];
 if (!isProd) {
-  // Development: Next.js Fast Refresh and React hydration require unsafe-eval and unsafe-inline
-  scriptSources.push("'unsafe-eval'", "'unsafe-inline'");
+  // Development: Next.js Fast Refresh requires unsafe-eval
+  scriptSources.push("'unsafe-eval'");
 }
 
 const cspDirectives = [
