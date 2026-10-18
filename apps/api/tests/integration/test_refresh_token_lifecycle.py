@@ -294,8 +294,9 @@ def test_grace_window_cannot_mint_indefinitely():
 @pytest.mark.integration
 def test_login_account_rate_limiting(monkeypatch):
     """Verify that excessive login attempts against a single account triggers 429."""
-    # Ensure rate limiting is active during this test
+    # Ensure rate limiting is active during this test across all environments (including CI where APP_ENV=test)
     monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+    monkeypatch.setattr(settings, "APP_ENV", "development")
     # Configure testclient as trusted proxy so distinct forwarded client IPs are recognized
     monkeypatch.setattr(settings, "TRUSTED_PROXIES", "testclient")
 
@@ -318,9 +319,42 @@ def test_login_account_rate_limiting(monkeypatch):
         statuses.append(res.status_code)
 
     # Max login attempts per account is 10.
-    # The 11th and 12th attempts should be 429 Too Many Requests
-    assert 429 in statuses
-    assert statuses[-1] == 429
+    # The first 10 attempts fail credential validation (401).
+    # The 11th and 12th attempts exceed the threshold and must be 429 Too Many Requests.
+    assert statuses[:10] == [401] * 10
+    assert statuses[10:] == [429, 429]
+
+    # Changing client IP does not bypass account-level limit on target account
+    res_diff_ip = client.post(
+        "/api/v1/auth/login",
+        json={"email": target_email, "password": "WrongPassword999!"},
+        headers={"X-Forwarded-For": "203.0.113.99"},
+    )
+    assert res_diff_ip.status_code == 429
+
+    # Even with the correct password, the rate-limited account remains blocked until window expires
+    res_correct_pw = client.post(
+        "/api/v1/auth/login",
+        json={"email": target_email, "password": "CorrectPassword123!"},
+        headers={"X-Forwarded-For": "203.0.113.100"},
+    )
+    assert res_correct_pw.status_code == 429
+
+    # Separate accounts do not share the rate-limit counter
+    other_email = f"separate_{uuid.uuid4().hex[:8]}@example.com"
+    reg_other = client.post(
+        "/api/v1/auth/register",
+        json={"email": other_email, "password": "CorrectPassword123!", "role": "PATIENT"},
+    )
+    assert reg_other.status_code == 201
+
+    login_other = client.post(
+        "/api/v1/auth/login",
+        json={"email": other_email, "password": "CorrectPassword123!"},
+        headers={"X-Forwarded-For": "198.51.100.1"},
+    )
+    assert login_other.status_code == 200
+    assert "access_token" in login_other.json()["data"]
 
 
 @pytest.mark.integration
