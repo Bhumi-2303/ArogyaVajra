@@ -226,34 +226,39 @@ setSuccessMessage(null)}>
             disabled={isSubmitting}
           />
 
-          {/* Demo Testing Accounts Quick-Fill */}
-          <div className="pt-2 border-t border-app-border">
-            <span className="text-xs font-semibold text-app-muted uppercase tracking-wider block mb-2">
-              Demo Credentials (Dev / Testing):
-            </span>
-            <div className="flex flex-wrap gap-1.5">
-              {[
-                { role: "Patient", email: "patient@arogyavajra.com" },
-                { role: "Doctor", email: "doctor@arogyavajra.com" },
-                { role: "Receptionist", email: "receptionist@arogyavajra.com" },
-                { role: "Billing", email: "billing@arogyavajra.com" },
-                { role: "Admin", email: "admin@arogyavajra.com" },
-              ].map((acc) => (
-                <button
-                  key={acc.role}
-                  type="button"
-                  onClick={() => {
-                    setEmail(acc.email);
-                    setPassword("ArogyaVajra@2026!");
-                    setFieldErrors({});
-                  }}
-                  className="text-xs px-2.5 py-1 rounded-md bg-app-bg hover:bg-slate-200 border border-app-border text-navy transition-colors font-medium"
-                >
-                  {acc.role}
-                </button>
-              ))}
+          {/* Demo Testing Accounts Quick-Fill (Development / Testing Only) */}
+          {process.env.NODE_ENV !== "production" && (
+            <div className="pt-2 border-t border-app-border" data-testid="demo-credentials-section">
+              <span className="text-xs font-semibold text-app-muted uppercase tracking-wider block mb-2">
+                Demo Credentials (Dev / Testing):
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { role: "Patient", email: "patient@arogyavajra.com" },
+                  { role: "Doctor", email: "doctor@arogyavajra.com" },
+                  { role: "Receptionist", email: "receptionist@arogyavajra.com" },
+                  { role: "Billing", email: "billing@arogyavajra.com" },
+                  { role: "Admin", email: "admin@arogyavajra.com" },
+                ].map((acc) => (
+                  <button
+                    key={acc.role}
+                    type="button"
+                    onClick={() => {
+                      setEmail(acc.email);
+                      setPassword(
+                        process.env.NEXT_PUBLIC_DEMO_PASSWORD ||
+                          "ArogyaVajra@2026!"
+                      );
+                      setFieldErrors({});
+                    }}
+                    className="text-xs px-2.5 py-1 rounded-md bg-app-bg hover:bg-slate-200 border border-app-border text-navy transition-colors font-medium"
+                  >
+                    {acc.role}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </CardContent>
 
         <CardFooter className="flex flex-col space-y-4">
