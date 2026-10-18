@@ -35,14 +35,23 @@ function resolveApiUrl(endpoint, baseUrl = process.env.NEXT_PUBLIC_API_URL || "h
   const base = baseUrl.replace(/\/+$/, "");
   const normalizedEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
 
-  if (
-    base.endsWith("/api/v1") &&
-    (normalizedEndpoint === "/api/v1" ||
-      normalizedEndpoint.startsWith("/api/v1/") ||
-      normalizedEndpoint.startsWith("/api/v1?"))
-  ) {
+  const baseHasVersion = base.endsWith("/api/v1");
+  const endpointHasVersion =
+    normalizedEndpoint === "/api/v1" ||
+    normalizedEndpoint.startsWith("/api/v1/") ||
+    normalizedEndpoint.startsWith("/api/v1?");
+
+  if (normalizedEndpoint === "/") {
+    return baseHasVersion ? base : `${base}/api/v1`;
+  }
+
+  if (baseHasVersion && endpointHasVersion) {
     const stripped = normalizedEndpoint.slice("/api/v1".length);
     return `${base}${stripped}`;
+  }
+
+  if (!baseHasVersion && !endpointHasVersion) {
+    return `${base}/api/v1${normalizedEndpoint}`;
   }
 
   return `${base}${normalizedEndpoint}`;
@@ -65,6 +74,14 @@ async function run() {
   assert(
     clientContent.includes("resolveApiUrl(endpoint)"),
     "apiClient invokes resolveApiUrl(endpoint)"
+  );
+  assert(
+    clientContent.includes('resolveApiUrl("/auth/refresh")'),
+    "client.ts uses resolveApiUrl for token refresh"
+  );
+  assert(
+    !clientContent.includes("${API_BASE_URL}"),
+    "No un-normalized API_BASE_URL string interpolations remain in client.ts"
   );
   assert(
     !clientContent.includes("`${API_BASE_URL}${endpoint.startsWith(\"/\")"),
@@ -111,10 +128,55 @@ async function run() {
     "Normalizes base URL with trailing slash"
   );
 
-  // Custom production domain
+  // Custom production domain with /api/v1
   assert(
     resolveApiUrl("/patients", "https://api.arogyavajra.com/api/v1") === "https://api.arogyavajra.com/api/v1/patients",
-    "Resolves correctly with custom production HTTPS domain"
+    "Resolves correctly with custom production HTTPS domain with /api/v1"
+  );
+
+  // Bare origin base URLs without /api/v1 (e.g. Render production environment)
+  const renderOrigin = "https://arogyavajra-api.onrender.com";
+  assert(
+    resolveApiUrl("/auth/register", renderOrigin) === "https://arogyavajra-api.onrender.com/api/v1/auth/register",
+    "Prepends /api/v1 when base URL is bare domain without /api/v1"
+  );
+  assert(
+    resolveApiUrl("auth/register", renderOrigin) === "https://arogyavajra-api.onrender.com/api/v1/auth/register",
+    "Prepends /api/v1 when base URL is bare domain and endpoint lacks leading slash"
+  );
+  assert(
+    resolveApiUrl("/auth/register", "https://arogyavajra-api.onrender.com/") === "https://arogyavajra-api.onrender.com/api/v1/auth/register",
+    "Normalizes bare domain with trailing slash and prepends /api/v1"
+  );
+  assert(
+    resolveApiUrl("/api/v1/auth/register", renderOrigin) === "https://arogyavajra-api.onrender.com/api/v1/auth/register",
+    "Does not duplicate /api/v1 when base URL is bare domain but endpoint includes /api/v1"
+  );
+  assert(
+    resolveApiUrl("/api/v1", renderOrigin) === "https://arogyavajra-api.onrender.com/api/v1",
+    "Resolves /api/v1 on bare domain without duplicate segments"
+  );
+  assert(
+    resolveApiUrl("/api/v1?page=1", renderOrigin) === "https://arogyavajra-api.onrender.com/api/v1?page=1",
+    "Resolves /api/v1 with query string on bare domain"
+  );
+  assert(
+    resolveApiUrl("/", renderOrigin) === "https://arogyavajra-api.onrender.com/api/v1",
+    "Resolves root slash on bare domain to /api/v1"
+  );
+  assert(
+    resolveApiUrl("", renderOrigin) === "https://arogyavajra-api.onrender.com/api/v1",
+    "Resolves empty endpoint on bare domain to /api/v1"
+  );
+
+  // Local bare origin
+  assert(
+    resolveApiUrl("/auth/login", "http://localhost:8000") === "http://localhost:8000/api/v1/auth/login",
+    "Resolves /auth/login on local bare domain http://localhost:8000"
+  );
+  assert(
+    resolveApiUrl("/auth/login", "http://localhost:8000/") === "http://localhost:8000/api/v1/auth/login",
+    "Resolves /auth/login on local bare domain http://localhost:8000/ with trailing slash"
   );
 
   // 3. Inspect All API Module Source Files for Duplicated Prefixes

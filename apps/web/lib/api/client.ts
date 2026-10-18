@@ -2,9 +2,6 @@
  * Centralized API client with automatic token attachment and 401 recovery.
  */
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
-
 export class ApiError extends Error {
   status: number;
   data?: unknown;
@@ -40,22 +37,33 @@ export function clearStoredTokens(): void {
 }
 
 /**
- * Resolve endpoint to full API URL ensuring /api/v1 is not duplicated.
+ * Resolve endpoint to full API URL ensuring /api/v1 is always present exactly once.
+ * Handles both base URLs with /api/v1 (e.g. "https://api.domain.com/api/v1")
+ * and bare origins without /api/v1 (e.g. "https://arogyavajra-api.onrender.com").
  */
 export function resolveApiUrl(endpoint: string): string {
-  const base = (
-    process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"
-  ).replace(/\/+$/, "");
+  const rawBase =
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+  const base = rawBase.replace(/\/+$/, "");
   const normalizedEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
 
-  if (
-    base.endsWith("/api/v1") &&
-    (normalizedEndpoint === "/api/v1" ||
-      normalizedEndpoint.startsWith("/api/v1/") ||
-      normalizedEndpoint.startsWith("/api/v1?"))
-  ) {
+  const baseHasVersion = base.endsWith("/api/v1");
+  const endpointHasVersion =
+    normalizedEndpoint === "/api/v1" ||
+    normalizedEndpoint.startsWith("/api/v1/") ||
+    normalizedEndpoint.startsWith("/api/v1?");
+
+  if (normalizedEndpoint === "/") {
+    return baseHasVersion ? base : `${base}/api/v1`;
+  }
+
+  if (baseHasVersion && endpointHasVersion) {
     const stripped = normalizedEndpoint.slice("/api/v1".length);
     return `${base}${stripped}`;
+  }
+
+  if (!baseHasVersion && !endpointHasVersion) {
+    return `${base}/api/v1${normalizedEndpoint}`;
   }
 
   return `${base}${normalizedEndpoint}`;
@@ -90,7 +98,7 @@ export async function apiClient<T>(
     const refreshToken = getStoredRefreshToken();
     if (refreshToken) {
       try {
-        const refreshRes = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        const refreshRes = await fetch(resolveApiUrl("/auth/refresh"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ refresh_token: refreshToken }),
