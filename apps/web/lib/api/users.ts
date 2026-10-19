@@ -4,11 +4,25 @@
 
 import { apiClient } from "./client";
 import {
+  UserCreateInput,
+  UserCreateResponse,
   UserDetailResponse,
   UserListResponse,
   UserSearchParams,
   UserUpdateInput,
 } from "./types";
+
+/**
+ * Provision a new staff or user account (Admin only).
+ */
+export async function createUserApi(
+  data: UserCreateInput
+): Promise<UserCreateResponse> {
+  return apiClient<UserCreateResponse>("/users", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
 
 /**
  * Fetch paginated list of users with optional filtering (search, role, active status).

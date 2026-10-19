@@ -3,15 +3,18 @@
 import * as React from "react";
 import {
   AlertTriangle,
+  Check,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  Copy,
   Filter,
   RotateCcw,
   Search,
   Shield,
   ShieldAlert,
   UserCheck,
+  UserPlus,
   UserX,
   Users,
 } from "lucide-react";
@@ -44,6 +47,7 @@ import {
 import { useAuthorization } from "@/hooks/use-authorization";
 import {
   useActivateUser,
+  useCreateUser,
   useDeactivateUser,
   useUpdateUser,
   useUsers,
@@ -96,6 +100,18 @@ export default function UsersManagementPage() {
   const [feedbackSuccess, setFeedbackSuccess] = React.useState<string | null>(null);
   const [feedbackError, setFeedbackError] = React.useState<string | null>(null);
 
+  // Staff Account Creation State
+  const [isCreateOpen, setIsCreateOpen] = React.useState<boolean>(false);
+  const [createEmail, setCreateEmail] = React.useState<string>("");
+  const [createRole, setCreateRole] = React.useState<UserRole>("RECEPTIONIST");
+  const [createPassword, setCreatePassword] = React.useState<string>("");
+  const [createdCredentials, setCreatedCredentials] = React.useState<{
+    email: string;
+    role: string;
+    password?: string | null;
+  } | null>(null);
+  const [copied, setCopied] = React.useState<boolean>(false);
+
   // Applied Query Params
   const queryParams: UserSearchParams = React.useMemo(() => {
     const params: UserSearchParams = {
@@ -117,9 +133,40 @@ export default function UsersManagementPage() {
     refetch,
   } = useUsers(queryParams);
 
+  const createMutation = useCreateUser();
   const updateMutation = useUpdateUser();
   const activateMutation = useActivateUser();
   const deactivateMutation = useDeactivateUser();
+
+  const handleCreateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!createEmail.trim()) return;
+
+    try {
+      const res = await createMutation.mutateAsync({
+        email: createEmail.trim(),
+        role: createRole,
+        password: createPassword.trim() || undefined,
+      });
+      setCreatedCredentials({
+        email: res.data.email,
+        role: res.data.role,
+        password: res.temporary_password || createPassword.trim() || "(Password configured)",
+      });
+      setIsCreateOpen(false);
+      setCreateEmail("");
+      setCreatePassword("");
+      setCreateRole("RECEPTIONIST");
+      setFeedbackSuccess(
+        `Staff account for ${res.data.email} (${res.data.role}) successfully created.`
+      );
+      setTimeout(() => setFeedbackSuccess(null), 8000);
+    } catch (err: unknown) {
+      setFeedbackError(
+        err instanceof Error ? err.message : "Failed to create staff account."
+      );
+    }
+  };
 
   const handleResetFilters = () => {
     setSearchTerm("");
@@ -217,6 +264,20 @@ Only administrators have authorization to view and manage user accounts.
         title="User Management"
         description="Search, view, and manage system user credentials, clinical role assignments, and account access statuses."
         breadcrumbs={breadcrumbs}
+        actions={
+          <Button
+            variant="primary"
+            size="sm"
+            leftIcon={<UserPlus className="h-4 w-4" />}
+            onClick={() => {
+              setIsCreateOpen(true);
+              setFeedbackError(null);
+            }}
+            id="btn-open-create-user"
+          >
+            Create Staff Account
+          </Button>
+        }
       />
 
       {feedbackSuccess && (
@@ -691,6 +752,156 @@ refetch()}>
               id="btn-confirm-activation"
             >
               Confirm Activation
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Staff Account Dialog */}
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <DialogContent className="max-w-md">
+          <form onSubmit={handleCreateSubmit}>
+            <DialogHeader>
+              <div className="flex items-center gap-2 text-royal">
+                <UserPlus className="h-5 w-5" />
+                <DialogTitle>Provision Staff Account</DialogTitle>
+              </div>
+              <DialogDescription className="pt-2 text-xs text-app-muted">
+                Provision a verified clinical or operational staff account. The user will be able to log in immediately.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="py-4 space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="create-user-email">Email Address</Label>
+                <Input
+                  id="create-user-email"
+                  type="email"
+                  placeholder="staff@arogyavajra.com"
+                  value={createEmail}
+                  onChange={(e) => setCreateEmail(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="create-user-role">Assigned System Role</Label>
+                <select
+                  id="create-user-role"
+                  value={createRole}
+                  onChange={(e) => setCreateRole(e.target.value as UserRole)}
+                  className="flex h-10 w-full rounded-lg border border-app-border bg-white px-3 py-2 text-sm text-navy transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal focus-visible:border-royal"
+                >
+                  <option value="RECEPTIONIST">RECEPTIONIST — Front Desk Intake & Scheduling</option>
+                  <option value="BILLING_STAFF">BILLING_STAFF — Invoicing & Financial Operations</option>
+                  <option value="DOCTOR">DOCTOR — Clinical Care & Prescriptions</option>
+                  <option value="ADMIN">ADMIN — System Administrator</option>
+                  <option value="PATIENT">PATIENT — Patient Portal</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="create-user-password">
+                  Initial Password <span className="text-xs text-app-muted font-normal">(Optional)</span>
+                </Label>
+                <Input
+                  id="create-user-password"
+                  type="password"
+                  placeholder="Leave blank to auto-generate temporary password"
+                  value={createPassword}
+                  onChange={(e) => setCreatePassword(e.target.value)}
+                />
+                <p className="text-[11px] text-app-muted">
+                  If left blank, a secure 16-character temporary password will be generated for handoff.
+                </p>
+              </div>
+            </div>
+
+            <DialogFooter className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsCreateOpen(false)}
+                disabled={createMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                size="sm"
+                isLoading={createMutation.isPending}
+                loadingText="Provisioning..."
+                id="btn-submit-create-user"
+              >
+                Provision Account
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Created Credentials Modal */}
+      <Dialog
+        open={Boolean(createdCredentials)}
+        onOpenChange={(open) => !open && setCreatedCredentials(null)}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-2 text-success">
+              <CheckCircle2 className="h-5 w-5" />
+              <DialogTitle>Account Successfully Provisioned</DialogTitle>
+            </div>
+            <DialogDescription className="pt-2 text-xs text-app-muted">
+              Provide these initial credentials to the staff member. For security, ask them to change their password upon first login.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4 space-y-3">
+            <div className="rounded-lg border border-app-border bg-app-bg p-3.5 space-y-2 text-xs">
+              <div className="flex justify-between items-center">
+                <span className="font-semibold text-app-muted">Email:</span>
+                <span className="font-mono text-navy font-medium">{createdCredentials?.email}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="font-semibold text-app-muted">Assigned Role:</span>
+                <Badge variant="confirmed">{createdCredentials?.role}</Badge>
+              </div>
+              <div className="flex justify-between items-center pt-1 border-t border-app-border">
+                <span className="font-semibold text-app-muted">Temporary Password:</span>
+                <span className="font-mono font-bold text-royal bg-white px-2 py-0.5 rounded border border-blue-200">
+                  {createdCredentials?.password}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="flex justify-between sm:justify-between items-center">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              leftIcon={copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
+              onClick={() => {
+                if (createdCredentials?.password) {
+                  navigator.clipboard.writeText(
+                    `ArogyaVajra Staff Account\nEmail: ${createdCredentials.email}\nRole: ${createdCredentials.role}\nPassword: ${createdCredentials.password}\nLogin at: https://arogyavajra.onrender.com/login`
+                  );
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2500);
+                }
+              }}
+            >
+              {copied ? "Copied to Clipboard!" : "Copy Credentials"}
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={() => setCreatedCredentials(null)}
+            >
+              Done
             </Button>
           </DialogFooter>
         </DialogContent>

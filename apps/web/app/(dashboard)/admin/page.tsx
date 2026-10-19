@@ -24,12 +24,12 @@ export default function AdminDashboardPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button asChild>
-            <Link href="/doctors/new">
+            <Link href="/doctors">
               <Plus className="mr-2 h-4 w-4" /> Add Doctor
             </Link>
           </Button>
           <Button variant="secondary" asChild>
-            <Link href="/users/new?role=RECEPTIONIST">
+            <Link href="/users">
               <Plus className="mr-2 h-4 w-4" /> Add Staff
             </Link>
           </Button>

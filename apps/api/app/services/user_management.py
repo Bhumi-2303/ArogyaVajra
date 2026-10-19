@@ -1,13 +1,13 @@
-"""Service orchestrating administrative user management and audit logging."""
-
+import secrets
 import uuid
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.security import hash_password
 from app.models.user import User, UserRole
 from app.repositories.user import UserRepository
-from app.schemas.user import UserUpdate
+from app.schemas.user import UserCreate, UserUpdate
 from app.services.audit import record_audit_event
 
 
@@ -22,6 +22,99 @@ class UserManagementService:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Administrator privileges required.",
             )
+
+    @classmethod
+    def create_user(
+        cls,
+        db: Session,
+        data: UserCreate,
+        current_user: User,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
+    ) -> tuple[User, str | None]:
+        """Provision a new staff or user account with audit logging."""
+        cls._verify_admin(current_user)
+
+        normalized_email = data.email.lower().strip()
+        existing = UserRepository.get_by_email(db, normalized_email)
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="A user with this email address already exists.",
+            )
+
+        temporary_password: str | None = None
+        if data.password and data.password.strip():
+            raw_password = data.password.strip()
+        else:
+            temporary_password = secrets.token_urlsafe(16)
+            raw_password = temporary_password
+
+        new_user = User(
+            id=uuid.uuid4(),
+            email=normalized_email,
+            password_hash=hash_password(raw_password),
+            role=data.role,
+            is_active=True,
+        )
+        db.add(new_user)
+        db.flush()
+
+        # If DOCTOR, initialize base doctor profile with code
+        if data.role == UserRole.DOCTOR:
+            from app.models.doctor import DoctorProfile
+            from app.repositories.doctor import DoctorRepository
+
+            doc_code = DoctorRepository.generate_doctor_code(db)
+            prefix = normalized_email.split("@")[0].replace(".", " ").replace("_", " ")
+            name_parts = prefix.split(maxsplit=1)
+            first_name = name_parts[0].capitalize()
+            last_name = name_parts[1].capitalize() if len(name_parts) > 1 else "Doctor"
+
+            profile = DoctorProfile(
+                id=uuid.uuid4(),
+                user_id=new_user.id,
+                doctor_code=doc_code,
+                first_name=first_name,
+                last_name=last_name,
+                specialization="General Practice",
+            )
+            db.add(profile)
+            db.flush()
+
+        # If PATIENT, initialize base patient profile with code
+        elif data.role == UserRole.PATIENT:
+            from app.models.patient import PatientProfile
+            from app.repositories.patient import PatientRepository
+
+            pat_code = PatientRepository.generate_patient_code(db)
+            prefix = normalized_email.split("@")[0].replace(".", " ").replace("_", " ")
+            name_parts = prefix.split(maxsplit=1)
+            first_name = name_parts[0].capitalize()
+            last_name = name_parts[1].capitalize() if len(name_parts) > 1 else "Patient"
+
+            pat_profile = PatientProfile(
+                id=uuid.uuid4(),
+                user_id=new_user.id,
+                patient_code=pat_code,
+                first_name=first_name,
+                last_name=last_name,
+            )
+            db.add(pat_profile)
+            db.flush()
+
+        record_audit_event(
+            db=db,
+            action="USER_CREATE",
+            entity_type="USER",
+            entity_id=str(new_user.id),
+            user_id=current_user.id,
+            new_values={"email": normalized_email, "role": data.role.value},
+            ip_address=ip_address,
+            user_agent=user_agent,
+        )
+
+        return new_user, temporary_password
 
     @classmethod
     def list_users(

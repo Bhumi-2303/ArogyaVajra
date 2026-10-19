@@ -67,3 +67,26 @@ class UserStatusUpdate(BaseModel):
         ...,
         description="True to activate, False to deactivate.",
     )
+
+
+class UserCreate(BaseModel):
+    """Payload for administrative staff and user account creation."""
+
+    email: EmailStr = Field(..., description="Unique email address for user login")
+    role: UserRole = Field(
+        ...,
+        description="Assigned role (PATIENT, DOCTOR, RECEPTIONIST, BILLING_STAFF, ADMIN)",
+    )
+    password: str | None = Field(
+        default=None,
+        min_length=8,
+        description="Initial password. If omitted, a secure temporary password is automatically generated.",
+    )
+
+
+class UserCreateResponse(BaseModel):
+    """Envelope for user creation response, providing one-time access to generated temporary credentials."""
+
+    data: UserResponse
+    temporary_password: str | None = None
+    message: str = "User account created successfully."

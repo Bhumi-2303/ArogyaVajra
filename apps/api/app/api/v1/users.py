@@ -2,7 +2,7 @@
 
 import uuid
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_roles
@@ -10,6 +10,8 @@ from app.db.session import get_db
 from app.models.user import User, UserRole
 from app.schemas.patient import PaginationMeta
 from app.schemas.user import (
+    UserCreate,
+    UserCreateResponse,
     UserDetailResponse,
     UserListResponse,
     UserResponse,
@@ -18,6 +20,38 @@ from app.schemas.user import (
 from app.services.user_management import UserManagementService
 
 router = APIRouter(prefix="/users", tags=["Users"])
+
+
+@router.post(
+    "",
+    response_model=UserCreateResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a new staff or user account (Admin only)",
+)
+def create_user(
+    data: UserCreate,
+    request: Request,
+    current_user: User = Depends(require_roles(UserRole.ADMIN)),
+    db: Session = Depends(get_db),
+):
+    """Provision a new staff or system user account with audit trail."""
+    ip_address = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
+
+    user, temp_pw = UserManagementService.create_user(
+        db=db,
+        data=data,
+        current_user=current_user,
+        ip_address=ip_address,
+        user_agent=user_agent,
+    )
+    db.commit()
+
+    return UserCreateResponse(
+        data=UserResponse.model_validate(user),
+        temporary_password=temp_pw,
+        message="User account created successfully.",
+    )
 
 
 @router.get(

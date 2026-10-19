@@ -3,14 +3,26 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   activateUserApi,
+  createUserApi,
   deactivateUserApi,
   getUserApi,
   getUsersApi,
   updateUserApi,
 } from "@/lib/api/users";
-import { UserSearchParams, UserUpdateInput } from "@/lib/api/types";
+import { UserCreateInput, UserSearchParams, UserUpdateInput } from "@/lib/api/types";
 
 export const USERS_QUERY_KEY = ["users"];
+
+export function useCreateUser() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: UserCreateInput) => createUserApi(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: USERS_QUERY_KEY });
+    },
+  });
+}
 
 export function useUsers(params?: UserSearchParams) {
   return useQuery({

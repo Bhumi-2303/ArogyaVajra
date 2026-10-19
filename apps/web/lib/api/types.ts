@@ -24,6 +24,18 @@ export interface UserUpdateInput {
   is_active?: boolean;
 }
 
+export interface UserCreateInput {
+  email: string;
+  role: UserRole;
+  password?: string;
+}
+
+export interface UserCreateResponse {
+  data: User;
+  temporary_password?: string | null;
+  message: string;
+}
+
 export interface UserListResponse {
   data: User[];
   pagination: PaginationMeta;
