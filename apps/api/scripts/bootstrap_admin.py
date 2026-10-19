@@ -19,6 +19,7 @@ import argparse
 import getpass
 import os
 import re
+import secrets
 import sys
 import uuid
 
@@ -68,20 +69,38 @@ def validate_password_complexity(password: str) -> None:
             raise ValueError(f"Password must not contain forbidden pattern '{forbidden}'.")
 
 
-def validate_bootstrap_secret(secret: str | None, app_env: str) -> None:
-    """Validate that the bootstrap authorization secret is safe and present."""
-    if not secret or not secret.strip():
-        raise ValueError(
-            "BOOTSTRAP_SECRET is missing. An operator authorization secret is required to bootstrap."
-        )
+def validate_bootstrap_secret(
+    supplied_secret: str | None,
+    expected_secret: str | None,
+    app_env: str,
+) -> None:
+    """Validate that the supplied operator secret matches the trusted expected secret.
 
-    clean_secret = secret.strip()
-    if app_env == "production":
-        if len(clean_secret) < 16:
+    Security guarantees:
+    1. Fails closed in production if expected_secret is missing or empty.
+    2. Enforces minimum 16 characters and non-trivial complexity for expected_secret in production.
+    3. Fails if supplied_secret is missing or empty.
+    4. Compares supplied_secret against expected_secret using constant-time comparison (secrets.compare_digest).
+    5. Never includes secret values in exception strings or error logs.
+    """
+    effective_env = (app_env or "").lower().strip()
+    is_prod = effective_env in ("production", "prod")
+
+    if not expected_secret or not expected_secret.strip():
+        if is_prod:
             raise ValueError(
-                "In production, BOOTSTRAP_SECRET must be at least 16 characters in length."
+                "Trusted bootstrap secret is not configured in the environment. "
+                "Bootstrap authorization fails closed in production."
             )
-        lowered = clean_secret.lower()
+        raise ValueError("Trusted bootstrap secret is missing or not configured.")
+
+    clean_expected = expected_secret.strip()
+    if is_prod:
+        if len(clean_expected) < 16:
+            raise ValueError(
+                "In production, trusted bootstrap secret must be at least 16 characters in length."
+            )
+        lowered = clean_expected.lower()
         trivial_patterns = (
             "password",
             "secret",
@@ -93,7 +112,14 @@ def validate_bootstrap_secret(secret: str | None, app_env: str) -> None:
             "1234567890123456",
         )
         if lowered in trivial_patterns or len(set(lowered)) <= 3:
-            raise ValueError("In production, BOOTSTRAP_SECRET cannot be a trivial or default value.")
+            raise ValueError("In production, trusted bootstrap secret cannot be a trivial or default value.")
+
+    if not supplied_secret or not supplied_secret.strip():
+        raise ValueError("Operator authorization secret is missing.")
+
+    clean_supplied = supplied_secret.strip()
+    if not secrets.compare_digest(clean_supplied, clean_expected):
+        raise ValueError("Invalid bootstrap authorization secret.")
 
 
 def validate_email_format(email: str) -> str:
@@ -112,20 +138,31 @@ def bootstrap_initial_admin(
     secret: str,
     app_env: str | None = None,
     force: bool = False,
+    expected_secret: str | None = None,
 ) -> tuple[User, str]:
     """Execute the secure initial admin bootstrap process on an active database session.
 
     Returns:
-        (User, "CREATED" | "PROMOTED")
+        (User, "CREATED" | "PROMOTED" | "RECOVERED")
 
     Raises:
         RuntimeError: If an active administrator already exists and force is False.
-        ValueError: If configuration or credentials fail validation checks.
+        ValueError: If configuration, authorization secret, or credentials fail validation checks.
     """
     effective_env = app_env or os.environ.get("APP_ENV") or settings.APP_ENV
 
-    # 1. Validate authorization secret (essential safety check - cannot be bypassed by force)
-    validate_bootstrap_secret(secret, effective_env)
+    # 1. Resolve and validate authorization secret (essential safety check - cannot be bypassed by force)
+    trusted_secret = (
+        expected_secret
+        or os.environ.get("EXPECTED_BOOTSTRAP_SECRET")
+        or os.environ.get("BOOTSTRAP_SECRET")
+        or getattr(settings, "BOOTSTRAP_SECRET", None)
+    )
+    validate_bootstrap_secret(
+        supplied_secret=secret,
+        expected_secret=trusted_secret,
+        app_env=effective_env,
+    )
 
     # 2. Validate inputs (essential safety check - cannot be bypassed by force)
     normalized_email = validate_email_format(email)
@@ -222,10 +259,15 @@ def main() -> None:
         help="Administrator password (or set ADMIN_BOOTSTRAP_PASSWORD; will prompt if omitted)",
     )
     parser.add_argument(
+        "--expected-secret",
+        default=os.environ.get("EXPECTED_BOOTSTRAP_SECRET") or os.environ.get("BOOTSTRAP_SECRET"),
+        help="Trusted expected authorization secret (or set EXPECTED_BOOTSTRAP_SECRET / BOOTSTRAP_SECRET env var)",
+    )
+    parser.add_argument(
         "--secret",
         "-s",
-        default=os.environ.get("BOOTSTRAP_SECRET"),
-        help="Operator authorization secret (or set BOOTSTRAP_SECRET)",
+        default=os.environ.get("OPERATOR_BOOTSTRAP_SECRET"),
+        help="Supplied operator authorization secret (prefer interactive prompt or OPERATOR_BOOTSTRAP_SECRET)",
     )
     parser.add_argument(
         "--db-url",
@@ -292,15 +334,34 @@ def main() -> None:
             print("[!] Error: Passwords do not match.", file=sys.stderr)
             sys.exit(1)
 
-    # 4. Gather secret
+    # 4. Resolve trusted expected secret
+    trusted_secret = (
+        args.expected_secret
+        or os.environ.get("EXPECTED_BOOTSTRAP_SECRET")
+        or os.environ.get("BOOTSTRAP_SECRET")
+        or getattr(settings, "BOOTSTRAP_SECRET", None)
+    )
+    is_prod = (app_env or "").lower().strip() in ("production", "prod")
+    if is_prod and not trusted_secret:
+        print(
+            "[!] Error: Trusted bootstrap secret is not configured in the environment "
+            "(EXPECTED_BOOTSTRAP_SECRET or BOOTSTRAP_SECRET). Bootstrap fails closed in production.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    # 5. Gather supplied operator secret
     secret = args.secret
     if not secret:
         if not sys.stdin.isatty():
-            print("[!] Error: BOOTSTRAP_SECRET is required (--secret or BOOTSTRAP_SECRET).", file=sys.stderr)
+            print(
+                "[!] Error: Operator authorization secret is required (--secret or OPERATOR_BOOTSTRAP_SECRET).",
+                file=sys.stderr,
+            )
             sys.exit(1)
-        secret = getpass.getpass("Enter BOOTSTRAP_SECRET: ")
+        secret = getpass.getpass("Enter operator authorization secret: ")
 
-    # 5. Interactive confirmation if in terminal and --yes not provided
+    # 6. Interactive confirmation if in terminal and --yes not provided
     if sys.stdin.isatty() and not args.yes:
         action_desc = "emergency recovery of administrator" if args.force else "initial administrator"
         print(f"\nYou are about to provision an {action_desc} for: {email}")
@@ -309,7 +370,7 @@ def main() -> None:
             print("[*] Bootstrap cancelled by operator.")
             sys.exit(0)
 
-    # 6. Execute bootstrap
+    # 7. Execute bootstrap
     try:
         with Session(engine) as session:
             admin_user, action_type = bootstrap_initial_admin(
@@ -319,6 +380,7 @@ def main() -> None:
                 secret=secret,
                 app_env=app_env,
                 force=args.force,
+                expected_secret=trusted_secret,
             )
 
         print("\n------------------------------------------------------------")

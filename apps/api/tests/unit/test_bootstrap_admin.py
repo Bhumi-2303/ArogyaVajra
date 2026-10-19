@@ -53,28 +53,88 @@ def test_validate_password_complexity_rejects_forbidden_patterns():
         validate_password_complexity("MyArogyavajraKey!1234")
 
 
-def test_validate_bootstrap_secret():
-    """Verify secret validation handles presence, length, and production invariants."""
-    # Missing secret
-    with pytest.raises(ValueError, match="BOOTSTRAP_SECRET is missing"):
-        validate_bootstrap_secret("", "development")
+def test_validate_bootstrap_secret_missing_trusted():
+    """Verify missing trusted secret fails closed in production and errors in other envs."""
+    # In production, missing trusted secret fails closed
+    with pytest.raises(ValueError, match="Trusted bootstrap secret is not configured in the environment"):
+        validate_bootstrap_secret("supplied-secret", None, "production")
 
-    with pytest.raises(ValueError, match="BOOTSTRAP_SECRET is missing"):
-        validate_bootstrap_secret(None, "production")
+    with pytest.raises(ValueError, match="Trusted bootstrap secret is not configured in the environment"):
+        validate_bootstrap_secret("supplied-secret", "", "production")
 
-    # In development, non-empty secret is allowed
-    validate_bootstrap_secret("dev-secret", "development")
+    # In development, missing trusted secret raises error
+    with pytest.raises(ValueError, match="Trusted bootstrap secret is missing or not configured"):
+        validate_bootstrap_secret("supplied-secret", None, "development")
 
-    # In production, < 16 chars is rejected
+
+def test_validate_bootstrap_secret_production_invariants():
+    """Verify production checks for trusted secret length, trivial values, and entropy."""
+    # Under 16 chars is rejected
     with pytest.raises(ValueError, match="at least 16 characters"):
-        validate_bootstrap_secret("short-prod-key", "production")
+        validate_bootstrap_secret("short-prod-key", "short-prod-key", "production")
 
-    # In production, trivial values are rejected
+    # Trivial values are rejected
     with pytest.raises(ValueError, match="cannot be a trivial or default value"):
-        validate_bootstrap_secret("secretsecretsecret", "production")
+        validate_bootstrap_secret("secretsecretsecret", "secretsecretsecret", "production")
 
-    # In production, robust secret is accepted
-    validate_bootstrap_secret("Enterprise#Operator#Key#2026!XyZ", "production")
+    # Low entropy (<= 3 distinct lowercase chars) is rejected
+    with pytest.raises(ValueError, match="cannot be a trivial or default value"):
+        validate_bootstrap_secret("aaaaaaaaaaaaaaaa", "aaaaaaaaaaaaaaaa", "production")
+
+
+def test_validate_bootstrap_secret_missing_supplied():
+    """Verify missing or empty supplied secret is rejected."""
+    trusted = "Enterprise#Operator#Key#2026!XyZ"
+    with pytest.raises(ValueError, match="Operator authorization secret is missing"):
+        validate_bootstrap_secret("", trusted, "production")
+
+    with pytest.raises(ValueError, match="Operator authorization secret is missing"):
+        validate_bootstrap_secret(None, trusted, "production")
+
+
+def test_validate_bootstrap_secret_mismatch():
+    """Verify mismatched secrets are rejected via constant-time comparison."""
+    trusted = "Enterprise#Operator#Key#2026!XyZ"
+    with pytest.raises(ValueError, match="Invalid bootstrap authorization secret"):
+        validate_bootstrap_secret("WrongSecretSupplied#2026!XyZ", trusted, "production")
+
+    with pytest.raises(ValueError, match="Invalid bootstrap authorization secret"):
+        validate_bootstrap_secret("wrong-dev-secret", "dev-secret-trusted", "development")
+
+
+def test_validate_bootstrap_secret_success():
+    """Verify valid matching secrets pass in production and development."""
+    trusted_prod = "Enterprise#Operator#Key#2026!XyZ"
+    validate_bootstrap_secret(trusted_prod, trusted_prod, "production")
+
+    validate_bootstrap_secret("dev-key-1234", "dev-key-1234", "development")
+
+
+def test_bootstrap_initial_admin_authorization_failure():
+    """Verify bootstrap_initial_admin rejects missing or mismatched authorization secret."""
+    factory = get_sessionmaker()
+    with factory() as db:
+        # Fails closed when trusted secret is missing in production
+        with pytest.raises(ValueError, match="Trusted bootstrap secret is not configured in the environment"):
+            bootstrap_initial_admin(
+                db=db,
+                email="admin@hospital.org",
+                password="StrongP@ssw0rd!2026",
+                secret="SuppliedKey#12345678",
+                app_env="production",
+                expected_secret=None,
+            )
+
+        # Rejects mismatched authorization secret
+        with pytest.raises(ValueError, match="Invalid bootstrap authorization secret"):
+            bootstrap_initial_admin(
+                db=db,
+                email="admin@hospital.org",
+                password="StrongP@ssw0rd!2026",
+                secret="IncorrectSuppliedKey#123",
+                app_env="test",
+                expected_secret="ExpectedSecretKey#123456",
+            )
 
 
 def test_validate_email_format():
@@ -108,6 +168,7 @@ def test_bootstrap_initial_admin_creation_and_audit():
                 password=test_password,
                 secret=secret,
                 app_env="test",
+                expected_secret=secret,
             )
 
             assert action_type == "CREATED"
@@ -141,6 +202,7 @@ def test_bootstrap_initial_admin_creation_and_audit():
                     password="AnotherChief#Pass123!",
                     secret=secret,
                     app_env="test",
+                    expected_secret=secret,
                 )
         finally:
             # Restore previous active admins
@@ -183,6 +245,7 @@ def test_bootstrap_initial_admin_promotes_existing_user():
                 password=new_password,
                 secret=secret,
                 app_env="test",
+                expected_secret=secret,
             )
 
             assert action_type == "PROMOTED"
@@ -239,6 +302,7 @@ def test_emergency_recovery_force_flag_with_existing_admins():
                     secret=secret,
                     app_env="test",
                     force=False,
+                    expected_secret=secret,
                 )
 
             # With force=True, it succeeds in emergency recovery mode
@@ -249,6 +313,7 @@ def test_emergency_recovery_force_flag_with_existing_admins():
                 secret=secret,
                 app_env="test",
                 force=True,
+                expected_secret=secret,
             )
             assert action_type == "RECOVERED"
             assert recovered_user.email == recovery_email
@@ -272,8 +337,9 @@ def test_emergency_recovery_force_flag_with_existing_admins():
 
 
 def test_emergency_recovery_force_flag_cannot_bypass_safety_checks():
-    """Verify that --force CANNOT bypass secret validation, password complexity, or email checks."""
+    """Verify that --force CANNOT bypass authorization, password complexity, or email checks."""
     factory = get_sessionmaker()
+    valid_key = "Enterprise#Operator#Key#2026!XyZ"
     with factory() as db:
         # Weak password check fails even with force=True
         with pytest.raises(ValueError, match="at least 12 characters"):
@@ -281,13 +347,14 @@ def test_emergency_recovery_force_flag_cannot_bypass_safety_checks():
                 db=db,
                 email="admin@hospital.org",
                 password="short",
-                secret="ValidSecret123456",
+                secret=valid_key,
                 app_env="test",
                 force=True,
+                expected_secret=valid_key,
             )
 
-        # Missing secret fails even with force=True
-        with pytest.raises(ValueError, match="BOOTSTRAP_SECRET is missing"):
+        # Missing supplied secret fails even with force=True
+        with pytest.raises(ValueError, match="Operator authorization secret is missing"):
             bootstrap_initial_admin(
                 db=db,
                 email="admin@hospital.org",
@@ -295,9 +362,34 @@ def test_emergency_recovery_force_flag_cannot_bypass_safety_checks():
                 secret="",
                 app_env="test",
                 force=True,
+                expected_secret=valid_key,
             )
 
-        # Production trivial secret fails even with force=True
+        # Mismatched authorization secret fails even with force=True
+        with pytest.raises(ValueError, match="Invalid bootstrap authorization secret"):
+            bootstrap_initial_admin(
+                db=db,
+                email="admin@hospital.org",
+                password="StrongP@ssw0rd!2026",
+                secret="WrongSuppliedSecret#123!",
+                app_env="test",
+                force=True,
+                expected_secret=valid_key,
+            )
+
+        # Missing trusted secret in production fails closed even with force=True
+        with pytest.raises(ValueError, match="Trusted bootstrap secret is not configured in the environment"):
+            bootstrap_initial_admin(
+                db=db,
+                email="admin@hospital.org",
+                password="StrongP@ssw0rd!2026",
+                secret=valid_key,
+                app_env="production",
+                force=True,
+                expected_secret=None,
+            )
+
+        # Production trivial trusted secret fails even with force=True
         with pytest.raises(ValueError, match="cannot be a trivial or default value"):
             bootstrap_initial_admin(
                 db=db,
@@ -306,6 +398,7 @@ def test_emergency_recovery_force_flag_cannot_bypass_safety_checks():
                 secret="secretsecretsecret",
                 app_env="production",
                 force=True,
+                expected_secret="secretsecretsecret",
             )
 
         # Malformed email fails even with force=True
@@ -314,7 +407,8 @@ def test_emergency_recovery_force_flag_cannot_bypass_safety_checks():
                 db=db,
                 email="not-an-email",
                 password="StrongP@ssw0rd!2026",
-                secret="ValidSecret123456",
+                secret=valid_key,
                 app_env="test",
                 force=True,
+                expected_secret=valid_key,
             )

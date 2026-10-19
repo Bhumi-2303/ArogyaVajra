@@ -46,6 +46,9 @@ class Settings(BaseSettings):
     # If empty or unset, no proxy is trusted by default and forwarded headers are strictly ignored.
     TRUSTED_PROXIES: str = ""
 
+    # Operator Administration & Bootstrap Authorization
+    BOOTSTRAP_SECRET: str | None = None
+
     @property
     def cors_origins_list(self) -> list[str]:
         """Return CORS origins as a list of strings."""
@@ -111,6 +114,15 @@ class Settings(BaseSettings):
                 raise ValueError(
                     "Security validation failed: In production environment, DATABASE_URL must not use "
                     "known development or default database credentials."
+                )
+
+            if self.BOOTSTRAP_SECRET and (
+                self.BOOTSTRAP_SECRET in INSECURE_DEFAULT_JWT_SECRETS
+                or len(self.BOOTSTRAP_SECRET.strip()) < 16
+            ):
+                raise ValueError(
+                    "Security validation failed: In production environment, BOOTSTRAP_SECRET "
+                    "cannot use known development defaults and must be at least 16 characters long."
                 )
 
         return self
