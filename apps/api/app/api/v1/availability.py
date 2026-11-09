@@ -13,10 +13,16 @@ from app.schemas.availability import (
 )
 from app.services.availability import AvailabilityService
 
-router = APIRouter(prefix="/doctors/{doctor_id}/availability", tags=["Doctor Availability"])
+router = APIRouter(
+    prefix="/doctors/{doctor_id}/availability", tags=["Doctor Availability"]
+)
 
 
-@router.get("", response_model=DoctorAvailabilityListResponse, summary="List doctor availability slots")
+@router.get(
+    "",
+    response_model=DoctorAvailabilityListResponse,
+    summary="List doctor availability slots",
+)
 def list_availability(
     doctor_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
@@ -54,8 +60,7 @@ def create_availability(
     )
     db.commit()
     return DoctorAvailabilityDetailResponse(
-        data=slot,
-        message="Availability slot created successfully."
+        data=slot, message="Availability slot created successfully."
     )
 
 
@@ -87,8 +92,7 @@ def update_availability(
     )
     db.commit()
     return DoctorAvailabilityDetailResponse(
-        data=slot,
-        message="Availability slot updated successfully."
+        data=slot, message="Availability slot updated successfully."
     )
 
 

@@ -95,9 +95,13 @@ class PatientService:
             if data.address:
                 existing_profile.address = data.address.strip()
             if data.emergency_contact_name:
-                existing_profile.emergency_contact_name = data.emergency_contact_name.strip()
+                existing_profile.emergency_contact_name = (
+                    data.emergency_contact_name.strip()
+                )
             if data.emergency_contact_phone:
-                existing_profile.emergency_contact_phone = data.emergency_contact_phone.strip()
+                existing_profile.emergency_contact_phone = (
+                    data.emergency_contact_phone.strip()
+                )
             db.flush()
             record_audit_event(
                 db=db,

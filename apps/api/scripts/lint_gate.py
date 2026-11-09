@@ -28,7 +28,9 @@ def get_git_modified_files(api_root: Path) -> list[str]:
             text=True,
             check=False,
         )
-        repo_root = Path(root_res.stdout.strip()) if root_res.returncode == 0 else api_root
+        repo_root = (
+            Path(root_res.stdout.strip()) if root_res.returncode == 0 else api_root
+        )
     except (subprocess.SubprocessError, OSError):
         repo_root = api_root
 
@@ -113,7 +115,9 @@ def main() -> int:
     try:
         current_findings = json.loads(ruff_res.stdout)
     except json.JSONDecodeError:
-        print(f"ERROR: Failed to parse Ruff JSON output:\n{ruff_res.stderr or ruff_res.stdout}")
+        print(
+            f"ERROR: Failed to parse Ruff JSON output:\n{ruff_res.stderr or ruff_res.stdout}"
+        )
         return 1
 
     current_count = len(current_findings)
@@ -167,8 +171,12 @@ def main() -> int:
 
     # 5. Success summary
     if current_count < baseline_ceiling:
-        print(f"\n✓ Backlog improved: {baseline_ceiling - current_count} legacy issues resolved!")
-    print("\n✓ Lint gate passed: zero new violations, modified files clean, within baseline ceiling.")
+        print(
+            f"\n✓ Backlog improved: {baseline_ceiling - current_count} legacy issues resolved!"
+        )
+    print(
+        "\n✓ Lint gate passed: zero new violations, modified files clean, within baseline ceiling."
+    )
     print("=" * 60)
     return 0
 

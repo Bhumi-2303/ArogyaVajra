@@ -75,10 +75,10 @@ jobs:
           cd apps/api
           alembic upgrade head
 
-      - name: Run Pytest Suite
+      - name: Run Pytest Suite with Coverage Gate (>=80%)
         run: |
           cd apps/api
-          pytest -v
+          pytest -v --cov=app/services --cov=app/api/v1 --cov-report=term-missing --cov-fail-under=80
 
   frontend-qa:
     name: Frontend Lint, Type Check & Build
@@ -121,8 +121,89 @@ jobs:
           cd apps/web
           node scripts/verify-security-headers.mjs
 
+      - name: Run Demo Credentials Isolation Verification
+        run: |
+          cd apps/web
+          node scripts/verify-demo-credentials-isolation.mjs
+
+      - name: Run Public Experience Verification
+        run: |
+          cd apps/web
+          node scripts/verify-public-experience.mjs
+
+      - name: Run Responsive Shell Verification
+        run: |
+          cd apps/web
+          node scripts/verify-responsive-shell.mjs
+
       - name: Run Next.js Build
         run: |
           cd apps/web
           npm run build
+
+  e2e-qa:
+    name: End-to-End Playwright & Live Verification
+    runs-on: ubuntu-latest
+    needs: [backend-qa, frontend-qa]
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Start Docker Compose Environment
+        run: |
+          cp .env.example .env
+          docker compose up -d --build
+
+      - name: Wait for API and Web Services Readiness
+        run: |
+          timeout 120 bash -c '
+            until curl -f -s http://localhost:8000/health > /dev/null; do
+              echo "Waiting for API service at http://localhost:8000/health..."
+              sleep 3
+            done
+            until curl -f -s http://localhost:3000 > /dev/null; do
+              echo "Waiting for Web service at http://localhost:3000..."
+              sleep 3
+            done
+            echo "All services are up and healthy."
+          '
+
+      - name: Seed Database with Initial Data
+        run: |
+          docker compose exec -T api python scripts/seed_dev_accounts.py
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install Frontend Dependencies & Playwright
+        run: |
+          cd apps/web
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Run Live Integration Verification Suites
+        run: |
+          cd apps/web
+          node scripts/verify-auth-experience.mjs
+          node scripts/verify-authorization-flow.mjs
+          node scripts/verify-patient-experience.mjs
+          node scripts/verify-doctor-experience.mjs
+          node scripts/verify-admin-users.mjs
+
+      - name: Run Playwright End-to-End Tests
+        run: |
+          cd apps/web
+          npm run test:e2e
+
+      - name: Tear Down Docker Environment
+        if: always()
+        run: |
+          docker compose down -v
 

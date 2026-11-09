@@ -150,4 +150,3 @@ class DoctorSlotsResponse(BaseModel):
     day_of_week: int
     slots: list[TimeSlot]
     message: str = "Available slots retrieved successfully."
-

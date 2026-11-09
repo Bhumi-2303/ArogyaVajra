@@ -32,7 +32,11 @@ target_metadata = Base.metadata
 # 1. Command-line override via '-x db_url=...'
 # 2. Explicit programmatic override on Config object (e.g. disposable test database)
 # 3. Application runtime configuration via settings.DATABASE_URL
-x_args = context.get_x_argument(as_dictionary=True) if hasattr(context, "get_x_argument") else {}
+x_args = (
+    context.get_x_argument(as_dictionary=True)
+    if hasattr(context, "get_x_argument")
+    else {}
+)
 cmd_x_url = x_args.get("db_url")
 if cmd_x_url:
     config.set_main_option("sqlalchemy.url", cmd_x_url)
@@ -77,8 +81,6 @@ def run_migrations_online() -> None:
         connectable = get_engine()
 
     with connectable.connect() as connection:
-
-
         context.configure(
             connection=connection,
             target_metadata=target_metadata,

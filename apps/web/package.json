@@ -15,7 +15,8 @@
     "verify:patients": "node scripts/verify-patient-experience.mjs",
     "verify:users": "node scripts/verify-admin-users.mjs",
     "verify:doctors": "node scripts/verify-doctor-experience.mjs",
-    "verify:all": "npm run verify:shell && npm run verify:public && npm run verify:auth && npm run verify:authz && npm run verify:patients && npm run verify:users && npm run verify:doctors"
+    "verify:all": "npm run verify:shell && npm run verify:public && npm run verify:auth && npm run verify:authz && npm run verify:patients && npm run verify:users && npm run verify:doctors",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
@@ -34,6 +35,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.0",
     "@types/node": "^20.14.8",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",

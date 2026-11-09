@@ -42,4 +42,6 @@ def upgrade() -> None:
 def downgrade() -> None:
     bind = op.get_bind()
     if bind.dialect.name == "postgresql":
-        op.execute("ALTER TABLE appointments DROP CONSTRAINT IF EXISTS exclude_overlapping_appointments;")
+        op.execute(
+            "ALTER TABLE appointments DROP CONSTRAINT IF EXISTS exclude_overlapping_appointments;"
+        )

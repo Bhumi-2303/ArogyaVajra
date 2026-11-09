@@ -53,4 +53,3 @@ class RefreshToken(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         server_default="0",
         nullable=False,
     )
-

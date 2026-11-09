@@ -48,7 +48,7 @@ def list_audit_events(
     page_size: int = 50,
 ) -> tuple[list[AuditLog], int]:
     query = db.query(AuditLog)
-    
+
     if user_id:
         query = query.filter(AuditLog.user_id == user_id)
     if entity_type:
@@ -57,14 +57,14 @@ def list_audit_events(
         query = query.filter(AuditLog.entity_id == entity_id)
     if action:
         query = query.filter(AuditLog.action == action)
-        
+
     total = query.count()
-    
+
     logs = (
         query.order_by(AuditLog.created_at.desc())
         .offset((page - 1) * page_size)
         .limit(page_size)
         .all()
     )
-    
+
     return logs, total

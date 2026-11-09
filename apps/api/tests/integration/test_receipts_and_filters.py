@@ -60,7 +60,9 @@ def test_payment_receipt_generation_and_authorization():
 
     # Get patient 1 profile ID
     with SessionLocal() as db:
-        p1_profile = db.scalar(select(PatientProfile).where(PatientProfile.user_id == p1_user_id))
+        p1_profile = db.scalar(
+            select(PatientProfile).where(PatientProfile.user_id == p1_user_id)
+        )
         assert p1_profile is not None
         p1_id = p1_profile.id
 
@@ -143,7 +145,9 @@ def test_search_and_filtering_across_entities():
     p_user_id, _, p_token = create_user(UserRole.PATIENT)
 
     with SessionLocal() as db:
-        p_profile = db.scalar(select(PatientProfile).where(PatientProfile.user_id == p_user_id))
+        p_profile = db.scalar(
+            select(PatientProfile).where(PatientProfile.user_id == p_user_id)
+        )
         assert p_profile is not None
         patient_id = p_profile.id
 
@@ -195,7 +199,9 @@ def test_search_and_filtering_across_entities():
         headers=auth_headers(admin_token),
     )
     assert q_search.status_code == 200
-    assert any("bronchitis" in r["chief_complaint"].lower() for r in q_search.json()["data"])
+    assert any(
+        "bronchitis" in r["chief_complaint"].lower() for r in q_search.json()["data"]
+    )
 
     # Test medical record date range filter
     date_filter = client.get(
@@ -252,7 +258,13 @@ def test_search_and_filtering_across_entities():
         json={
             "patient_id": str(patient_id),
             "invoice_date": d1.isoformat(),
-            "items": [{"description": "Specialized Cardiac Consultation", "quantity": 1, "unit_price": 750}],
+            "items": [
+                {
+                    "description": "Specialized Cardiac Consultation",
+                    "quantity": 1,
+                    "unit_price": 750,
+                }
+            ],
         },
     )
     assert inv_res.status_code == 201
@@ -272,7 +284,10 @@ def test_search_and_filtering_across_entities():
         headers=auth_headers(admin_token),
     )
     assert item_search.status_code == 200
-    assert any(any("cardiac" in it["description"].lower() for it in i["items"]) for i in item_search.json()["data"])
+    assert any(
+        any("cardiac" in it["description"].lower() for it in i["items"])
+        for i in item_search.json()["data"]
+    )
 
     # Scoped access: patient should only see invoices for their own patient_id
     pat_invoices = client.get(

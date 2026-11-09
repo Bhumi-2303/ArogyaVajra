@@ -11,6 +11,7 @@ interface SelectContextType {
   setOpen: (open: boolean) => void;
   selectedLabel: string;
   setSelectedLabel: (label: string) => void;
+  contentId: string;
 }
 
 const SelectContext = React.createContext<SelectContextType>({
@@ -20,6 +21,7 @@ const SelectContext = React.createContext<SelectContextType>({
   setOpen: () => {},
   selectedLabel: "",
   setSelectedLabel: () => {},
+  contentId: "",
 });
 
 export interface SelectProps {
@@ -35,6 +37,7 @@ export function Select({
   onValueChange,
   children,
 }: SelectProps) {
+  const contentId = React.useId();
   const [uncontrolledValue, setUncontrolledValue] = React.useState(defaultValue);
   const [open, setOpen] = React.useState(false);
   const [selectedLabel, setSelectedLabel] = React.useState("");
@@ -62,6 +65,7 @@ export function Select({
         setOpen,
         selectedLabel,
         setSelectedLabel,
+        contentId,
       }}
     >
       <div className="relative inline-block w-full">{children}</div>
@@ -74,7 +78,7 @@ export interface SelectTriggerProps
 
 export const SelectTrigger = React.forwardRef<HTMLButtonElement, SelectTriggerProps>(
   ({ className, children, ...props }, ref) => {
-    const { open, setOpen } = React.useContext(SelectContext);
+    const { open, setOpen, contentId } = React.useContext(SelectContext);
 
     return (
       <button
@@ -82,6 +86,7 @@ export const SelectTrigger = React.forwardRef<HTMLButtonElement, SelectTriggerPr
         type="button"
         role="combobox"
         aria-expanded={open}
+        aria-controls={contentId}
         onClick={() => setOpen(!open)}
         className={cn(
           "flex h-10 w-full items-center justify-between rounded-lg border border-app-border bg-white px-3 py-2 text-sm text-navy placeholder:text-app-muted focus:outline-none focus:ring-2 focus:ring-royal disabled:cursor-not-allowed disabled:opacity-50",
@@ -115,7 +120,7 @@ export interface SelectContentProps
 
 export const SelectContent = React.forwardRef<HTMLDivElement, SelectContentProps>(
   ({ className, children, ...props }, ref) => {
-    const { open, setOpen } = React.useContext(SelectContext);
+    const { open, setOpen, contentId } = React.useContext(SelectContext);
     const contentRef = React.useRef<HTMLDivElement>(null);
 
     React.useEffect(() => {
@@ -137,6 +142,7 @@ export const SelectContent = React.forwardRef<HTMLDivElement, SelectContentProps
     return (
       <div
         ref={contentRef}
+        id={contentId}
         role="listbox"
         className={cn(
           "absolute left-0 top-full z-50 mt-1 max-h-60 w-full min-w-[8rem] overflow-auto rounded-lg border border-app-border bg-white p-1 text-navy shadow-dialog animate-in fade-in-0 zoom-in-95 duration-150 focus:outline-none",

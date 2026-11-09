@@ -56,13 +56,21 @@ def create_invoice(
     summary="List invoices",
 )
 def list_invoices(
-    q: str | None = Query(None, description="Search invoice number or item description"),
+    q: str | None = Query(
+        None, description="Search invoice number or item description"
+    ),
     status: str | None = Query(None, description="Filter by payment status"),
-    start_date: date | None = Query(None, description="Filter invoices on or after start date"),
-    end_date: date | None = Query(None, description="Filter invoices on or before end date"),
+    start_date: date | None = Query(
+        None, description="Filter invoices on or after start date"
+    ),
+    end_date: date | None = Query(
+        None, description="Filter invoices on or before end date"
+    ),
     patient_id: uuid.UUID | None = Query(None, description="Filter by patient ID"),
     invoice_number: str | None = Query(None, description="Filter by invoice number"),
-    invoice_date: str | None = Query(None, alias="date", description="Filter by invoice date"),
+    invoice_date: str | None = Query(
+        None, alias="date", description="Filter by invoice date"
+    ),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
@@ -197,7 +205,11 @@ def get_payment_receipt(
     return PaymentReceiptResponse(data=receipt_data)
 
 
-@router.post("/{invoice_id}/issue", response_model=InvoiceDetailResponse, summary="Issue an invoice")
+@router.post(
+    "/{invoice_id}/issue",
+    response_model=InvoiceDetailResponse,
+    summary="Issue an invoice",
+)
 def issue_invoice(
     invoice_id: uuid.UUID,
     request: Request,
@@ -206,10 +218,10 @@ def issue_invoice(
 ):
     ip_address = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
-    
+
     from app.models.invoice import InvoiceStatus
     from app.schemas.invoice import InvoiceUpdate
-    
+
     updated = InvoiceService.update_invoice(
         db=db,
         invoice_id=invoice_id,
@@ -221,7 +233,12 @@ def issue_invoice(
     db.commit()
     return InvoiceDetailResponse(data=updated, message="Invoice issued.")
 
-@router.post("/{invoice_id}/cancel", response_model=InvoiceDetailResponse, summary="Cancel an invoice")
+
+@router.post(
+    "/{invoice_id}/cancel",
+    response_model=InvoiceDetailResponse,
+    summary="Cancel an invoice",
+)
 def cancel_invoice(
     invoice_id: uuid.UUID,
     request: Request,
@@ -230,10 +247,10 @@ def cancel_invoice(
 ):
     ip_address = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
-    
+
     from app.models.invoice import InvoiceStatus
     from app.schemas.invoice import InvoiceUpdate
-    
+
     updated = InvoiceService.update_invoice(
         db=db,
         invoice_id=invoice_id,

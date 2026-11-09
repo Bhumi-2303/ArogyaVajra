@@ -70,7 +70,6 @@ class RegisterRequest(BaseModel):
     )
 
 
-
 class LoginRequest(BaseModel):
     """Payload for user login authentication."""
 

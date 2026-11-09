@@ -54,24 +54,25 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         else:
             field = ".".join(str(x) for x in loc)
         errors[field] = error.get("msg")
-        
+
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={
             "error": {
                 "code": "VALIDATION_ERROR",
                 "message": "Validation failed.",
-                "fields": errors
+                "fields": errors,
             }
-        }
+        },
     )
+
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
     detail = exc.detail
     code = "API_ERROR"
     message = str(detail)
-    
+
     if isinstance(detail, dict):
         if "code" in detail:
             code = detail["code"]
@@ -95,14 +96,9 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
     return JSONResponse(
         status_code=exc.status_code,
-        content={
-            "detail": message,
-            "error": {
-                "code": code,
-                "message": message
-            }
-        }
+        content={"detail": message, "error": {"code": code, "message": message}},
     )
+
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
@@ -112,9 +108,9 @@ async def general_exception_handler(request: Request, exc: Exception):
         content={
             "error": {
                 "code": "INTERNAL_SERVER_ERROR",
-                "message": "An unexpected error occurred."
+                "message": "An unexpected error occurred.",
             }
-        }
+        },
     )
 
 

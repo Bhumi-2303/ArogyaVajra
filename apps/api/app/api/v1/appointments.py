@@ -126,7 +126,11 @@ def update_appointment(
     return AppointmentDetailResponse(data=appointment)
 
 
-@router.post("/{appointment_id}/confirm", response_model=AppointmentDetailResponse, summary="Confirm an appointment")
+@router.post(
+    "/{appointment_id}/confirm",
+    response_model=AppointmentDetailResponse,
+    summary="Confirm an appointment",
+)
 def confirm_appointment(
     appointment_id: uuid.UUID,
     request: Request,
@@ -135,11 +139,11 @@ def confirm_appointment(
 ):
     ip_address = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
-    
+
     # Use update_appointment with status=CONFIRMED
     from app.models.appointment import AppointmentStatus
     from app.schemas.appointment import AppointmentUpdate
-    
+
     updated = AppointmentService.update_appointment(
         db=db,
         appointment_id=appointment_id,
@@ -151,7 +155,12 @@ def confirm_appointment(
     db.commit()
     return AppointmentDetailResponse(data=updated, message="Appointment confirmed.")
 
-@router.post("/{appointment_id}/cancel", response_model=AppointmentDetailResponse, summary="Cancel an appointment")
+
+@router.post(
+    "/{appointment_id}/cancel",
+    response_model=AppointmentDetailResponse,
+    summary="Cancel an appointment",
+)
 def cancel_appointment(
     appointment_id: uuid.UUID,
     request: Request,
@@ -160,10 +169,10 @@ def cancel_appointment(
 ):
     ip_address = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
-    
+
     from app.models.appointment import AppointmentStatus
     from app.schemas.appointment import AppointmentUpdate
-    
+
     updated = AppointmentService.update_appointment(
         db=db,
         appointment_id=appointment_id,
@@ -175,7 +184,12 @@ def cancel_appointment(
     db.commit()
     return AppointmentDetailResponse(data=updated, message="Appointment cancelled.")
 
-@router.post("/{appointment_id}/complete", response_model=AppointmentDetailResponse, summary="Complete an appointment")
+
+@router.post(
+    "/{appointment_id}/complete",
+    response_model=AppointmentDetailResponse,
+    summary="Complete an appointment",
+)
 def complete_appointment(
     appointment_id: uuid.UUID,
     request: Request,
@@ -184,10 +198,10 @@ def complete_appointment(
 ):
     ip_address = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
-    
+
     from app.models.appointment import AppointmentStatus
     from app.schemas.appointment import AppointmentUpdate
-    
+
     updated = AppointmentService.update_appointment(
         db=db,
         appointment_id=appointment_id,

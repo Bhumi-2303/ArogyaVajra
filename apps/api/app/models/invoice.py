@@ -20,8 +20,15 @@ class Invoice(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     __tablename__ = "invoices"
 
     invoice_number = Column(String(32), unique=True, nullable=False, index=True)
-    patient_id = Column(UUID(as_uuid=True), ForeignKey("patient_profiles.id"), nullable=False, index=True)
-    appointment_id = Column(UUID(as_uuid=True), ForeignKey("appointments.id"), nullable=True, index=True)
+    patient_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("patient_profiles.id"),
+        nullable=False,
+        index=True,
+    )
+    appointment_id = Column(
+        UUID(as_uuid=True), ForeignKey("appointments.id"), nullable=True, index=True
+    )
     invoice_date = Column(Date, nullable=False)
     subtotal = Column(Numeric(10, 2), nullable=False)
     discount = Column(Numeric(10, 2), nullable=False, default=0.00)
@@ -29,7 +36,9 @@ class Invoice(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     total = Column(Numeric(10, 2), nullable=False)
     paid_amount = Column(Numeric(10, 2), nullable=False, default=0.00)
     balance = Column(Numeric(10, 2), nullable=False)
-    status = Column(SQLAlchemyEnum(InvoiceStatus), nullable=False, default=InvoiceStatus.DRAFT)
+    status = Column(
+        SQLAlchemyEnum(InvoiceStatus), nullable=False, default=InvoiceStatus.DRAFT
+    )
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
 
     patient = relationship("PatientProfile", backref="invoices")
@@ -50,7 +59,12 @@ class Invoice(Base, UUIDPrimaryKeyMixin, TimestampMixin):
 class InvoiceItem(Base, UUIDPrimaryKeyMixin):
     __tablename__ = "invoice_items"
 
-    invoice_id = Column(UUID(as_uuid=True), ForeignKey("invoices.id", ondelete="CASCADE"), nullable=False, index=True)
+    invoice_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("invoices.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     description = Column(Text, nullable=False)
     quantity = Column(Numeric(10, 2), nullable=False, default=1.00)
     unit_price = Column(Numeric(10, 2), nullable=False)

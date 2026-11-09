@@ -66,7 +66,9 @@ def validate_password_complexity(password: str) -> None:
     lowered = password.lower()
     for forbidden in ("password", "admin", "arogyavajra"):
         if forbidden in lowered:
-            raise ValueError(f"Password must not contain forbidden pattern '{forbidden}'.")
+            raise ValueError(
+                f"Password must not contain forbidden pattern '{forbidden}'."
+            )
 
 
 def validate_bootstrap_secret(
@@ -112,7 +114,9 @@ def validate_bootstrap_secret(
             "1234567890123456",
         )
         if lowered in trivial_patterns or len(set(lowered)) <= 3:
-            raise ValueError("In production, trusted bootstrap secret cannot be a trivial or default value.")
+            raise ValueError(
+                "In production, trusted bootstrap secret cannot be a trivial or default value."
+            )
 
     if not supplied_secret or not supplied_secret.strip():
         raise ValueError("Operator authorization secret is missing.")
@@ -190,7 +194,9 @@ def bootstrap_initial_admin(
         db.flush()
 
         is_emergency = force and active_admins_count > 0
-        action_name = "ADMIN_EMERGENCY_RECOVERY" if is_emergency else "ADMIN_BOOTSTRAP_PROMOTED"
+        action_name = (
+            "ADMIN_EMERGENCY_RECOVERY" if is_emergency else "ADMIN_BOOTSTRAP_PROMOTED"
+        )
         new_values = {"role": UserRole.ADMIN.value, "email": normalized_email}
         if is_emergency:
             new_values["emergency_recovery"] = True
@@ -221,7 +227,9 @@ def bootstrap_initial_admin(
         db.flush()
 
         is_emergency = force and active_admins_count > 0
-        action_name = "ADMIN_EMERGENCY_RECOVERY" if is_emergency else "ADMIN_BOOTSTRAP_CREATED"
+        action_name = (
+            "ADMIN_EMERGENCY_RECOVERY" if is_emergency else "ADMIN_BOOTSTRAP_CREATED"
+        )
         new_values = {"role": UserRole.ADMIN.value, "email": normalized_email}
         if is_emergency:
             new_values["emergency_recovery"] = True
@@ -260,13 +268,15 @@ def main() -> None:
     )
     parser.add_argument(
         "--expected-secret",
-        default=os.environ.get("EXPECTED_BOOTSTRAP_SECRET") or os.environ.get("BOOTSTRAP_SECRET"),
+        default=os.environ.get("EXPECTED_BOOTSTRAP_SECRET")
+        or os.environ.get("BOOTSTRAP_SECRET"),
         help="Trusted expected authorization secret (or set EXPECTED_BOOTSTRAP_SECRET / BOOTSTRAP_SECRET env var)",
     )
     parser.add_argument(
         "--secret",
         "-s",
-        default=os.environ.get("OPERATOR_BOOTSTRAP_SECRET") or os.environ.get("BOOTSTRAP_SECRET"),
+        default=os.environ.get("OPERATOR_BOOTSTRAP_SECRET")
+        or os.environ.get("BOOTSTRAP_SECRET"),
         help="Supplied operator authorization secret (prefer interactive prompt or OPERATOR_BOOTSTRAP_SECRET / BOOTSTRAP_SECRET)",
     )
     parser.add_argument(
@@ -318,7 +328,10 @@ def main() -> None:
     email = args.email
     if not email:
         if not sys.stdin.isatty():
-            print("[!] Error: Email is required (--email or ADMIN_BOOTSTRAP_EMAIL).", file=sys.stderr)
+            print(
+                "[!] Error: Email is required (--email or ADMIN_BOOTSTRAP_EMAIL).",
+                file=sys.stderr,
+            )
             sys.exit(1)
         email = input("Enter administrator email address: ").strip()
 
@@ -326,7 +339,10 @@ def main() -> None:
     password = args.password
     if not password:
         if not sys.stdin.isatty():
-            print("[!] Error: Password is required (--password or ADMIN_BOOTSTRAP_PASSWORD).", file=sys.stderr)
+            print(
+                "[!] Error: Password is required (--password or ADMIN_BOOTSTRAP_PASSWORD).",
+                file=sys.stderr,
+            )
             sys.exit(1)
         password = getpass.getpass("Enter administrator password: ")
         confirm_password = getpass.getpass("Confirm administrator password: ")
@@ -363,7 +379,11 @@ def main() -> None:
 
     # 6. Interactive confirmation if in terminal and --yes not provided
     if sys.stdin.isatty() and not args.yes:
-        action_desc = "emergency recovery of administrator" if args.force else "initial administrator"
+        action_desc = (
+            "emergency recovery of administrator"
+            if args.force
+            else "initial administrator"
+        )
         print(f"\nYou are about to provision an {action_desc} for: {email}")
         confirm = input("Proceed with provisioning? [y/N]: ").strip().lower()
         if confirm not in ("y", "yes"):
@@ -385,21 +405,35 @@ def main() -> None:
 
         print("\n------------------------------------------------------------")
         if action_type == "RECOVERED":
-            print(f"[!] RECOVERY: Administrator account '{admin_user.email}' recovered successfully via --force.")
+            print(
+                f"[!] RECOVERY: Administrator account '{admin_user.email}' recovered successfully via --force."
+            )
         elif action_type == "PROMOTED":
-            print(f"[*] SUCCESS: Existing user '{admin_user.email}' elevated to Administrator role.")
+            print(
+                f"[*] SUCCESS: Existing user '{admin_user.email}' elevated to Administrator role."
+            )
         else:
-            print(f"[+] SUCCESS: Initial Administrator '{admin_user.email}' created successfully.")
+            print(
+                f"[+] SUCCESS: Initial Administrator '{admin_user.email}' created successfully."
+            )
         print(f"    User ID: {admin_user.id}")
         print(f"    Role:    {admin_user.role}")
         print("------------------------------------------------------------")
         print("\nRecommended Next Steps:")
-        print("1. Log in to the ArogyaVajra web portal at /login with these credentials.")
+        print(
+            "1. Log in to the ArogyaVajra web portal at /login with these credentials."
+        )
         print("2. Navigate to /admin to access the system administration workspace.")
-        print("3. Unset or revoke BOOTSTRAP_SECRET from environment variables to prevent repeat use.")
-        print("4. Onboard clinical practitioners and support staff via the User Management panel.\n")
+        print(
+            "3. Unset or revoke BOOTSTRAP_SECRET from environment variables to prevent repeat use."
+        )
+        print(
+            "4. Onboard clinical practitioners and support staff via the User Management panel.\n"
+        )
     except RuntimeError as r_err:
-        print(f"\n[!] Bootstrap Failed (Precondition/Invariant): {r_err}", file=sys.stderr)
+        print(
+            f"\n[!] Bootstrap Failed (Precondition/Invariant): {r_err}", file=sys.stderr
+        )
         sys.exit(2)
     except ValueError as v_err:
         print(f"\n[!] Bootstrap Failed (Validation Error): {v_err}", file=sys.stderr)

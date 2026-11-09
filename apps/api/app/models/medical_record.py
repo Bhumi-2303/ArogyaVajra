@@ -1,4 +1,3 @@
-
 from sqlalchemy import Column, Date, ForeignKey, Text
 from sqlalchemy import Uuid as UUID
 from sqlalchemy.orm import relationship
@@ -9,9 +8,18 @@ from app.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
 class MedicalRecord(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     __tablename__ = "medical_records"
 
-    patient_id = Column(UUID(as_uuid=True), ForeignKey("patient_profiles.id"), nullable=False, index=True)
-    doctor_id = Column(UUID(as_uuid=True), ForeignKey("doctor_profiles.id"), nullable=False, index=True)
-    appointment_id = Column(UUID(as_uuid=True), ForeignKey("appointments.id"), nullable=True)
+    patient_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("patient_profiles.id"),
+        nullable=False,
+        index=True,
+    )
+    doctor_id = Column(
+        UUID(as_uuid=True), ForeignKey("doctor_profiles.id"), nullable=False, index=True
+    )
+    appointment_id = Column(
+        UUID(as_uuid=True), ForeignKey("appointments.id"), nullable=True
+    )
     record_date = Column(Date, nullable=False)
     chief_complaint = Column(Text, nullable=True)
     clinical_notes = Column(Text, nullable=True)

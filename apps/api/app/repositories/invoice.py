@@ -58,9 +58,7 @@ class InvoiceRepository:
             query = query.filter(
                 or_(
                     Invoice.invoice_number.ilike(search_pattern),
-                    Invoice.items.any(
-                        InvoiceItem.description.ilike(search_pattern)
-                    ),
+                    Invoice.items.any(InvoiceItem.description.ilike(search_pattern)),
                 )
             )
 

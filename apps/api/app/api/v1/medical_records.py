@@ -50,12 +50,20 @@ def create_medical_record(
     summary="List medical records",
 )
 def list_medical_records(
-    q: str | None = Query(None, description="Search chief complaint, diagnosis, or clinical notes"),
-    start_date: date | None = Query(None, description="Filter records on or after start date"),
-    end_date: date | None = Query(None, description="Filter records on or before end date"),
+    q: str | None = Query(
+        None, description="Search chief complaint, diagnosis, or clinical notes"
+    ),
+    start_date: date | None = Query(
+        None, description="Filter records on or after start date"
+    ),
+    end_date: date | None = Query(
+        None, description="Filter records on or before end date"
+    ),
     patient_id: uuid.UUID | None = Query(None, description="Filter by patient ID"),
     doctor_id: uuid.UUID | None = Query(None, description="Filter by doctor ID"),
-    appointment_id: uuid.UUID | None = Query(None, description="Filter by appointment ID"),
+    appointment_id: uuid.UUID | None = Query(
+        None, description="Filter by appointment ID"
+    ),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),

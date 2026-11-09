@@ -20,8 +20,12 @@ BASE_DB = os.environ.get("POSTGRES_DB", "arogyavajra")
 DISPOSABLE_DB = "arogyavajra_disposable_mig_test"
 
 BASE_CONN_STR = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{BASE_DB}"
-DISPOSABLE_CONN_STR = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DISPOSABLE_DB}"
-DISPOSABLE_SQLALCHEMY_URL = f"postgresql+psycopg://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DISPOSABLE_DB}"
+DISPOSABLE_CONN_STR = (
+    f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DISPOSABLE_DB}"
+)
+DISPOSABLE_SQLALCHEMY_URL = (
+    f"postgresql+psycopg://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DISPOSABLE_DB}"
+)
 
 
 def drop_disposable_db():
@@ -34,7 +38,9 @@ def drop_disposable_db():
             """,
             (DISPOSABLE_DB,),
         )
-        cur.execute(sql.SQL("DROP DATABASE IF EXISTS {}").format(sql.Identifier(DISPOSABLE_DB)))
+        cur.execute(
+            sql.SQL("DROP DATABASE IF EXISTS {}").format(sql.Identifier(DISPOSABLE_DB))
+        )
 
 
 def run_migration_verification():
@@ -53,14 +59,18 @@ def run_migration_verification():
     alembic_ini_path = os.path.join(base_dir, "alembic.ini")
     alembic_cfg = Config(alembic_ini_path)
     alembic_cfg.set_main_option("sqlalchemy.url", DISPOSABLE_SQLALCHEMY_URL)
-    alembic_cfg.set_main_option("script_location", os.path.join(base_dir, "app/db/migrations"))
+    alembic_cfg.set_main_option(
+        "script_location", os.path.join(base_dir, "app/db/migrations")
+    )
     alembic_cfg.set_main_option(
         "version_locations", os.path.join(base_dir, "app/db/migrations/versions")
     )
 
     try:
         # 2. Upgrade to preceding revision (7ea81b2c90df)
-        print("\n[2/6] Upgrading disposable database to preceding revision (7ea81b2c90df)...")
+        print(
+            "\n[2/6] Upgrading disposable database to preceding revision (7ea81b2c90df)..."
+        )
         command.upgrade(alembic_cfg, "7ea81b2c90df")
         print("  ✓ Successfully upgraded to revision 7ea81b2c90df")
 
@@ -71,7 +81,9 @@ def run_migration_verification():
                 WHERE table_name = 'refresh_tokens' AND column_name = 'grace_count';
             """)
             row = cur.fetchone()
-            assert row is None, "Error: grace_count column already exists before migration!"
+            assert row is None, (
+                "Error: grace_count column already exists before migration!"
+            )
             print("  ✓ Confirmed: 'grace_count' does NOT exist prior to f8a3c4d5e6f7")
 
         # 3. Upgrade to head revision (f8a3c4d5e6f7)
@@ -88,7 +100,9 @@ def run_migration_verification():
                 WHERE table_name = 'refresh_tokens' AND column_name = 'grace_count';
             """)
             col = cur.fetchone()
-            assert col is not None, "Error: grace_count column was not found after migration!"
+            assert col is not None, (
+                "Error: grace_count column was not found after migration!"
+            )
             col_name, data_type, is_nullable, col_default = col
             print(f"  ✓ Column: {col_name}")
             print(f"  ✓ Data type: {data_type} (expected: integer)")
@@ -116,7 +130,9 @@ def run_migration_verification():
                 SELECT column_name FROM information_schema.columns 
                 WHERE table_name = 'refresh_tokens' AND column_name = 'grace_count';
             """)
-            assert cur.fetchone() is None, "Error: grace_count column was not dropped on downgrade!"
+            assert cur.fetchone() is None, (
+                "Error: grace_count column was not dropped on downgrade!"
+            )
         print("  ✓ Downgrade successfully dropped grace_count")
 
         command.upgrade(alembic_cfg, "head")
@@ -125,7 +141,9 @@ def run_migration_verification():
                 SELECT column_name FROM information_schema.columns 
                 WHERE table_name = 'refresh_tokens' AND column_name = 'grace_count';
             """)
-            assert cur.fetchone() is not None, "Error: grace_count not recreated on re-upgrade!"
+            assert cur.fetchone() is not None, (
+                "Error: grace_count not recreated on re-upgrade!"
+            )
         print("  ✓ Re-upgrade to head successfully recreated grace_count")
 
     finally:

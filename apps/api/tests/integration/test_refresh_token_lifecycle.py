@@ -50,7 +50,6 @@ def test_refresh_token_rotation_success():
         assert rt1_db.consumed_at is not None
         assert rt1_db.is_revoked is False
 
-
     # 3. Second refresh (RT2 -> RT3)
     ref_res2 = client.post("/api/v1/auth/refresh", json={"refresh_token": rt2})
     assert ref_res2.status_code == 200
@@ -82,7 +81,6 @@ def test_refresh_token_concurrency_grace_window():
     # Returns valid fresh access and refresh tokens
     assert "access_token" in ref_res2.json()["data"]
     assert "refresh_token" in ref_res2.json()["data"]
-
 
 
 @pytest.mark.integration
@@ -117,14 +115,15 @@ def test_refresh_token_replay_triggers_family_revocation():
         )
         db.commit()
 
-
     # Replay of RT1 now occurs after grace window
     replay_res = client.post("/api/v1/auth/refresh", json={"refresh_token": rt1})
     assert replay_res.status_code == 401
     assert "Replay attack detected" in replay_res.json()["detail"]
 
     # Attempting to use the active RT2 should now also fail because family was revoked
-    res_after_revocation = client.post("/api/v1/auth/refresh", json={"refresh_token": rt2})
+    res_after_revocation = client.post(
+        "/api/v1/auth/refresh", json={"refresh_token": rt2}
+    )
     assert res_after_revocation.status_code == 401
     assert "revoked" in res_after_revocation.json()["detail"].lower()
 
@@ -144,7 +143,9 @@ def test_logout_revokes_token_family():
     rt = reg_res.json()["data"]["refresh_token"]
 
     # Log out
-    logout_res = client.post("/api/v1/auth/logout", headers={"Authorization": f"Bearer {at}"})
+    logout_res = client.post(
+        "/api/v1/auth/logout", headers={"Authorization": f"Bearer {at}"}
+    )
     assert logout_res.status_code == 200
 
     # Refresh should fail
@@ -304,7 +305,11 @@ def test_login_account_rate_limiting(monkeypatch):
     # Create the user first
     reg_res = client.post(
         "/api/v1/auth/register",
-        json={"email": target_email, "password": "CorrectPassword123!", "role": "PATIENT"},
+        json={
+            "email": target_email,
+            "password": "CorrectPassword123!",
+            "role": "PATIENT",
+        },
     )
     assert reg_res.status_code == 201
 
@@ -314,7 +319,7 @@ def test_login_account_rate_limiting(monkeypatch):
         res = client.post(
             "/api/v1/auth/login",
             json={"email": target_email, "password": "WrongPassword999!"},
-            headers={"X-Forwarded-For": f"198.51.100.{i+1}"},
+            headers={"X-Forwarded-For": f"198.51.100.{i + 1}"},
         )
         statuses.append(res.status_code)
 
@@ -344,7 +349,11 @@ def test_login_account_rate_limiting(monkeypatch):
     other_email = f"separate_{uuid.uuid4().hex[:8]}@example.com"
     reg_other = client.post(
         "/api/v1/auth/register",
-        json={"email": other_email, "password": "CorrectPassword123!", "role": "PATIENT"},
+        json={
+            "email": other_email,
+            "password": "CorrectPassword123!",
+            "role": "PATIENT",
+        },
     )
     assert reg_other.status_code == 201
 
@@ -390,7 +399,9 @@ def test_postgresql_row_locking_transaction_isolation():
     user_id = reg_res.json()["data"]["user"]["id"]
 
     with SessionLocal() as db_prep:
-        token = db_prep.scalar(select(RefreshToken).where(RefreshToken.user_id == user_id))
+        token = db_prep.scalar(
+            select(RefreshToken).where(RefreshToken.user_id == user_id)
+        )
         token_id = token.id
 
     session1 = SessionLocal()
@@ -413,7 +424,9 @@ def test_postgresql_row_locking_transaction_isolation():
             # Session 2 attempts to select FOR UPDATE the same row.
             # Must block in PostgreSQL until Session 1 commits.
             t2 = session2.scalar(
-                select(RefreshToken).where(RefreshToken.id == token_id).with_for_update()
+                select(RefreshToken)
+                .where(RefreshToken.id == token_id)
+                .with_for_update()
             )
             lock_acquired_time[0] = time.time()
             session2_read_consumed_at[0] = t2.consumed_at
@@ -464,7 +477,9 @@ def test_refresh_token_rollback_on_persistence_failure(monkeypatch):
 
     # Verify initial state: rt1 is in DB with consumed_at is None
     with SessionLocal() as db_check:
-        t1 = db_check.scalar(select(RefreshToken).where(RefreshToken.user_id == user_id))
+        t1 = db_check.scalar(
+            select(RefreshToken).where(RefreshToken.user_id == user_id)
+        )
         assert t1 is not None
         assert t1.consumed_at is None
         assert t1.grace_count == 0
@@ -478,19 +493,25 @@ def test_refresh_token_rollback_on_persistence_failure(monkeypatch):
     monkeypatch.setattr(auth_mod, "issue_and_persist_tokens", failing_issue_and_persist)
 
     # Attempt refresh - should fail with RuntimeError in TestClient
-    with pytest.raises(RuntimeError, match="Simulated failure during replacement token persistence"):
+    with pytest.raises(
+        RuntimeError, match="Simulated failure during replacement token persistence"
+    ):
         client.post("/api/v1/auth/refresh", json={"refresh_token": rt1})
 
     # Query database using a fresh session to verify rollback
     with SessionLocal() as db_check:
-        t1_after = db_check.scalar(select(RefreshToken).where(RefreshToken.user_id == user_id))
+        t1_after = db_check.scalar(
+            select(RefreshToken).where(RefreshToken.user_id == user_id)
+        )
         assert t1_after is not None
         # MUST BE ROLLED BACK: consumed_at is still None, grace_count is still 0
         assert t1_after.consumed_at is None
         assert t1_after.grace_count == 0
 
         # And no replacement token exists
-        total_tokens = db_check.scalars(select(RefreshToken).where(RefreshToken.user_id == user_id)).all()
+        total_tokens = db_check.scalars(
+            select(RefreshToken).where(RefreshToken.user_id == user_id)
+        ).all()
         assert len(total_tokens) == 1
 
     # Restore the original function
@@ -504,14 +525,11 @@ def test_refresh_token_rollback_on_persistence_failure(monkeypatch):
 
     # Verify state in DB now reflects successful consumption and issuance of rt2
     with SessionLocal() as db_check:
-        all_tokens = db_check.scalars(select(RefreshToken).where(RefreshToken.user_id == user_id)).all()
+        all_tokens = db_check.scalars(
+            select(RefreshToken).where(RefreshToken.user_id == user_id)
+        ).all()
         assert len(all_tokens) == 2
         consumed_tokens = [t for t in all_tokens if t.consumed_at is not None]
         active_tokens = [t for t in all_tokens if t.consumed_at is None]
         assert len(consumed_tokens) == 1
         assert len(active_tokens) == 1
-
-
-
-
-

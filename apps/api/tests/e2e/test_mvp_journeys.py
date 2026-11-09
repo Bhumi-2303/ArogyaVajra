@@ -13,6 +13,7 @@ from app.models.user import User, UserRole
 
 client = TestClient(app)
 
+
 def create_authenticated_user(role: UserRole) -> tuple[str, str]:
     """Helper to create user and return (email, token)."""
     email = f"{role.value.lower()}_{uuid.uuid4().hex[:8]}@example.com"
@@ -51,7 +52,9 @@ def test_unauthorized_access():
     _, patient_token = create_authenticated_user(UserRole.PATIENT)
 
     # Patient tries to access admin-only users management endpoint
-    res = client.get("/api/v1/users", headers={"Authorization": f"Bearer {patient_token}"})
+    res = client.get(
+        "/api/v1/users", headers={"Authorization": f"Bearer {patient_token}"}
+    )
     assert res.status_code == 403
 
 
@@ -131,24 +134,38 @@ def test_patient_isolation():
     _, _doc_token = create_authenticated_user(UserRole.DOCTOR)
 
     # In a real flow, a patient is linked to a Patient profile.
-    # We will simulate fetching medical records. 
+    # We will simulate fetching medical records.
     # Patient 1 tries to fetch Patient 2's medical records
 
-    # First, receptionist creates patient profiles. 
+    # First, receptionist creates patient profiles.
     _, recep_token = create_authenticated_user(UserRole.RECEPTIONIST)
 
-    res1 = client.post("/api/v1/patients", headers={"Authorization": f"Bearer {recep_token}"}, json={"email": p1_email, "first_name": "P1", "last_name": "One"})
+    res1 = client.post(
+        "/api/v1/patients",
+        headers={"Authorization": f"Bearer {recep_token}"},
+        json={"email": p1_email, "first_name": "P1", "last_name": "One"},
+    )
     p1_id = res1.json()["data"]["id"]
 
-    res2 = client.post("/api/v1/patients", headers={"Authorization": f"Bearer {recep_token}"}, json={"email": p2_email, "first_name": "P2", "last_name": "Two"})
+    res2 = client.post(
+        "/api/v1/patients",
+        headers={"Authorization": f"Bearer {recep_token}"},
+        json={"email": p2_email, "first_name": "P2", "last_name": "Two"},
+    )
     p2_id = res2.json()["data"]["id"]
 
     # P1 trying to view P2's records
-    res = client.get(f"/api/v1/patients/{p2_id}/medical-records", headers={"Authorization": f"Bearer {p1_token}"})
+    res = client.get(
+        f"/api/v1/patients/{p2_id}/medical-records",
+        headers={"Authorization": f"Bearer {p1_token}"},
+    )
     assert res.status_code == 403
 
     # P1 viewing own records
-    res_own = client.get(f"/api/v1/patients/{p1_id}/medical-records", headers={"Authorization": f"Bearer {p1_token}"})
+    res_own = client.get(
+        f"/api/v1/patients/{p1_id}/medical-records",
+        headers={"Authorization": f"Bearer {p1_token}"},
+    )
     assert res_own.status_code == 200
 
 
@@ -212,7 +229,11 @@ def test_appointment_lifecycle_and_conflicts():
         "reason": "Checkup",
     }
 
-    appt1_res = client.post("/api/v1/appointments", headers={"Authorization": f"Bearer {recep_token}"}, json=appt1_payload)
+    appt1_res = client.post(
+        "/api/v1/appointments",
+        headers={"Authorization": f"Bearer {recep_token}"},
+        json=appt1_payload,
+    )
     assert appt1_res.status_code == 201
     appt1_id = appt1_res.json()["data"]["id"]
 
@@ -225,36 +246,60 @@ def test_appointment_lifecycle_and_conflicts():
         "end_time": "10:30:00",
         "reason": "Conflict",
     }
-    appt2_res = client.post("/api/v1/appointments", headers={"Authorization": f"Bearer {recep_token}"}, json=appt2_payload)
+    appt2_res = client.post(
+        "/api/v1/appointments",
+        headers={"Authorization": f"Bearer {recep_token}"},
+        json=appt2_payload,
+    )
     assert appt2_res.status_code == 409
     assert "conflict" in appt2_res.json()["detail"].lower()
 
     # 5. Cancel appointment
-    cancel_res = client.put(f"/api/v1/appointments/{appt1_id}", headers={"Authorization": f"Bearer {recep_token}"}, json={"status": "CANCELLED"})
+    cancel_res = client.put(
+        f"/api/v1/appointments/{appt1_id}",
+        headers={"Authorization": f"Bearer {recep_token}"},
+        json={"status": "CANCELLED"},
+    )
     assert cancel_res.status_code == 200
 
     # 6. Cancelled appointment cannot be completed
-    complete_res = client.put(f"/api/v1/appointments/{appt1_id}", headers={"Authorization": f"Bearer {recep_token}"}, json={"status": "COMPLETED"})
+    complete_res = client.put(
+        f"/api/v1/appointments/{appt1_id}",
+        headers={"Authorization": f"Bearer {recep_token}"},
+        json={"status": "COMPLETED"},
+    )
     assert complete_res.status_code == 400
     assert "cancelled" in complete_res.json()["detail"].lower()
 
     # 7. Create another, complete it, try to reschedule
-    appt3_res = client.post("/api/v1/appointments", headers={"Authorization": f"Bearer {recep_token}"}, json={
-        "patient_id": patient_id,
-        "doctor_id": doctor_id,
-        "appointment_date": appt_date.isoformat(),
-        "start_time": "11:00:00",
-        "end_time": "11:30:00",
-        "reason": "Another checkup",
-    })
+    appt3_res = client.post(
+        "/api/v1/appointments",
+        headers={"Authorization": f"Bearer {recep_token}"},
+        json={
+            "patient_id": patient_id,
+            "doctor_id": doctor_id,
+            "appointment_date": appt_date.isoformat(),
+            "start_time": "11:00:00",
+            "end_time": "11:30:00",
+            "reason": "Another checkup",
+        },
+    )
     assert appt3_res.status_code == 201
     appt3_id = appt3_res.json()["data"]["id"]
 
-    comp_res = client.put(f"/api/v1/appointments/{appt3_id}", headers={"Authorization": f"Bearer {recep_token}"}, json={"status": "COMPLETED"})
+    comp_res = client.put(
+        f"/api/v1/appointments/{appt3_id}",
+        headers={"Authorization": f"Bearer {recep_token}"},
+        json={"status": "COMPLETED"},
+    )
     assert comp_res.status_code == 200
 
     # completed appointment cannot be directly rescheduled
-    reschedule_res = client.put(f"/api/v1/appointments/{appt3_id}", headers={"Authorization": f"Bearer {recep_token}"}, json={"status": "SCHEDULED"})
+    reschedule_res = client.put(
+        f"/api/v1/appointments/{appt3_id}",
+        headers={"Authorization": f"Bearer {recep_token}"},
+        json={"status": "SCHEDULED"},
+    )
     assert reschedule_res.status_code == 400
     assert "cannot reschedule a completed" in reschedule_res.json()["detail"].lower()
 
@@ -288,7 +333,11 @@ def test_billing_calculations():
         ],
     }
 
-    inv_res = client.post("/api/v1/invoices", headers={"Authorization": f"Bearer {billing_token}"}, json=invoice_payload)
+    inv_res = client.post(
+        "/api/v1/invoices",
+        headers={"Authorization": f"Bearer {billing_token}"},
+        json=invoice_payload,
+    )
     assert inv_res.status_code == 201
     invoice = inv_res.json()["data"]
 
@@ -312,7 +361,10 @@ def test_billing_calculations():
     assert pay_res.status_code == 201
 
     # Test payment status recalculation
-    get_inv = client.get(f"/api/v1/invoices/{invoice_id}", headers={"Authorization": f"Bearer {billing_token}"})
+    get_inv = client.get(
+        f"/api/v1/invoices/{invoice_id}",
+        headers={"Authorization": f"Bearer {billing_token}"},
+    )
     updated_invoice = get_inv.json()["data"]
     assert float(updated_invoice["paid_amount"]) == 400.0
     assert float(updated_invoice["balance"]) == 600.0
@@ -329,7 +381,10 @@ def test_billing_calculations():
     )
     assert pay2_res.status_code == 201
 
-    get_inv_final = client.get(f"/api/v1/invoices/{invoice_id}", headers={"Authorization": f"Bearer {billing_token}"})
+    get_inv_final = client.get(
+        f"/api/v1/invoices/{invoice_id}",
+        headers={"Authorization": f"Bearer {billing_token}"},
+    )
     final_invoice = get_inv_final.json()["data"]
     assert float(final_invoice["paid_amount"]) == 1000.0
     assert float(final_invoice["balance"]) == 0.0

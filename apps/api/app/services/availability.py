@@ -23,7 +23,7 @@ class AvailabilityService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Doctor profile not found.",
             )
-        
+
         if current_user.role != UserRole.ADMIN and doctor.user_id != current_user.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -122,12 +122,14 @@ class AvailabilityService:
         }
 
         # Custom validation for end_time after start_time if only one is updated
-        new_start = data.start_time if data.start_time is not None else availability.start_time
+        new_start = (
+            data.start_time if data.start_time is not None else availability.start_time
+        )
         new_end = data.end_time if data.end_time is not None else availability.end_time
         if new_start >= new_end:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="end_time must be after start_time"
+                detail="end_time must be after start_time",
             )
 
         if data.day_of_week is not None:

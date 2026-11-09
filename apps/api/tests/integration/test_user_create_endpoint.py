@@ -120,8 +120,7 @@ def test_admin_can_provision_doctor_with_profile():
 
         # Verify audit log was recorded
         audit_log = db.scalar(
-            select(AuditLog)
-            .where(
+            select(AuditLog).where(
                 AuditLog.entity_id == doc_id,
                 AuditLog.action == "USER_CREATE",
             )

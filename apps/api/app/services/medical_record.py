@@ -52,7 +52,10 @@ class MedicalRecordService:
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Appointment not found.",
                 )
-            if appointment.doctor_id != doctor.id or appointment.patient_id != patient.id:
+            if (
+                appointment.doctor_id != doctor.id
+                or appointment.patient_id != patient.id
+            ):
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Appointment does not match patient and doctor.",
@@ -82,7 +85,9 @@ class MedicalRecordService:
             new_values={
                 "patient_id": str(record.patient_id),
                 "doctor_id": str(record.doctor_id),
-                "appointment_id": str(record.appointment_id) if record.appointment_id else None,
+                "appointment_id": str(record.appointment_id)
+                if record.appointment_id
+                else None,
                 "record_date": str(record.record_date),
             },
             ip_address=ip_address,
@@ -92,7 +97,9 @@ class MedicalRecordService:
         return record
 
     @classmethod
-    def get_record(cls, db: Session, record_id: uuid.UUID, current_user: User) -> MedicalRecord:
+    def get_record(
+        cls, db: Session, record_id: uuid.UUID, current_user: User
+    ) -> MedicalRecord:
         record = MedicalRecordRepository.get_by_id(db, record_id)
         if not record:
             raise HTTPException(
@@ -103,14 +110,20 @@ class MedicalRecordService:
         if current_user.role == UserRole.PATIENT:
             patient = PatientRepository.get_by_id(db, record.patient_id)
             if not patient or patient.user_id != current_user.id:
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized.")
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized."
+                )
         elif current_user.role == UserRole.DOCTOR:
             doctor = DoctorRepository.get_by_id(db, record.doctor_id)
             if not doctor or doctor.user_id != current_user.id:
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized.")
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized."
+                )
         elif current_user.role not in [UserRole.ADMIN, UserRole.RECEPTIONIST]:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized.")
-        
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized."
+            )
+
         return record
 
     @classmethod
@@ -136,7 +149,9 @@ class MedicalRecordService:
             "clinical_notes": record.clinical_notes,
             "diagnosis": record.diagnosis,
             "treatment_notes": record.treatment_notes,
-            "follow_up_date": str(record.follow_up_date) if record.follow_up_date else None,
+            "follow_up_date": str(record.follow_up_date)
+            if record.follow_up_date
+            else None,
         }
 
         if data.chief_complaint is not None:
@@ -158,7 +173,9 @@ class MedicalRecordService:
             "clinical_notes": record.clinical_notes,
             "diagnosis": record.diagnosis,
             "treatment_notes": record.treatment_notes,
-            "follow_up_date": str(record.follow_up_date) if record.follow_up_date else None,
+            "follow_up_date": str(record.follow_up_date)
+            if record.follow_up_date
+            else None,
         }
 
         record_audit_event(
@@ -189,21 +206,25 @@ class MedicalRecordService:
         page: int = 1,
         page_size: int = 20,
     ) -> tuple[list[MedicalRecord], int]:
-        
+
         # Enforce role-based filtering limits
         if current_user.role == UserRole.PATIENT:
             patient = PatientRepository.get_by_user_id(db, current_user.id)
             if not patient:
                 return [], 0
             if patient_id and patient_id != patient.id:
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized.")
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized."
+                )
             patient_id = patient.id
         elif current_user.role == UserRole.DOCTOR:
             doctor = DoctorRepository.get_by_user_id(db, current_user.id)
             if not doctor:
                 return [], 0
             if doctor_id and doctor_id != doctor.id:
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized.")
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized."
+                )
             doctor_id = doctor.id
 
         skip = (page - 1) * page_size

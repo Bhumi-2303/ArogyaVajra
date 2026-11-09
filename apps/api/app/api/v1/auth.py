@@ -105,8 +105,6 @@ def issue_and_persist_tokens(
     return access_token, refresh_token
 
 
-
-
 @router.post(
     "/register",
     response_model=APIResponse[AuthData],
@@ -157,7 +155,9 @@ def register(
         first_name = name_parts[0]
         last_name = name_parts[1] if len(name_parts) > 1 else "Patient"
     else:
-        email_prefix = normalized_email.split("@")[0].replace(".", " ").replace("_", " ")
+        email_prefix = (
+            normalized_email.split("@")[0].replace(".", " ").replace("_", " ")
+        )
         name_parts = email_prefix.split(maxsplit=1)
         first_name = name_parts[0].capitalize()
         last_name = name_parts[1].capitalize() if len(name_parts) > 1 else "Patient"
@@ -293,9 +293,7 @@ def refresh_token(
     )
 
     raw_token = (
-        payload.refresh_token
-        if payload and payload.refresh_token
-        else None
+        payload.refresh_token if payload and payload.refresh_token else None
     ) or request.cookies.get("refresh_token")
     if not raw_token:
         raise credentials_exception
@@ -328,9 +326,7 @@ def refresh_token(
     # 1. Row-level pessimistic lock: Prevents concurrent requests from both consuming
     # the same token record simultaneously.
     stored_token = db.scalar(
-        select(RefreshToken)
-        .where(RefreshToken.id == token_id)
-        .with_for_update()
+        select(RefreshToken).where(RefreshToken.id == token_id).with_for_update()
     )
     if not stored_token or stored_token.expires_at < now:
         raise credentials_exception
@@ -708,5 +704,3 @@ def reset_password(
     return SimpleMessageResponse(
         message="Password has been reset successfully. You can now log in with your new password."
     )
-
-

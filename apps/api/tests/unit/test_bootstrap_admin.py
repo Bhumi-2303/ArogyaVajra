@@ -56,14 +56,22 @@ def test_validate_password_complexity_rejects_forbidden_patterns():
 def test_validate_bootstrap_secret_missing_trusted():
     """Verify missing trusted secret fails closed in production and errors in other envs."""
     # In production, missing trusted secret fails closed
-    with pytest.raises(ValueError, match="Trusted bootstrap secret is not configured in the environment"):
+    with pytest.raises(
+        ValueError,
+        match="Trusted bootstrap secret is not configured in the environment",
+    ):
         validate_bootstrap_secret("supplied-secret", None, "production")
 
-    with pytest.raises(ValueError, match="Trusted bootstrap secret is not configured in the environment"):
+    with pytest.raises(
+        ValueError,
+        match="Trusted bootstrap secret is not configured in the environment",
+    ):
         validate_bootstrap_secret("supplied-secret", "", "production")
 
     # In development, missing trusted secret raises error
-    with pytest.raises(ValueError, match="Trusted bootstrap secret is missing or not configured"):
+    with pytest.raises(
+        ValueError, match="Trusted bootstrap secret is missing or not configured"
+    ):
         validate_bootstrap_secret("supplied-secret", None, "development")
 
 
@@ -75,7 +83,9 @@ def test_validate_bootstrap_secret_production_invariants():
 
     # Trivial values are rejected
     with pytest.raises(ValueError, match="cannot be a trivial or default value"):
-        validate_bootstrap_secret("secretsecretsecret", "secretsecretsecret", "production")
+        validate_bootstrap_secret(
+            "secretsecretsecret", "secretsecretsecret", "production"
+        )
 
     # Low entropy (<= 3 distinct lowercase chars) is rejected
     with pytest.raises(ValueError, match="cannot be a trivial or default value"):
@@ -99,7 +109,9 @@ def test_validate_bootstrap_secret_mismatch():
         validate_bootstrap_secret("WrongSecretSupplied#2026!XyZ", trusted, "production")
 
     with pytest.raises(ValueError, match="Invalid bootstrap authorization secret"):
-        validate_bootstrap_secret("wrong-dev-secret", "dev-secret-trusted", "development")
+        validate_bootstrap_secret(
+            "wrong-dev-secret", "dev-secret-trusted", "development"
+        )
 
 
 def test_validate_bootstrap_secret_success():
@@ -115,7 +127,10 @@ def test_bootstrap_initial_admin_authorization_failure():
     factory = get_sessionmaker()
     with factory() as db:
         # Fails closed when trusted secret is missing in production
-        with pytest.raises(ValueError, match="Trusted bootstrap secret is not configured in the environment"):
+        with pytest.raises(
+            ValueError,
+            match="Trusted bootstrap secret is not configured in the environment",
+        ):
             bootstrap_initial_admin(
                 db=db,
                 email="admin@hospital.org",
@@ -179,8 +194,7 @@ def test_bootstrap_initial_admin_creation_and_audit():
 
             # Verify audit log entry
             audit_entry = db.scalar(
-                select(AuditLog)
-                .where(
+                select(AuditLog).where(
                     AuditLog.entity_id == str(admin_user.id),
                     AuditLog.action == "ADMIN_BOOTSTRAP_CREATED",
                 )
@@ -195,7 +209,9 @@ def test_bootstrap_initial_admin_creation_and_audit():
             assert "secret" not in str(audit_entry.new_values)
 
             # Attempting to bootstrap a SECOND time must be strictly rejected
-            with pytest.raises(RuntimeError, match="already contains one or more active administrators"):
+            with pytest.raises(
+                RuntimeError, match="already contains one or more active administrators"
+            ):
                 bootstrap_initial_admin(
                     db=db,
                     email="another.admin@example.com",
@@ -256,15 +272,17 @@ def test_bootstrap_initial_admin_promotes_existing_user():
 
             # Verify audit log entry
             audit_entry = db.scalar(
-                select(AuditLog)
-                .where(
+                select(AuditLog).where(
                     AuditLog.entity_id == str(promoted_user.id),
                     AuditLog.action == "ADMIN_BOOTSTRAP_PROMOTED",
                 )
             )
             assert audit_entry is not None
             assert audit_entry.old_values == {"role": "PATIENT"}
-            assert audit_entry.new_values == {"role": "ADMIN", "email": existing_user_email}
+            assert audit_entry.new_values == {
+                "role": "ADMIN",
+                "email": existing_user_email,
+            }
             assert "password" not in str(audit_entry.new_values)
             assert "secret" not in str(audit_entry.new_values)
         finally:
@@ -294,7 +312,9 @@ def test_emergency_recovery_force_flag_with_existing_admins():
 
         try:
             # Without force, it must raise RuntimeError
-            with pytest.raises(RuntimeError, match="already contains one or more active administrators"):
+            with pytest.raises(
+                RuntimeError, match="already contains one or more active administrators"
+            ):
                 bootstrap_initial_admin(
                     db=db,
                     email=recovery_email,
@@ -354,7 +374,9 @@ def test_emergency_recovery_force_flag_cannot_bypass_safety_checks():
             )
 
         # Missing supplied secret fails even with force=True
-        with pytest.raises(ValueError, match="Operator authorization secret is missing"):
+        with pytest.raises(
+            ValueError, match="Operator authorization secret is missing"
+        ):
             bootstrap_initial_admin(
                 db=db,
                 email="admin@hospital.org",
@@ -378,7 +400,10 @@ def test_emergency_recovery_force_flag_cannot_bypass_safety_checks():
             )
 
         # Missing trusted secret in production fails closed even with force=True
-        with pytest.raises(ValueError, match="Trusted bootstrap secret is not configured in the environment"):
+        with pytest.raises(
+            ValueError,
+            match="Trusted bootstrap secret is not configured in the environment",
+        ):
             bootstrap_initial_admin(
                 db=db,
                 email="admin@hospital.org",

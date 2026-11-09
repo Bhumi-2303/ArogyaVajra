@@ -8,8 +8,12 @@ class DoctorAvailabilityBase(BaseModel):
     day_of_week: int = Field(..., ge=0, le=6, description="0 = Sunday, 6 = Saturday")
     start_time: datetime.time = Field(..., description="Start time of the slot window")
     end_time: datetime.time = Field(..., description="End time of the slot window")
-    slot_duration_minutes: int = Field(..., gt=0, description="Duration of each appointment slot in minutes")
-    is_active: bool = Field(True, description="Whether this availability window is active")
+    slot_duration_minutes: int = Field(
+        ..., gt=0, description="Duration of each appointment slot in minutes"
+    )
+    is_active: bool = Field(
+        True, description="Whether this availability window is active"
+    )
 
     @model_validator(mode="after")
     def validate_times(self) -> "DoctorAvailabilityBase":
@@ -31,11 +35,7 @@ class DoctorAvailabilityUpdate(BaseModel):
 
     @model_validator(mode="after")
     def validate_times(self) -> "DoctorAvailabilityUpdate":
-        if (
-            self.start_time
-            and self.end_time
-            and self.start_time >= self.end_time
-        ):
+        if self.start_time and self.end_time and self.start_time >= self.end_time:
             raise ValueError("end_time must be after start_time")
         return self
 

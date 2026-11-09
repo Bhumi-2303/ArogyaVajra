@@ -66,9 +66,7 @@ class AuditLog(Base, UUIDPrimaryKeyMixin):
         lazy="selectin",
     )
 
-    __table_args__ = (
-        Index("ix_audit_logs_entity", "entity_type", "entity_id"),
-    )
+    __table_args__ = (Index("ix_audit_logs_entity", "entity_type", "entity_id"),)
 
     def __repr__(self) -> str:
         return (

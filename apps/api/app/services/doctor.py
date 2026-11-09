@@ -325,10 +325,12 @@ class DoctorService:
             .filter(
                 Appointment.doctor_id == doctor_id,
                 Appointment.appointment_date == slot_date,
-                Appointment.status.in_([
-                    AppointmentStatus.SCHEDULED,
-                    AppointmentStatus.CONFIRMED,
-                ]),
+                Appointment.status.in_(
+                    [
+                        AppointmentStatus.SCHEDULED,
+                        AppointmentStatus.CONFIRMED,
+                    ]
+                ),
             )
             .all()
         )
@@ -355,12 +357,13 @@ class DoctorService:
                     slot_date == today_utc and slot_start <= current_time
                 )
 
-                slots.append({
-                    "start_time": slot_start.strftime("%H:%M"),
-                    "end_time": slot_end.strftime("%H:%M"),
-                    "is_available": (not has_overlap) and (not is_past),
-                })
+                slots.append(
+                    {
+                        "start_time": slot_start.strftime("%H:%M"),
+                        "end_time": slot_end.strftime("%H:%M"),
+                        "is_available": (not has_overlap) and (not is_past),
+                    }
+                )
                 curr += duration
 
         return doctor, slots
-

@@ -18,7 +18,12 @@ class PaymentMethod(str, enum.Enum):
 class Payment(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     __tablename__ = "payments"
 
-    invoice_id = Column(UUID(as_uuid=True), ForeignKey("invoices.id", ondelete="CASCADE"), nullable=False, index=True)
+    invoice_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("invoices.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     amount = Column(Numeric(10, 2), nullable=False)
     payment_method = Column(SQLAlchemyEnum(PaymentMethod), nullable=False)
     reference = Column(String(255), nullable=True)

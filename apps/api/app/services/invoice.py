@@ -118,7 +118,9 @@ class InvoiceService:
         return invoice
 
     @classmethod
-    def get_invoice(cls, db: Session, invoice_id: uuid.UUID, current_user: User) -> Invoice:
+    def get_invoice(
+        cls, db: Session, invoice_id: uuid.UUID, current_user: User
+    ) -> Invoice:
         invoice = InvoiceRepository.get_by_id(db, invoice_id)
         if not invoice:
             raise HTTPException(
@@ -126,7 +128,11 @@ class InvoiceService:
                 detail="Invoice not found.",
             )
 
-        if current_user.role not in [UserRole.ADMIN, UserRole.BILLING_STAFF, UserRole.PATIENT]:
+        if current_user.role not in [
+            UserRole.ADMIN,
+            UserRole.BILLING_STAFF,
+            UserRole.PATIENT,
+        ]:
             raise HTTPException(
                 status_code=http_status.HTTP_403_FORBIDDEN,
                 detail="Not authorized to access billing invoices.",
@@ -135,8 +141,10 @@ class InvoiceService:
         if current_user.role == UserRole.PATIENT:
             patient = PatientRepository.get_by_user_id(db, current_user.id)
             if not patient or patient.id != invoice.patient_id:
-                raise HTTPException(status_code=http_status.HTTP_403_FORBIDDEN, detail="Not authorized.")
-        
+                raise HTTPException(
+                    status_code=http_status.HTTP_403_FORBIDDEN, detail="Not authorized."
+                )
+
         return invoice
 
     @classmethod
@@ -156,11 +164,20 @@ class InvoiceService:
             )
 
         invoice = cls.get_invoice(db, invoice_id, current_user)
-        
+
         if invoice.status in [InvoiceStatus.PAID, InvoiceStatus.CANCELLED]:
-             raise HTTPException(
+            raise HTTPException(
                 status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail="Cannot modify a paid or cancelled invoice.",
+            )
+
+        if (
+            data.status == InvoiceStatus.CANCELLED
+            and invoice.paid_amount > Decimal("0.00")
+        ):
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail="Cannot cancel an invoice with recorded payments.",
             )
 
         old_values = {
@@ -205,7 +222,11 @@ class InvoiceService:
         page: int = 1,
         page_size: int = 20,
     ) -> tuple[list[Invoice], int]:
-        if current_user.role not in [UserRole.ADMIN, UserRole.BILLING_STAFF, UserRole.PATIENT]:
+        if current_user.role not in [
+            UserRole.ADMIN,
+            UserRole.BILLING_STAFF,
+            UserRole.PATIENT,
+        ]:
             raise HTTPException(
                 status_code=http_status.HTTP_403_FORBIDDEN,
                 detail="Not authorized to access billing invoices.",
@@ -216,7 +237,9 @@ class InvoiceService:
             if not patient:
                 return [], 0
             if patient_id and patient_id != patient.id:
-                raise HTTPException(status_code=http_status.HTTP_403_FORBIDDEN, detail="Not authorized.")
+                raise HTTPException(
+                    status_code=http_status.HTTP_403_FORBIDDEN, detail="Not authorized."
+                )
             patient_id = patient.id
 
         skip = (page - 1) * page_size

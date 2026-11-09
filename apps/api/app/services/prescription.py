@@ -51,7 +51,10 @@ class PrescriptionService:
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Appointment not found.",
                 )
-            if appointment.doctor_id != doctor.id or appointment.patient_id != patient.id:
+            if (
+                appointment.doctor_id != doctor.id
+                or appointment.patient_id != patient.id
+            ):
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Appointment does not match patient and doctor.",
@@ -90,7 +93,9 @@ class PrescriptionService:
             new_values={
                 "patient_id": str(prescription.patient_id),
                 "doctor_id": str(prescription.doctor_id),
-                "appointment_id": str(prescription.appointment_id) if prescription.appointment_id else None,
+                "appointment_id": str(prescription.appointment_id)
+                if prescription.appointment_id
+                else None,
                 "status": prescription.status.value,
                 "items_count": len(prescription.items),
             },
@@ -101,7 +106,9 @@ class PrescriptionService:
         return prescription
 
     @classmethod
-    def get_prescription(cls, db: Session, prescription_id: uuid.UUID, current_user: User) -> Prescription:
+    def get_prescription(
+        cls, db: Session, prescription_id: uuid.UUID, current_user: User
+    ) -> Prescription:
         prescription = PrescriptionRepository.get_by_id(db, prescription_id)
         if not prescription:
             raise HTTPException(
@@ -112,14 +119,20 @@ class PrescriptionService:
         if current_user.role == UserRole.PATIENT:
             patient = PatientRepository.get_by_id(db, prescription.patient_id)
             if not patient or patient.user_id != current_user.id:
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized.")
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized."
+                )
         elif current_user.role == UserRole.DOCTOR:
             doctor = DoctorRepository.get_by_id(db, prescription.doctor_id)
             if not doctor or doctor.user_id != current_user.id:
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized.")
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized."
+                )
         elif current_user.role not in [UserRole.ADMIN, UserRole.RECEPTIONIST]:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized.")
-        
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized."
+            )
+
         return prescription
 
     @classmethod
@@ -139,9 +152,15 @@ class PrescriptionService:
             )
 
         prescription = cls.get_prescription(db, prescription_id, current_user)
-        
-        if prescription.status in [PrescriptionStatus.COMPLETED, PrescriptionStatus.CANCELLED] and data.status not in [PrescriptionStatus.COMPLETED, PrescriptionStatus.CANCELLED]:
-             raise HTTPException(
+
+        if prescription.status in [
+            PrescriptionStatus.COMPLETED,
+            PrescriptionStatus.CANCELLED,
+        ] and data.status not in [
+            PrescriptionStatus.COMPLETED,
+            PrescriptionStatus.CANCELLED,
+        ]:
+            raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Cannot revert a completed or cancelled prescription.",
             )
@@ -156,7 +175,7 @@ class PrescriptionService:
             prescription.instructions = data.instructions
         if data.status is not None:
             prescription.status = data.status
-            
+
         if data.items is not None:
             prescription.items.clear()
             for item_data in data.items:
@@ -214,14 +233,18 @@ class PrescriptionService:
             if not patient:
                 return [], 0
             if patient_id and patient_id != patient.id:
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized.")
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized."
+                )
             patient_id = patient.id
         elif current_user.role == UserRole.DOCTOR:
             doctor = DoctorRepository.get_by_user_id(db, current_user.id)
             if not doctor:
                 return [], 0
             if doctor_id and doctor_id != doctor.id:
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized.")
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized."
+                )
             doctor_id = doctor.id
 
         skip = (page - 1) * page_size

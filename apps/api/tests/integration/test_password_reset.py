@@ -51,7 +51,10 @@ def test_forgot_password_and_reset_password_lifecycle():
         json={"email": email},
     )
     assert forgot_res.status_code == 200
-    assert forgot_res.json()["message"] == "If the email is registered, a password reset link has been sent."
+    assert (
+        forgot_res.json()["message"]
+        == "If the email is registered, a password reset link has been sent."
+    )
 
     # Verify mock sender received email
     assert len(mock_sender.sent_emails) == 1
@@ -89,7 +92,10 @@ def test_forgot_password_and_reset_password_lifecycle():
         json={"email": unknown_email},
     )
     assert unknown_res.status_code == 200
-    assert unknown_res.json()["message"] == "If the email is registered, a password reset link has been sent."
+    assert (
+        unknown_res.json()["message"]
+        == "If the email is registered, a password reset link has been sent."
+    )
     # No extra email sent
     assert len(mock_sender.sent_emails) == 1
 

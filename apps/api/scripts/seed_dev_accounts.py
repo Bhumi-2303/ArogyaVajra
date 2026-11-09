@@ -132,7 +132,9 @@ def _run_seed_on_session(db: Session, password: str) -> dict[str, str]:
         doc_user.is_active = True
         print(f"[*] Updated Doctor User: {doc_email}")
 
-    doc_profile = db.scalar(select(DoctorProfile).where(DoctorProfile.user_id == doc_user.id))
+    doc_profile = db.scalar(
+        select(DoctorProfile).where(DoctorProfile.user_id == doc_user.id)
+    )
     if not doc_profile:
         doc_code = DoctorRepository.generate_doctor_code(db)
         lic_num = f"MED-CARDIO-{uuid.uuid4().hex[:6].upper()}"
@@ -150,9 +152,13 @@ def _run_seed_on_session(db: Session, password: str) -> dict[str, str]:
         )
         db.add(doc_profile)
         db.flush()
-        print(f"[+] Created DoctorProfile: Dr. Ananya Sharma ({doc_profile.doctor_code})")
+        print(
+            f"[+] Created DoctorProfile: Dr. Ananya Sharma ({doc_profile.doctor_code})"
+        )
     else:
-        print(f"[*] DoctorProfile already exists: Dr. {doc_profile.first_name} {doc_profile.last_name}")
+        print(
+            f"[*] DoctorProfile already exists: Dr. {doc_profile.first_name} {doc_profile.last_name}"
+        )
 
     # Doctor Availability (Mon-Fri 09:00 - 17:00)
     existing_avail = db.scalars(
@@ -189,7 +195,9 @@ def _run_seed_on_session(db: Session, password: str) -> dict[str, str]:
         pat_user.is_active = True
         print(f"[*] Updated Patient User: {pat_email}")
 
-    pat_profile = db.scalar(select(PatientProfile).where(PatientProfile.user_id == pat_user.id))
+    pat_profile = db.scalar(
+        select(PatientProfile).where(PatientProfile.user_id == pat_user.id)
+    )
     if not pat_profile:
         pat_code = PatientRepository.generate_patient_code(db)
         pat_profile = PatientProfile(
@@ -208,7 +216,9 @@ def _run_seed_on_session(db: Session, password: str) -> dict[str, str]:
         db.flush()
         print(f"[+] Created PatientProfile: Ramesh Gupta ({pat_profile.patient_code})")
     else:
-        print(f"[*] PatientProfile already exists: {pat_profile.first_name} {pat_profile.last_name}")
+        print(
+            f"[*] PatientProfile already exists: {pat_profile.first_name} {pat_profile.last_name}"
+        )
 
     # 6. Clinical Records (Appointment, Medical Record, Prescription, Invoice)
     today = datetime.now(UTC).date()
@@ -252,7 +262,11 @@ def _run_seed_on_session(db: Session, password: str) -> dict[str, str]:
             clinical_notes="BP 128/82 mmHg, resting heart rate 74 bpm. Normal S1/S2 heart sounds. Resting 12-lead ECG showed normal sinus rhythm.",
             diagnosis="Benign sinus arrhythmia; early stage primary essential hypertension (controlled)",
             treatment_notes="Prescribed Metoprolol 25mg daily. Advised 30 minutes daily moderate aerobic exercise and reduced sodium intake.",
-            follow_up_date=date(today.year, today.month + 1 if today.month < 12 else 1, min(today.day, 28)),
+            follow_up_date=date(
+                today.year,
+                today.month + 1 if today.month < 12 else 1,
+                min(today.day, 28),
+            ),
         )
         db.add(mr)
         db.flush()
@@ -379,16 +393,20 @@ def seed_accounts(
     lower_url = db_url_str.lower()
     is_cloud_prod = any(
         indicator in lower_url
-        for indicator in ("dpg-", "render.com", "render-postgres", "oregon-postgres", "frankfurt-postgres")
+        for indicator in (
+            "dpg-",
+            "render.com",
+            "render-postgres",
+            "oregon-postgres",
+            "frankfurt-postgres",
+        )
     )
     if is_cloud_prod and not os.environ.get("ALLOW_PRODUCTION_DEMO_SEED"):
         raise RuntimeError(
             "Seeding demo accounts is strictly prohibited against a production or Render cloud database."
         )
 
-    active_password = (
-        password or os.environ.get("DEMO_USER_PASSWORD") or DEV_PASSWORD
-    )
+    active_password = password or os.environ.get("DEMO_USER_PASSWORD") or DEV_PASSWORD
 
     if db is not None:
         return _run_seed_on_session(db, active_password)

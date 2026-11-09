@@ -299,7 +299,9 @@ def test_register_with_profile_and_age():
 
     # Verify PatientProfile was created in the database atomically
     with transactional_session() as session:
-        profile = session.scalar(select(PatientProfile).where(PatientProfile.user_id == user_id))
+        profile = session.scalar(
+            select(PatientProfile).where(PatientProfile.user_id == user_id)
+        )
         assert profile is not None
         assert profile.first_name == "Arjun"
         assert profile.last_name == "Varma"

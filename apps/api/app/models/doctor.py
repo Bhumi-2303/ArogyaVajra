@@ -99,9 +99,17 @@ class DoctorAvailability(Base, UUIDPrimaryKeyMixin, TimestampMixin):
 
     __tablename__ = "doctor_availability"
     __table_args__ = (
-        CheckConstraint("start_time < end_time", name="ck_doctor_availability_time_order"),
-        CheckConstraint("slot_duration_minutes > 0", name="ck_doctor_availability_slot_duration_positive"),
-        CheckConstraint("day_of_week >= 0 AND day_of_week <= 6", name="ck_doctor_availability_day_of_week_range"),
+        CheckConstraint(
+            "start_time < end_time", name="ck_doctor_availability_time_order"
+        ),
+        CheckConstraint(
+            "slot_duration_minutes > 0",
+            name="ck_doctor_availability_slot_duration_positive",
+        ),
+        CheckConstraint(
+            "day_of_week >= 0 AND day_of_week <= 6",
+            name="ck_doctor_availability_day_of_week_range",
+        ),
     )
 
     doctor_id: Mapped[uuid.UUID] = mapped_column(

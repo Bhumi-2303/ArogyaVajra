@@ -19,7 +19,11 @@ class AvailabilityRepository:
 
     @staticmethod
     def get_by_id(db: Session, slot_id: uuid.UUID) -> DoctorAvailability | None:
-        return db.query(DoctorAvailability).filter(DoctorAvailability.id == slot_id).first()
+        return (
+            db.query(DoctorAvailability)
+            .filter(DoctorAvailability.id == slot_id)
+            .first()
+        )
 
     @staticmethod
     def create(db: Session, availability: DoctorAvailability) -> DoctorAvailability:

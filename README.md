@@ -488,24 +488,48 @@ curl -f -s https://<api-service>.onrender.com/api/v1
 
 ## 🧪 Testing and Quality Assurance
 
-### Backend Tests (Pytest)
+### Baseline Verification Commands
+
+Both the backend and frontend enforce strict quality gates before any commit or deployment:
+
+#### Backend Baseline
 ```bash
 cd apps/api
-pytest -v
+
+# 1. Enforceable Ruff Lint Gate (zero new violations, strict modified file verification)
+python scripts/lint_gate.py
+
+# 2. Database Migrations Check
+alembic upgrade head
+
+# 3. Comprehensive Test Suite
+pytest -q
+
+# 4. Coverage Report (services and api/v1 target >= 80%)
+pytest --cov=app/services --cov=app/api/v1 --cov-report=term-missing
 ```
 
-### Backend Linting and Formatting
-```bash
-cd apps/api
-ruff check .
-ruff format .
-```
-
-### Frontend Type Checking and Linting
+#### Frontend Baseline
 ```bash
 cd apps/web
-npm run type-check
+
+# 1. Next.js Linting
 npm run lint
+
+# 2. TypeScript Static Type Check
+npm run type-check
+
+# 3. Production Build Compilation
+npm run build
+
+# 4. API URL Construction Verification Suite
+node scripts/verify-api-url-construction.mjs
+
+# 5. Security Headers and CSP Verification Suite
+node scripts/verify-security-headers.mjs
+
+# 6. Playwright End-to-End Test Suite
+npx playwright test
 ```
 
 ---

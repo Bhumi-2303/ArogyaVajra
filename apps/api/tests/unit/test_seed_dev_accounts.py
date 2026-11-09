@@ -27,13 +27,14 @@ def test_seed_accounts_safety_blocks_production():
 
 def test_seed_accounts_safety_blocks_render_cloud_database_url():
     """Verify that seed_accounts refuses to run against a Render production database URL."""
-    fake_render_url = (
-        "postgresql+psycopg://user:pass@dpg-abc1234-a.oregon-postgres.render.com/arogyavajra_prod"
-    )
+    fake_render_url = "postgresql+psycopg://user:pass@dpg-abc1234-a.oregon-postgres.render.com/arogyavajra_prod"
     with (
-        patch.dict(os.environ, {"DATABASE_URL": fake_render_url, "APP_ENV": "development"}),
+        patch.dict(
+            os.environ, {"DATABASE_URL": fake_render_url, "APP_ENV": "development"}
+        ),
         pytest.raises(
-            RuntimeError, match="strictly prohibited against a production or Render cloud database"
+            RuntimeError,
+            match="strictly prohibited against a production or Render cloud database",
         ),
     ):
         seed_accounts()
@@ -61,11 +62,15 @@ def test_seed_accounts_idempotency_and_completeness():
         assert doctor is not None
         assert doctor.role == UserRole.DOCTOR
         assert doctor.is_active is True
-        doc_profile = db.scalar(select(DoctorProfile).where(DoctorProfile.user_id == doctor.id))
+        doc_profile = db.scalar(
+            select(DoctorProfile).where(DoctorProfile.user_id == doctor.id)
+        )
         assert doc_profile is not None
         assert doc_profile.doctor_code.startswith("DOC-")
 
-        receptionist = db.scalar(select(User).where(User.email == "receptionist@arogyavajra.com"))
+        receptionist = db.scalar(
+            select(User).where(User.email == "receptionist@arogyavajra.com")
+        )
         assert receptionist is not None
         assert receptionist.role == UserRole.RECEPTIONIST
 
@@ -76,7 +81,9 @@ def test_seed_accounts_idempotency_and_completeness():
         patient = db.scalar(select(User).where(User.email == "patient@arogyavajra.com"))
         assert patient is not None
         assert patient.role == UserRole.PATIENT
-        pat_profile = db.scalar(select(PatientProfile).where(PatientProfile.user_id == patient.id))
+        pat_profile = db.scalar(
+            select(PatientProfile).where(PatientProfile.user_id == patient.id)
+        )
         assert pat_profile is not None
         assert pat_profile.patient_code.startswith("PAT-")
 

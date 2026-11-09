@@ -3,14 +3,16 @@ from typing import Any
 from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-INSECURE_DEFAULT_JWT_SECRETS: frozenset[str] = frozenset({
-    "dev-secret-key-change-in-production",
-    "change-this-to-a-secure-random-secret-key-in-production",
-    "secret",
-    "changeme",
-    "default",
-    "your-secret-key",
-})
+INSECURE_DEFAULT_JWT_SECRETS: frozenset[str] = frozenset(
+    {
+        "dev-secret-key-change-in-production",
+        "change-this-to-a-secure-random-secret-key-in-production",
+        "secret",
+        "changeme",
+        "default",
+        "your-secret-key",
+    }
+)
 
 
 class Settings(BaseSettings):
@@ -34,9 +36,9 @@ class Settings(BaseSettings):
     def normalize_database_url(cls, v: Any) -> Any:
         if isinstance(v, str):
             if v.startswith("postgres://"):
-                return "postgresql+psycopg://" + v[len("postgres://"):]
+                return "postgresql+psycopg://" + v[len("postgres://") :]
             if v.startswith("postgresql://") and not v.startswith("postgresql+"):
-                return "postgresql+psycopg://" + v[len("postgresql://"):]
+                return "postgresql+psycopg://" + v[len("postgresql://") :]
         return v
 
     # API Configuration
@@ -78,7 +80,6 @@ class Settings(BaseSettings):
             for pattern in self.TRUSTED_PROXIES.split(",")
             if pattern.strip()
         ]
-
 
     @model_validator(mode="after")
     def validate_production_configuration(self) -> "Settings":
@@ -122,7 +123,10 @@ class Settings(BaseSettings):
                         "must use secure HTTPS ('https://')."
                     )
 
-            if "arogyavajra_dev_password" in self.DATABASE_URL or "postgres:postgres@" in self.DATABASE_URL:
+            if (
+                "arogyavajra_dev_password" in self.DATABASE_URL
+                or "postgres:postgres@" in self.DATABASE_URL
+            ):
                 raise ValueError(
                     "Security validation failed: In production environment, DATABASE_URL must not use "
                     "known development or default database credentials."
@@ -138,7 +142,6 @@ class Settings(BaseSettings):
                 )
 
         return self
-
 
 
 settings = Settings()

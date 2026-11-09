@@ -246,7 +246,9 @@ def test_get_client_identifier_safe_default_when_no_proxy_configured(monkeypatch
     assert get_client_identifier(req) == "127.0.0.1"
 
 
-def test_get_client_identifier_trusts_configured_proxy_and_extracts_rightmost(monkeypatch):
+def test_get_client_identifier_trusts_configured_proxy_and_extracts_rightmost(
+    monkeypatch,
+):
     from starlette.requests import Request
 
     from app.core.config import settings
@@ -272,7 +274,6 @@ def test_get_client_identifier_trusts_configured_proxy_and_extracts_rightmost(mo
     }
     req = Request(scope)
     assert get_client_identifier(req) == "198.51.100.50"
-
 
 
 def test_rate_limiter_cannot_be_bypassed_in_production(monkeypatch):
@@ -379,15 +380,11 @@ def test_alembic_url_resolution_deterministic():
     assert resolved_url1 == settings.DATABASE_URL
 
     # Case 2: Explicit disposable test URL override
-    disposable_url = "postgresql+psycopg://test:pass@localhost:5434/arogyavajra_disposable"
+    disposable_url = (
+        "postgresql+psycopg://test:pass@localhost:5434/arogyavajra_disposable"
+    )
     cfg2 = Config(alembic_ini_path)
     cfg2.set_main_option("sqlalchemy.url", disposable_url)
     resolved_url2 = cfg2.get_main_option("sqlalchemy.url") or settings.DATABASE_URL
     assert resolved_url2 == disposable_url
     assert resolved_url2 != settings.DATABASE_URL
-
-
-
-
-
-

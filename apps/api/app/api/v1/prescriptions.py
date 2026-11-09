@@ -52,12 +52,20 @@ def create_prescription(
 )
 def list_prescriptions(
     q: str | None = Query(None, description="Search medicine name or instructions"),
-    status: PrescriptionStatus | None = Query(None, description="Filter by prescription status"),
-    start_date: date | None = Query(None, description="Filter prescriptions on or after start date"),
-    end_date: date | None = Query(None, description="Filter prescriptions on or before end date"),
+    status: PrescriptionStatus | None = Query(
+        None, description="Filter by prescription status"
+    ),
+    start_date: date | None = Query(
+        None, description="Filter prescriptions on or after start date"
+    ),
+    end_date: date | None = Query(
+        None, description="Filter prescriptions on or before end date"
+    ),
     patient_id: uuid.UUID | None = Query(None, description="Filter by patient ID"),
     doctor_id: uuid.UUID | None = Query(None, description="Filter by doctor ID"),
-    appointment_id: uuid.UUID | None = Query(None, description="Filter by appointment ID"),
+    appointment_id: uuid.UUID | None = Query(
+        None, description="Filter by appointment ID"
+    ),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
@@ -100,7 +108,9 @@ def get_prescription(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    prescription = PrescriptionService.get_prescription(db, prescription_id, current_user)
+    prescription = PrescriptionService.get_prescription(
+        db, prescription_id, current_user
+    )
     return PrescriptionDetailResponse(data=prescription)
 
 
@@ -132,7 +142,11 @@ def update_prescription(
     return PrescriptionDetailResponse(data=prescription)
 
 
-@router.post("/{prescription_id}/cancel", response_model=PrescriptionDetailResponse, summary="Cancel a prescription")
+@router.post(
+    "/{prescription_id}/cancel",
+    response_model=PrescriptionDetailResponse,
+    summary="Cancel a prescription",
+)
 def cancel_prescription(
     prescription_id: uuid.UUID,
     request: Request,
@@ -141,10 +155,10 @@ def cancel_prescription(
 ):
     ip_address = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
-    
+
     from app.models.prescription import PrescriptionStatus
     from app.schemas.prescription import PrescriptionUpdate
-    
+
     updated = PrescriptionService.update_prescription(
         db=db,
         prescription_id=prescription_id,

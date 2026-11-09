@@ -50,7 +50,6 @@ def is_trusted_proxy(ip_str: str | None) -> bool:
     return False
 
 
-
 def check_rate_limit(
     db: Session,
     key_prefix: str,
@@ -76,9 +75,13 @@ def check_rate_limit(
         fail_closed: If True, reject requests when rate limiter storage is unreachable.
     """
     is_prod = settings.APP_ENV.lower() in ("production", "prod", "staging")
-    if not is_prod and bypass_in_test and (
-        settings.APP_ENV.lower() in ("test", "testing")
-        or "PYTEST_CURRENT_TEST" in os.environ
+    if (
+        not is_prod
+        and bypass_in_test
+        and (
+            settings.APP_ENV.lower() in ("test", "testing")
+            or "PYTEST_CURRENT_TEST" in os.environ
+        )
     ):
         return
 
@@ -170,7 +173,9 @@ def get_client_identifier(request: Request) -> str:
     the proxy or no trusted proxies are configured, client-supplied forwarded headers are
     strictly ignored to prevent rate-limit spoofing.
     """
-    direct_host = request.client.host if request.client and request.client.host else "unknown"
+    direct_host = (
+        request.client.host if request.client and request.client.host else "unknown"
+    )
 
     if direct_host != "unknown" and is_trusted_proxy(direct_host):
         real_ip = request.headers.get("x-real-ip")
@@ -187,6 +192,3 @@ def get_client_identifier(request: Request) -> str:
                     return valid_cand
 
     return direct_host
-
-
-

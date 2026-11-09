@@ -25,10 +25,12 @@ class AppointmentService:
         end_time: datetime.time,
     ):
         """Check if the doctor has an active availability slot for the given time."""
-        day_of_week = (appointment_date.weekday() + 1) % 7 # Python weekday: 0=Mon, 6=Sun. ArogyaVajra schema usually: 0=Sun, 6=Sat? Let's check: 0=Sunday..6=Saturday or 1=Monday..7=Sunday. The schema says: 0=Sunday .. 6=Saturday.
+        day_of_week = (
+            (appointment_date.weekday() + 1) % 7
+        )  # Python weekday: 0=Mon, 6=Sun. ArogyaVajra schema usually: 0=Sun, 6=Sat? Let's check: 0=Sunday..6=Saturday or 1=Monday..7=Sunday. The schema says: 0=Sunday .. 6=Saturday.
         # Python weekday: 0=Monday, 1=Tuesday, ..., 6=Sunday.
         # So Sunday should be 0.
-        isoweekday = appointment_date.isoweekday() # 1=Mon, ..., 7=Sun
+        isoweekday = appointment_date.isoweekday()  # 1=Mon, ..., 7=Sun
         day_of_week = isoweekday % 7
 
         availabilities = AvailabilityRepository.get_by_doctor_id(db, doctor_id)
@@ -59,7 +61,11 @@ class AppointmentService:
         ip_address: str | None = None,
         user_agent: str | None = None,
     ) -> Appointment:
-        if current_user.role not in [UserRole.ADMIN, UserRole.RECEPTIONIST, UserRole.PATIENT]:
+        if current_user.role not in [
+            UserRole.ADMIN,
+            UserRole.RECEPTIONIST,
+            UserRole.PATIENT,
+        ]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not authorized to create appointments.",
@@ -121,7 +127,9 @@ class AppointmentService:
                 detail="Doctor is not currently active.",
             )
 
-        cls._validate_availability(db, doctor.id, data.appointment_date, data.start_time, data.end_time)
+        cls._validate_availability(
+            db, doctor.id, data.appointment_date, data.start_time, data.end_time
+        )
 
         if AppointmentRepository.check_overlap(
             db, doctor.id, data.appointment_date, data.start_time, data.end_time
@@ -183,7 +191,9 @@ class AppointmentService:
         return appointment
 
     @classmethod
-    def get_appointment(cls, db: Session, appointment_id: uuid.UUID, current_user: User) -> Appointment:
+    def get_appointment(
+        cls, db: Session, appointment_id: uuid.UUID, current_user: User
+    ) -> Appointment:
         appointment = AppointmentRepository.get_by_id(db, appointment_id)
         if not appointment:
             raise HTTPException(
@@ -194,12 +204,16 @@ class AppointmentService:
         if current_user.role == UserRole.PATIENT:
             patient = PatientRepository.get_by_id(db, appointment.patient_id)
             if not patient or patient.user_id != current_user.id:
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized.")
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized."
+                )
         elif current_user.role == UserRole.DOCTOR:
             doctor = DoctorRepository.get_by_id(db, appointment.doctor_id)
             if not doctor or doctor.user_id != current_user.id:
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized.")
-        
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized."
+                )
+
         return appointment
 
     @classmethod
@@ -222,21 +236,29 @@ class AppointmentService:
 
         if data.status and data.status != appointment.status:
             # Rule: cancelled cannot be completed
-            if appointment.status == AppointmentStatus.CANCELLED and data.status == AppointmentStatus.COMPLETED:
+            if (
+                appointment.status == AppointmentStatus.CANCELLED
+                and data.status == AppointmentStatus.COMPLETED
+            ):
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Cannot complete a cancelled appointment.",
                 )
-            
+
             # Rule: completed cannot be directly rescheduled (rescheduled maps to SCHEDULED/CONFIRMED typically, but not explicitly states here except "rescheduled")
-            if appointment.status == AppointmentStatus.COMPLETED and data.status in [AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED]:
+            if appointment.status == AppointmentStatus.COMPLETED and data.status in [
+                AppointmentStatus.SCHEDULED,
+                AppointmentStatus.CONFIRMED,
+            ]:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Cannot reschedule a completed appointment.",
                 )
 
             # Role checks for status
-            if current_user.role == UserRole.PATIENT and data.status not in [AppointmentStatus.CANCELLED]:
+            if current_user.role == UserRole.PATIENT and data.status not in [
+                AppointmentStatus.CANCELLED
+            ]:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Patients can only cancel appointments.",
@@ -262,7 +284,10 @@ class AppointmentService:
             or data.end_time is not None
         )
         if is_reschedule:
-            if appointment.status in [AppointmentStatus.COMPLETED, AppointmentStatus.CANCELLED]:
+            if appointment.status in [
+                AppointmentStatus.COMPLETED,
+                AppointmentStatus.CANCELLED,
+            ]:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Cannot reschedule a {appointment.status.value.lower()} appointment.",
@@ -278,7 +303,9 @@ class AppointmentService:
                     detail="end_time must be after start_time",
                 )
 
-            cls._validate_availability(db, appointment.doctor_id, new_date, new_start, new_end)
+            cls._validate_availability(
+                db, appointment.doctor_id, new_date, new_start, new_end
+            )
 
             if AppointmentRepository.check_overlap(
                 db,
@@ -352,7 +379,7 @@ class AppointmentService:
         page: int = 1,
         page_size: int = 20,
     ) -> tuple[list[Appointment], int]:
-        
+
         # Enforce role-based filtering limits
         if current_user.role == UserRole.PATIENT:
             patient = PatientRepository.get_by_user_id(db, current_user.id)
@@ -373,5 +400,5 @@ class AppointmentService:
             date=date,
             status=status_filter,
             skip=skip,
-            limit=page_size
+            limit=page_size,
         )

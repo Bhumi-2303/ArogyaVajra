@@ -146,13 +146,18 @@ def test_simultaneous_bookings_exactly_one_succeeds_and_one_conflicts():
         res_b = future_b.result()
 
     statuses = [res_a.status_code, res_b.status_code]
-    assert sorted(statuses) == [201, 409], f"Expected one 201 and one 409, got {statuses}"
+    assert sorted(statuses) == [201, 409], (
+        f"Expected one 201 and one 409, got {statuses}"
+    )
 
     # Verify the 409 response contract
     conflict_res = res_a if res_a.status_code == 409 else res_b
     conflict_body = conflict_res.json()
     assert conflict_body["error"]["code"] == "APPOINTMENT_CONFLICT"
-    assert "no longer available" in conflict_body["error"]["message"] or "conflicts" in conflict_body["error"]["message"]
+    assert (
+        "no longer available" in conflict_body["error"]["message"]
+        or "conflicts" in conflict_body["error"]["message"]
+    )
 
     # Verify the 201 response data
     success_res = res_a if res_a.status_code == 201 else res_b
@@ -172,10 +177,34 @@ def test_db_exclusion_constraint_blocks_direct_overlapping_inserts():
 
     with factory() as db:
         # Create distinct users for doctor and patients
-        creator = User(id=creator_uuid, email=f"creator_{uuid.uuid4().hex[:6]}@example.com", password_hash="hash", role=UserRole.ADMIN, is_active=True)
-        user_doc = User(id=uuid.uuid4(), email=f"doc_{uuid.uuid4().hex[:6]}@example.com", password_hash="hash", role=UserRole.DOCTOR, is_active=True)
-        user_pat1 = User(id=uuid.uuid4(), email=f"pat1_{uuid.uuid4().hex[:6]}@example.com", password_hash="hash", role=UserRole.PATIENT, is_active=True)
-        user_pat2 = User(id=uuid.uuid4(), email=f"pat2_{uuid.uuid4().hex[:6]}@example.com", password_hash="hash", role=UserRole.PATIENT, is_active=True)
+        creator = User(
+            id=creator_uuid,
+            email=f"creator_{uuid.uuid4().hex[:6]}@example.com",
+            password_hash="hash",
+            role=UserRole.ADMIN,
+            is_active=True,
+        )
+        user_doc = User(
+            id=uuid.uuid4(),
+            email=f"doc_{uuid.uuid4().hex[:6]}@example.com",
+            password_hash="hash",
+            role=UserRole.DOCTOR,
+            is_active=True,
+        )
+        user_pat1 = User(
+            id=uuid.uuid4(),
+            email=f"pat1_{uuid.uuid4().hex[:6]}@example.com",
+            password_hash="hash",
+            role=UserRole.PATIENT,
+            is_active=True,
+        )
+        user_pat2 = User(
+            id=uuid.uuid4(),
+            email=f"pat2_{uuid.uuid4().hex[:6]}@example.com",
+            password_hash="hash",
+            role=UserRole.PATIENT,
+            is_active=True,
+        )
         db.add_all([creator, user_doc, user_pat1, user_pat2])
         db.flush()
 
@@ -191,8 +220,20 @@ def test_db_exclusion_constraint_blocks_direct_overlapping_inserts():
             specialization="Cardiology",
             consultation_fee=Decimal(500),
         )
-        pat1 = PatientProfile(id=patient1_uuid, user_id=user_pat1.id, patient_code=f"PAT-{uuid.uuid4().hex[:4]}", first_name="Pat1", last_name="Test")
-        pat2 = PatientProfile(id=patient2_uuid, user_id=user_pat2.id, patient_code=f"PAT-{uuid.uuid4().hex[:4]}", first_name="Pat2", last_name="Test")
+        pat1 = PatientProfile(
+            id=patient1_uuid,
+            user_id=user_pat1.id,
+            patient_code=f"PAT-{uuid.uuid4().hex[:4]}",
+            first_name="Pat1",
+            last_name="Test",
+        )
+        pat2 = PatientProfile(
+            id=patient2_uuid,
+            user_id=user_pat2.id,
+            patient_code=f"PAT-{uuid.uuid4().hex[:4]}",
+            first_name="Pat2",
+            last_name="Test",
+        )
         db.add_all([doc, pat1, pat2])
         db.flush()
 

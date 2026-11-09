@@ -154,9 +154,7 @@ class PaymentService:
         patient = db.scalar(
             select(PatientProfile).where(PatientProfile.id == invoice.patient_id)
         )
-        patient_name = (
-            f"{patient.first_name} {patient.last_name}" if patient else None
-        )
+        patient_name = f"{patient.first_name} {patient.last_name}" if patient else None
         patient_code = patient.patient_code if patient else None
         receipt_number = f"REC-{invoice.invoice_number}-{payment.id.hex[:6].upper()}"
 
@@ -178,4 +176,3 @@ class PaymentService:
             invoice_status=invoice.status.value,
             received_by=payment.created_by,
         )
-

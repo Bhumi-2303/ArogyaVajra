@@ -30,14 +30,18 @@ class AppointmentRepository:
         query = db.query(Appointment).filter(
             Appointment.doctor_id == doctor_id,
             Appointment.appointment_date == appointment_date,
-            Appointment.status.in_([AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED]),
+            Appointment.status.in_(
+                [AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED]
+            ),
             or_(
-                and_(Appointment.start_time < end_time, Appointment.end_time > start_time)
-            )
+                and_(
+                    Appointment.start_time < end_time, Appointment.end_time > start_time
+                )
+            ),
         )
         if exclude_appointment_id:
             query = query.filter(Appointment.id != exclude_appointment_id)
-        
+
         return query.first() is not None
 
     @staticmethod
@@ -71,7 +75,14 @@ class AppointmentRepository:
             query = query.filter(Appointment.status == status)
 
         total = query.count()
-        items = query.order_by(Appointment.appointment_date.desc(), Appointment.start_time.desc()).offset(skip).limit(limit).all()
+        items = (
+            query.order_by(
+                Appointment.appointment_date.desc(), Appointment.start_time.desc()
+            )
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
 
         return items, total
 
@@ -80,7 +91,12 @@ class AppointmentRepository:
         # A simple generation logic, could be improved.
         import random
         import string
+
         while True:
             code = "APT-" + "".join(random.choices(string.digits, k=5))
-            if not db.query(Appointment).filter(Appointment.appointment_code == code).first():
+            if (
+                not db.query(Appointment)
+                .filter(Appointment.appointment_code == code)
+                .first()
+            ):
                 return code
