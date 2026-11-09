@@ -55,6 +55,28 @@ class Settings(BaseSettings):
     # CORS
     CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000"
 
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def normalize_cors_origins(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            items = []
+            for item in v.split(","):
+                stripped = item.strip()
+                if not stripped:
+                    continue
+                if stripped == "*":
+                    items.append(stripped)
+                    continue
+                # If injected via Render Blueprint fromService property: host, it lacks a protocol scheme
+                if not stripped.startswith("http://") and not stripped.startswith("https://"):
+                    if "localhost" in stripped or "127.0.0.1" in stripped:
+                        stripped = f"http://{stripped}"
+                    else:
+                        stripped = f"https://{stripped}"
+                items.append(stripped)
+            return ",".join(items)
+        return v
+
     # Reverse Proxy & Trusted Proxy Configuration
     # Comma-separated list of trusted proxy IP addresses or CIDR blocks (e.g., "127.0.0.1,::1,10.0.0.0/8").
     # If empty or unset, no proxy is trusted by default and forwarded headers are strictly ignored.
@@ -116,6 +138,11 @@ class Settings(BaseSettings):
                     raise ValueError(
                         f"Security validation failed: In production environment, CORS origin '{origin}' "
                         "cannot be a wildcard '*' or point to localhost/loopback addresses."
+                    )
+                if origin.endswith("/"):
+                    raise ValueError(
+                        f"Security validation failed: In production environment, CORS origin '{origin}' "
+                        "must not contain a trailing slash."
                     )
                 if not origin_clean.startswith("https://"):
                     raise ValueError(

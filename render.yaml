@@ -2,7 +2,7 @@ databases:
   - name: arogyavajra-db
     databaseName: arogyavajra
     user: arogyavajra
-    plan: starter
+    plan: starter # Alternative for free evaluation: plan: free (Note: free databases expire after 30 days)
     postgresMajorVersion: "16"
 
 services:
@@ -12,7 +12,7 @@ services:
     runtime: docker
     rootDir: apps/api
     dockerfilePath: Dockerfile
-    plan: starter
+    plan: starter # Alternative for free evaluation: plan: free (Note: free web services spin down after 15m inactivity)
     healthCheckPath: /health
     envVars:
       - key: APP_ENV
@@ -43,7 +43,7 @@ services:
     runtime: docker
     rootDir: apps/web
     dockerfilePath: Dockerfile
-    plan: starter
+    plan: starter # Alternative for free evaluation: plan: free (Note: free web services spin down after 15m inactivity)
     envVars:
       - key: NODE_ENV
         value: production

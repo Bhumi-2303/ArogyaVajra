@@ -209,6 +209,32 @@ def test_settings_production_fails_with_unspecified_ip_cors():
         )
 
 
+def test_settings_production_fails_with_trailing_slash_cors():
+    from app.core.config import Settings
+
+    with pytest.raises(ValueError, match="must not contain a trailing slash"):
+        Settings(
+            APP_ENV="production",
+            JWT_SECRET_KEY="a" * 32,
+            APP_DEBUG=False,
+            CORS_ORIGINS="https://app.arogyavajra.com/",
+            DATABASE_URL="postgresql+psycopg://u:p@db:5432/db",
+        )
+
+
+def test_settings_normalizes_bare_cors_host_to_https():
+    from app.core.config import Settings
+
+    s = Settings(
+        APP_ENV="production",
+        JWT_SECRET_KEY="a" * 32,
+        APP_DEBUG=False,
+        CORS_ORIGINS="app.arogyavajra.com",
+        DATABASE_URL="postgresql+psycopg://u:p@db:5432/db",
+    )
+    assert s.cors_origins_list == ["https://app.arogyavajra.com"]
+
+
 def test_get_client_identifier_ignores_spoofed_headers_from_untrusted_direct_client():
     from starlette.requests import Request
 
