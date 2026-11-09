@@ -266,8 +266,8 @@ def main() -> None:
     parser.add_argument(
         "--secret",
         "-s",
-        default=os.environ.get("OPERATOR_BOOTSTRAP_SECRET"),
-        help="Supplied operator authorization secret (prefer interactive prompt or OPERATOR_BOOTSTRAP_SECRET)",
+        default=os.environ.get("OPERATOR_BOOTSTRAP_SECRET") or os.environ.get("BOOTSTRAP_SECRET"),
+        help="Supplied operator authorization secret (prefer interactive prompt or OPERATOR_BOOTSTRAP_SECRET / BOOTSTRAP_SECRET)",
     )
     parser.add_argument(
         "--db-url",
