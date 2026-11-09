@@ -33,7 +33,7 @@ services:
         fromService:
           type: web
           name: arogyavajra-web
-          property: url
+          property: host
       - key: TRUSTED_PROXIES
         value: ""
 
@@ -47,9 +47,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-    dockerBuildArgs:
-      - key: NEXT_PUBLIC_API_URL
+      - key: API_INTERNAL_URL
         fromService:
           type: web
           name: arogyavajra-api
-          property: url
+          property: hostport

@@ -89,8 +89,11 @@ async function run() {
     assert(!tokens.includes("https:"), "connect-src must not contain open 'https:' wildcard");
   });
 
-  test("Prod CSP: connect-src includes secure API origin", () => {
-    assert(prodCsp.includes("https://api.arogyavajra.com"));
+  test("Prod CSP: connect-src is tightened strictly to 'self'", () => {
+    const connectDirective = prodCsp.split(";").find((d) => d.trim().startsWith("connect-src")) || "";
+    const tokens = connectDirective.trim().split(/\s+/).slice(1);
+    assert(tokens.includes("'self'"), "connect-src must include 'self'");
+    assert(tokens.length === 1 && tokens[0] === "'self'", "connect-src in production must be strictly 'self'");
   });
 
   test("Prod CSP: prevents framing with frame-ancestors 'none'", () => {

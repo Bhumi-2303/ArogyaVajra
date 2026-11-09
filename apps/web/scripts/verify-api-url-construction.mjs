@@ -31,8 +31,11 @@ function assert(condition, message) {
 }
 
 // Logic mirror of resolveApiUrl from lib/api/client.ts
-function resolveApiUrl(endpoint, baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1") {
-  const base = baseUrl.replace(/\/+$/, "");
+function resolveApiUrl(endpoint, baseUrl) {
+  const isProd = process.env.NODE_ENV === "production";
+  const defaultBase = isProd ? "/api/v1" : "http://localhost:8000/api/v1";
+  const rawBase = baseUrl ?? (process.env.NEXT_PUBLIC_API_URL || defaultBase);
+  const base = rawBase.replace(/\/+$/, "");
   const normalizedEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
 
   const baseHasVersion = base.endsWith("/api/v1");
@@ -42,7 +45,7 @@ function resolveApiUrl(endpoint, baseUrl = process.env.NEXT_PUBLIC_API_URL || "h
     normalizedEndpoint.startsWith("/api/v1?");
 
   if (normalizedEndpoint === "/") {
-    return baseHasVersion ? base : `${base}/api/v1`;
+    return baseHasVersion ? base : (base ? `${base}/api/v1` : "/api/v1");
   }
 
   if (baseHasVersion && endpointHasVersion) {
@@ -178,6 +181,48 @@ async function run() {
     resolveApiUrl("/auth/login", "http://localhost:8000/") === "http://localhost:8000/api/v1/auth/login",
     "Resolves /auth/login on local bare domain http://localhost:8000/ with trailing slash"
   );
+
+  // Production relative URL resolution (same-origin proxy)
+  assert(
+    resolveApiUrl("/appointments", "/api/v1") === "/api/v1/appointments",
+    "Prod relative: Resolves /appointments to /api/v1/appointments"
+  );
+  assert(
+    resolveApiUrl("medical-records/123", "/api/v1") === "/api/v1/medical-records/123",
+    "Prod relative: Resolves medical-records/123 without leading slash"
+  );
+  assert(
+    resolveApiUrl("/api/v1/prescriptions", "/api/v1") === "/api/v1/prescriptions",
+    "Prod relative: Strips duplicate /api/v1 from /api/v1/prescriptions"
+  );
+  assert(
+    resolveApiUrl("/auth/refresh", "/api/v1") === "/api/v1/auth/refresh",
+    "Prod relative: Resolves /auth/refresh to /api/v1/auth/refresh"
+  );
+
+  // Environment-based defaults
+  const prevEnv = process.env.NODE_ENV;
+  const prevUrl = process.env.NEXT_PUBLIC_API_URL;
+  delete process.env.NEXT_PUBLIC_API_URL;
+
+  process.env.NODE_ENV = "production";
+  assert(
+    resolveApiUrl("/appointments") === "/api/v1/appointments",
+    "Prod default: Resolves /appointments to relative /api/v1/appointments when NEXT_PUBLIC_API_URL is unset in production"
+  );
+  assert(
+    resolveApiUrl("/auth/refresh") === "/api/v1/auth/refresh",
+    "Prod default: Resolves /auth/refresh to relative /api/v1/auth/refresh in production"
+  );
+
+  process.env.NODE_ENV = "development";
+  assert(
+    resolveApiUrl("/appointments") === "http://localhost:8000/api/v1/appointments",
+    "Dev default: Resolves /appointments to http://localhost:8000/api/v1/appointments in development"
+  );
+
+  process.env.NODE_ENV = prevEnv;
+  if (prevUrl) process.env.NEXT_PUBLIC_API_URL = prevUrl;
 
   // 3. Inspect All API Module Source Files for Duplicated Prefixes
   console.log("\n[3/4] Inspecting domain API files to ensure NO hardcoded /api/v1 remains...");

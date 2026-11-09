@@ -14,12 +14,7 @@ const apiOrigin = (() => {
 })();
 
 const connectSources = ["'self'"];
-if (isProd) {
-  // Production: Only allow self and explicitly configured secure HTTPS API origin
-  if (apiOrigin && apiOrigin.startsWith("https://")) {
-    connectSources.push(apiOrigin);
-  }
-} else {
+if (!isProd) {
   // Development: Permit local API development ports
   connectSources.push("http://localhost:8000", "http://127.0.0.1:8000");
   if (apiOrigin) {
@@ -95,6 +90,21 @@ const nextConfig = {
       {
         source: "/(.*)",
         headers: securityHeaders,
+      },
+    ];
+  },
+  async rewrites() {
+    const rawInternal = process.env.API_INTERNAL_URL || "http://localhost:8000";
+    const cleanInternal = (
+      rawInternal.startsWith("http://") || rawInternal.startsWith("https://")
+        ? rawInternal
+        : `http://${rawInternal}`
+    ).replace(/\/+$/, "");
+
+    return [
+      {
+        source: "/api/v1/:path*",
+        destination: `${cleanInternal}/api/v1/:path*`,
       },
     ];
   },

@@ -64,13 +64,15 @@ export function clearStoredTokens(): void {
 }
 
 /**
- * Resolve endpoint to full API URL ensuring /api/v1 is always present exactly once.
- * Handles both base URLs with /api/v1 (e.g. "https://api.domain.com/api/v1")
- * and bare origins without /api/v1 (e.g. "https://arogyavajra-api.onrender.com").
+ * Resolve endpoint to full or relative API URL ensuring /api/v1 is always present exactly once.
+ * In production (when NEXT_PUBLIC_API_URL is unset), returns relative /api/v1 paths
+ * so requests are same-origin and proxied via Next.js rewrites to prevent cross-site cookie drop.
+ * In development, defaults to http://localhost:8000/api/v1.
  */
-export function resolveApiUrl(endpoint: string): string {
-  const rawBase =
-    process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+export function resolveApiUrl(endpoint: string, baseUrl?: string): string {
+  const isProd = process.env.NODE_ENV === "production";
+  const defaultBase = isProd ? "/api/v1" : "http://localhost:8000/api/v1";
+  const rawBase = baseUrl ?? (process.env.NEXT_PUBLIC_API_URL || defaultBase);
   const base = rawBase.replace(/\/+$/, "");
   const normalizedEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
 
@@ -81,7 +83,7 @@ export function resolveApiUrl(endpoint: string): string {
     normalizedEndpoint.startsWith("/api/v1?");
 
   if (normalizedEndpoint === "/") {
-    return baseHasVersion ? base : `${base}/api/v1`;
+    return baseHasVersion ? base : (base ? `${base}/api/v1` : "/api/v1");
   }
 
   if (baseHasVersion && endpointHasVersion) {
