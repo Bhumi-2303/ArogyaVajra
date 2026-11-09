@@ -5,6 +5,7 @@ from app.models.audit_log import AuditLog
 from app.models.doctor import DoctorAvailability, DoctorProfile
 from app.models.invoice import Invoice, InvoiceItem, InvoiceStatus
 from app.models.medical_record import MedicalRecord
+from app.models.password_reset import PasswordResetToken
 from app.models.patient import PatientProfile
 from app.models.payment import Payment, PaymentMethod
 from app.models.prescription import (
@@ -26,6 +27,7 @@ __all__ = [
     "InvoiceItem",
     "InvoiceStatus",
     "MedicalRecord",
+    "PasswordResetToken",
     "PatientProfile",
     "Payment",
     "PaymentMethod",

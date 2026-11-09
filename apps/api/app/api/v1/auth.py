@@ -1,9 +1,10 @@
 """Authentication and user session management endpoints."""
 
+import secrets
 import uuid
 from datetime import UTC, date, datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from jose import JWTError
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
@@ -20,6 +21,7 @@ from app.core.security import (
     verify_password,
 )
 from app.db.session import get_db
+from app.models.password_reset import PasswordResetToken
 from app.models.patient import PatientProfile
 from app.models.refresh_token import RefreshToken
 from app.models.user import User, UserRole
@@ -28,17 +30,46 @@ from app.schemas.auth import (
     APIResponse,
     AuthData,
     ChangePasswordRequest,
+    ForgotPasswordRequest,
     LoginRequest,
     RefreshRequest,
     RegisterRequest,
+    ResetPasswordRequest,
     SimpleMessageResponse,
     TokenResponse,
     UpdateProfileRequest,
     UserResponse,
 )
 from app.services.audit import record_audit_event
+from app.services.email import EmailSender, get_email_sender
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+
+def set_refresh_cookie(response: Response, refresh_token: str) -> None:
+    """Set the refresh token as an httpOnly, Secure, SameSite=Lax cookie."""
+    is_prod = settings.APP_ENV.lower() in ("production", "prod", "staging")
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=is_prod,
+        samesite="lax",
+        path="/",
+        max_age=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS * 86400,
+    )
+
+
+def clear_refresh_cookie(response: Response) -> None:
+    """Delete the refresh token cookie."""
+    is_prod = settings.APP_ENV.lower() in ("production", "prod", "staging")
+    response.delete_cookie(
+        key="refresh_token",
+        httponly=True,
+        secure=is_prod,
+        samesite="lax",
+        path="/",
+    )
 
 
 def issue_and_persist_tokens(
@@ -85,6 +116,7 @@ def issue_and_persist_tokens(
 def register(
     payload: RegisterRequest,
     request: Request,
+    response: Response,
     db: Session = Depends(get_db),
 ) -> APIResponse[AuthData]:
     """Register a new user account with credentials and role assignment.
@@ -154,6 +186,7 @@ def register(
 
     # Issue tracked token pair with new session family
     access_token, refresh_token = issue_and_persist_tokens(db=db, user=user)
+    set_refresh_cookie(response, refresh_token)
 
     return APIResponse(
         data=AuthData(
@@ -175,6 +208,7 @@ def register(
 def login(
     payload: LoginRequest,
     request: Request,
+    response: Response,
     db: Session = Depends(get_db),
 ) -> APIResponse[AuthData]:
     """Authenticate with email and password credentials.
@@ -218,6 +252,7 @@ def login(
     db.refresh(user)
 
     access_token, refresh_token = issue_and_persist_tokens(db=db, user=user)
+    set_refresh_cookie(response, refresh_token)
 
     return APIResponse(
         data=AuthData(
@@ -237,8 +272,9 @@ def login(
     summary="Renew access token using refresh token",
 )
 def refresh_token(
-    payload: RefreshRequest,
     request: Request,
+    response: Response,
+    payload: RefreshRequest | None = None,
     db: Session = Depends(get_db),
 ) -> APIResponse[TokenResponse]:
     """Validate refresh token, enforce single-use rotation, and issue fresh token pair."""
@@ -256,8 +292,16 @@ def refresh_token(
         headers={"WWW-Authenticate": "Bearer"},
     )
 
+    raw_token = (
+        payload.refresh_token
+        if payload and payload.refresh_token
+        else None
+    ) or request.cookies.get("refresh_token")
+    if not raw_token:
+        raise credentials_exception
+
     try:
-        decoded = decode_token(payload.refresh_token)
+        decoded = decode_token(raw_token)
         if decoded.get("type") != "refresh":
             raise credentials_exception
 
@@ -293,7 +337,7 @@ def refresh_token(
 
     # 2. Cryptographic and identity binding checks:
     # Ensure raw token hash matches stored hash, user matches, and family claim matches.
-    computed_hash = hash_token(payload.refresh_token)
+    computed_hash = hash_token(raw_token)
     if (
         stored_token.token_hash != computed_hash
         or stored_token.user_id != user.id
@@ -364,7 +408,7 @@ def refresh_token(
         db.rollback()
         raise
 
-
+    set_refresh_cookie(response, new_refresh)
 
     return APIResponse(
         data=TokenResponse(
@@ -383,10 +427,22 @@ def refresh_token(
     summary="Log out of current session",
 )
 def logout(
+    response: Response,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> SimpleMessageResponse:
     """Conclude current authentication session and revoke active refresh tokens."""
+    db.execute(
+        update(RefreshToken)
+        .where(
+            RefreshToken.user_id == current_user.id,
+            RefreshToken.is_revoked.is_(False),
+        )
+        .values(is_revoked=True)
+    )
+    db.commit()
+    clear_refresh_cookie(response)
+    return SimpleMessageResponse(message="Logout successful.")
     db.execute(
         update(RefreshToken)
         .where(
@@ -492,4 +548,165 @@ def change_password(
     db.commit()
 
     return SimpleMessageResponse(message="Password changed successfully.")
+
+
+@router.post(
+    "/forgot-password",
+    response_model=SimpleMessageResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Request password reset link",
+)
+def forgot_password(
+    payload: ForgotPasswordRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    email_sender: EmailSender = Depends(get_email_sender),
+) -> SimpleMessageResponse:
+    """Request an expiring, single-use password reset link.
+
+    Always returns a non-enumerating generic response.
+    """
+    client_ip = get_client_identifier(request)
+    check_rate_limit(
+        db,
+        "forgot_password_ip",
+        client_ip,
+        max_requests=5,
+        window_seconds=60,
+    )
+    normalized_email = payload.email.lower().strip()
+    check_rate_limit(
+        db,
+        "forgot_password_account",
+        normalized_email,
+        max_requests=5,
+        window_seconds=60,
+    )
+
+    user = db.scalar(select(User).where(User.email == normalized_email))
+    if user and user.is_active:
+        now = datetime.now(UTC)
+        raw_token = secrets.token_urlsafe(32)
+        token_hash_val = hash_token(raw_token)
+        expires_at = now + timedelta(hours=1)
+
+        # Invalidate previous unused reset tokens for this user
+        db.execute(
+            update(PasswordResetToken)
+            .where(
+                PasswordResetToken.user_id == user.id,
+                PasswordResetToken.is_used.is_(False),
+            )
+            .values(is_used=True)
+        )
+
+        reset_record = PasswordResetToken(
+            id=uuid.uuid4(),
+            user_id=user.id,
+            token_hash=token_hash_val,
+            expires_at=expires_at,
+            is_used=False,
+        )
+        db.add(reset_record)
+
+        record_audit_event(
+            db=db,
+            action="REQUEST_PASSWORD_RESET",
+            entity_type="User",
+            entity_id=str(user.id),
+            user_id=user.id,
+            new_values={
+                "email": normalized_email,
+                "expires_at": expires_at.isoformat(),
+            },
+            ip_address=client_ip,
+        )
+        db.commit()
+
+        reset_url = f"/reset-password?token={raw_token}"
+        email_sender.send_password_reset_email(user.email, reset_url)
+
+    return SimpleMessageResponse(
+        message="If the email is registered, a password reset link has been sent."
+    )
+
+
+@router.post(
+    "/reset-password",
+    response_model=SimpleMessageResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Reset password using valid token",
+)
+def reset_password(
+    payload: ResetPasswordRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> SimpleMessageResponse:
+    """Reset user password using a single-use, unexpired token.
+
+    All active refresh tokens are revoked upon successful password reset.
+    """
+    client_ip = get_client_identifier(request)
+    check_rate_limit(
+        db,
+        "reset_password",
+        client_ip,
+        max_requests=5,
+        window_seconds=60,
+    )
+
+    now = datetime.now(UTC)
+    computed_hash = hash_token(payload.token)
+
+    reset_record = db.scalar(
+        select(PasswordResetToken)
+        .where(PasswordResetToken.token_hash == computed_hash)
+        .with_for_update()
+    )
+
+    if not reset_record or reset_record.is_used or reset_record.expires_at < now:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired password reset token.",
+        )
+
+    user = db.get(User, reset_record.user_id)
+    if not user or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired password reset token.",
+        )
+
+    # Mark token as used
+    reset_record.is_used = True
+    reset_record.used_at = now
+
+    # Update user password
+    user.password_hash = hash_password(payload.new_password)
+
+    # Revoke all active refresh tokens for the user
+    db.execute(
+        update(RefreshToken)
+        .where(
+            RefreshToken.user_id == user.id,
+            RefreshToken.is_revoked.is_(False),
+        )
+        .values(is_revoked=True)
+    )
+
+    record_audit_event(
+        db=db,
+        action="RESET_PASSWORD",
+        entity_type="User",
+        entity_id=str(user.id),
+        user_id=user.id,
+        new_values={"reason": "Password reset completed with valid token"},
+        ip_address=client_ip,
+    )
+    db.commit()
+
+    return SimpleMessageResponse(
+        message="Password has been reset successfully. You can now log in with your new password."
+    )
+
 

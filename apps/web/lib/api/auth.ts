@@ -31,10 +31,13 @@ export async function registerApi(data: RegisterInput): Promise<AuthData> {
   return response.data;
 }
 
-export async function refreshApi(refreshToken: string): Promise<TokenResponse> {
+export async function refreshApi(refreshToken?: string): Promise<TokenResponse> {
+  const body = refreshToken
+    ? JSON.stringify({ refresh_token: refreshToken })
+    : JSON.stringify({});
   const response = await apiClient<APIResponse<TokenResponse>>("/auth/refresh", {
     method: "POST",
-    body: JSON.stringify({ refresh_token: refreshToken }),
+    body,
   });
   return response.data;
 }
@@ -55,6 +58,23 @@ export async function logoutApi(): Promise<void> {
 export async function changePasswordApi(data: ChangePasswordInput): Promise<void> {
   await apiClient<SimpleMessageResponse>("/auth/change-password", {
     method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function forgotPasswordApi(email: string): Promise<SimpleMessageResponse> {
+  return await apiClient<SimpleMessageResponse>("/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function resetPasswordApi(data: {
+  token: string;
+  new_password: string;
+}): Promise<SimpleMessageResponse> {
+  return await apiClient<SimpleMessageResponse>("/auth/reset-password", {
+    method: "POST",
     body: JSON.stringify(data),
   });
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { notFound } from "next/navigation";
 import {
   ShieldCheck,
   Search,
@@ -40,6 +41,10 @@ import {
 } from "@/components/ui";
 
 export default function DesignSystemShowcasePage() {
+  if (process.env.NODE_ENV === "production") {
+    notFound();
+  }
+
   const [currentRole, setCurrentRole] = React.useState<UserRole>("ADMIN");
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [confirmOpen, setConfirmOpen] = React.useState(false);

@@ -30,15 +30,15 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS Middleware
-origins = settings.cors_origins_list
-allow_origins = origins if origins else ["*"]
-allow_credentials = bool(origins and "*" not in origins)
+# CORS Middleware: explicitly specified origins are mandatory when allow_credentials=True
+origins = [origin for origin in settings.cors_origins_list if origin != "*"]
+if not origins:
+    origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allow_origins,
-    allow_credentials=allow_credentials,
+    allow_origins=origins,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )

@@ -2,11 +2,18 @@
 
 import * as React from "react";
 import {
+  clearSessionCookie,
   clearStoredTokens,
-  getStoredAccessToken,
-  setStoredTokens,
+  setAccessToken,
+  setSessionCookie,
 } from "@/lib/api/client";
-import { getCurrentUserApi, loginApi, logoutApi, registerApi } from "@/lib/api/auth";
+import {
+  getCurrentUserApi,
+  loginApi,
+  logoutApi,
+  refreshApi,
+  registerApi,
+} from "@/lib/api/auth";
 import { LoginInput, RegisterInput, User, UserRole } from "@/lib/api/types";
 import {
   Permission,
@@ -44,20 +51,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = React.useState<boolean>(true);
 
   const initSession = React.useCallback(async () => {
-    const existingToken = getStoredAccessToken();
-    if (!existingToken) {
-      setUser(null);
-      setToken(null);
-      setIsLoading(false);
-      return;
-    }
-
     try {
-      const currentUser = await getCurrentUserApi();
-      setUser(currentUser);
-      setToken(existingToken);
+      // Attempt silent refresh on initial application load using httpOnly cookie
+      const refreshData = await refreshApi();
+      if (refreshData?.access_token) {
+        setAccessToken(refreshData.access_token);
+        setSessionCookie();
+        setToken(refreshData.access_token);
+        const currentUser = await getCurrentUserApi();
+        setUser(currentUser);
+      } else {
+        setAccessToken(null);
+        clearSessionCookie();
+        setUser(null);
+        setToken(null);
+      }
     } catch {
-      clearStoredTokens();
+      setAccessToken(null);
+      clearSessionCookie();
       setUser(null);
       setToken(null);
     } finally {
@@ -73,7 +84,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     try {
       const authData = await loginApi(credentials);
-      setStoredTokens(authData.access_token, authData.refresh_token);
+      setAccessToken(authData.access_token);
+      setSessionCookie();
       setUser(authData.user);
       setToken(authData.access_token);
       return authData.user;
@@ -86,7 +98,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     try {
       const authData = await registerApi(data);
-      setStoredTokens(authData.access_token, authData.refresh_token);
+      setAccessToken(authData.access_token);
+      setSessionCookie();
       setUser(authData.user);
       setToken(authData.access_token);
       return authData.user;

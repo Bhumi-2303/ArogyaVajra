@@ -98,7 +98,28 @@ class AuthData(BaseModel):
 class RefreshRequest(BaseModel):
     """Payload for renewing an expired access token."""
 
-    refresh_token: str = Field(..., min_length=1)
+    refresh_token: str | None = Field(
+        default=None,
+        description="Refresh token. If omitted, token is read from httpOnly cookie.",
+    )
+
+
+class ForgotPasswordRequest(BaseModel):
+    """Payload for requesting a password reset email."""
+
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    """Payload for completing password reset."""
+
+    token: str = Field(..., min_length=1, description="Password reset token.")
+    new_password: str = Field(
+        ...,
+        min_length=8,
+        max_length=128,
+        description="New password must be at least 8 characters long.",
+    )
 
 
 class ChangePasswordRequest(BaseModel):

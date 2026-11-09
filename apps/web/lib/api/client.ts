@@ -1,5 +1,7 @@
 /**
  * Centralized API client with automatic token attachment and 401 recovery.
+ * Access token is stored strictly in-memory (never in localStorage).
+ * Refresh token is handled securely via httpOnly, Secure, SameSite=Lax cookies.
  */
 
 export class ApiError extends Error {
@@ -14,26 +16,51 @@ export class ApiError extends Error {
   }
 }
 
+// In-memory access token storage
+let memoryAccessToken: string | null = null;
+
+export function getAccessToken(): string | null {
+  return memoryAccessToken;
+}
+
+export function setAccessToken(token: string | null): void {
+  memoryAccessToken = token;
+}
+
+/**
+ * Manage lightweight session indicator cookie for frontend navigation and Next.js middleware.
+ * The backend remains the sole authoritative source of truth for authorization.
+ */
+export function setSessionCookie(): void {
+  if (typeof document !== "undefined") {
+    const isHttps = typeof window !== "undefined" && window.location.protocol === "https:";
+    document.cookie = `arogyavajra_session=1; path=/; SameSite=Lax${isHttps ? "; Secure" : ""}; max-age=${7 * 86400}`;
+  }
+}
+
+export function clearSessionCookie(): void {
+  if (typeof document !== "undefined") {
+    document.cookie = "arogyavajra_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+  }
+}
+
+// Backwards-compatible aliases that operate strictly on in-memory storage and session cookies
 export function getStoredAccessToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("arogyavajra_access_token");
+  return memoryAccessToken;
 }
 
 export function getStoredRefreshToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("arogyavajra_refresh_token");
+  return null;
 }
 
-export function setStoredTokens(accessToken: string, refreshToken: string): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem("arogyavajra_access_token", accessToken);
-  localStorage.setItem("arogyavajra_refresh_token", refreshToken);
+export function setStoredTokens(accessToken: string, _refreshToken?: string): void {
+  setAccessToken(accessToken);
+  setSessionCookie();
 }
 
 export function clearStoredTokens(): void {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem("arogyavajra_access_token");
-  localStorage.removeItem("arogyavajra_refresh_token");
+  setAccessToken(null);
+  clearSessionCookie();
 }
 
 /**
@@ -70,14 +97,14 @@ export function resolveApiUrl(endpoint: string): string {
 }
 
 /**
- * Execute an authenticated API request with automatic header injection and 401 handling.
+ * Execute an authenticated API request with credentials and automatic 401 refresh recovery.
  */
 export async function apiClient<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
   const url = resolveApiUrl(endpoint);
-  const token = getStoredAccessToken();
+  const token = getAccessToken();
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -89,41 +116,46 @@ export async function apiClient<T>(
   }
 
   let response = await fetch(url, {
+    credentials: "include",
     ...options,
     headers,
   });
 
-  // Handle 401 Unauthorized with token refresh attempt
-  if (response.status === 401 && !endpoint.includes("/auth/refresh") && !endpoint.includes("/auth/login")) {
-    const refreshToken = getStoredRefreshToken();
-    if (refreshToken) {
-      try {
-        const refreshRes = await fetch(resolveApiUrl("/auth/refresh"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ refresh_token: refreshToken }),
+  // Handle 401 Unauthorized with silent cookie-based token refresh attempt
+  if (
+    response.status === 401 &&
+    !endpoint.includes("/auth/refresh") &&
+    !endpoint.includes("/auth/login") &&
+    !endpoint.includes("/auth/register")
+  ) {
+    try {
+      const refreshRes = await fetch(resolveApiUrl("/auth/refresh"), {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+
+      if (refreshRes.ok) {
+        const refreshData = await refreshRes.json();
+        const newAccess = refreshData.data.access_token;
+        setAccessToken(newAccess);
+        setSessionCookie();
+
+        // Retry original request with fresh token
+        headers["Authorization"] = `Bearer ${newAccess}`;
+        response = await fetch(url, {
+          credentials: "include",
+          ...options,
+          headers,
         });
-
-        if (refreshRes.ok) {
-          const refreshData = await refreshRes.json();
-          const newAccess = refreshData.data.access_token;
-          const newRefresh = refreshData.data.refresh_token;
-          setStoredTokens(newAccess, newRefresh);
-
-          // Retry original request with fresh token
-          headers["Authorization"] = `Bearer ${newAccess}`;
-          response = await fetch(url, {
-            ...options,
-            headers,
-          });
-        } else {
-          clearStoredTokens();
-        }
-      } catch {
-        clearStoredTokens();
+      } else {
+        setAccessToken(null);
+        clearSessionCookie();
       }
-    } else {
-      clearStoredTokens();
+    } catch {
+      setAccessToken(null);
+      clearSessionCookie();
     }
   }
 

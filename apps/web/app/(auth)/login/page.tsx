@@ -212,19 +212,29 @@ setSuccessMessage(null)}>
             disabled={isSubmitting}
           />
 
-          <Input
-            id="login-password"
-            type="password"
-            label="Password"
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            error={fieldErrors.password}
-            leftIcon={<Lock className="h-4 w-4 text-app-muted" />}
-            required
-            autoComplete="current-password"
-            disabled={isSubmitting}
-          />
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-navy">Password</span>
+              <Link
+                href="/forgot-password"
+                className="text-xs font-semibold text-royal hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-royal rounded"
+              >
+                Forgot password?
+              </Link>
+            </div>
+            <Input
+              id="login-password"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              error={fieldErrors.password}
+              leftIcon={<Lock className="h-4 w-4 text-app-muted" />}
+              required
+              autoComplete="current-password"
+              disabled={isSubmitting}
+            />
+          </div>
 
           {/* Demo Testing Accounts Quick-Fill (Development / Testing Only) */}
           {process.env.NODE_ENV !== "production" && (
