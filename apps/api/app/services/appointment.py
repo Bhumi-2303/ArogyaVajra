@@ -2,6 +2,7 @@ import datetime
 import uuid
 
 from fastapi import HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models.appointment import Appointment, AppointmentStatus
@@ -127,7 +128,10 @@ class AppointmentService:
         ):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="The requested time slot conflicts with an existing appointment.",
+                detail={
+                    "code": "APPOINTMENT_CONFLICT",
+                    "message": "The requested time slot conflicts with an existing appointment.",
+                },
             )
 
         appointment_code = AppointmentRepository.generate_appointment_code(db)
@@ -146,7 +150,17 @@ class AppointmentService:
             status=AppointmentStatus.SCHEDULED,
         )
 
-        AppointmentRepository.create(db, appointment)
+        try:
+            AppointmentRepository.create(db, appointment)
+        except IntegrityError as exc:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "code": "APPOINTMENT_CONFLICT",
+                    "message": "The requested time slot conflicts with an existing appointment.",
+                },
+            ) from exc
 
         record_audit_event(
             db=db,
@@ -241,13 +255,75 @@ class AppointmentService:
         if data.reason is not None:
             appointment.reason = data.reason
 
+        # Reschedule path: date or time updates
+        is_reschedule = (
+            data.appointment_date is not None
+            or data.start_time is not None
+            or data.end_time is not None
+        )
+        if is_reschedule:
+            if appointment.status in [AppointmentStatus.COMPLETED, AppointmentStatus.CANCELLED]:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Cannot reschedule a {appointment.status.value.lower()} appointment.",
+                )
+
+            new_date = data.appointment_date or appointment.appointment_date
+            new_start = data.start_time or appointment.start_time
+            new_end = data.end_time or appointment.end_time
+
+            if new_start >= new_end:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="end_time must be after start_time",
+                )
+
+            cls._validate_availability(db, appointment.doctor_id, new_date, new_start, new_end)
+
+            if AppointmentRepository.check_overlap(
+                db,
+                appointment.doctor_id,
+                new_date,
+                new_start,
+                new_end,
+                exclude_appointment_id=appointment.id,
+            ):
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail={
+                        "code": "APPOINTMENT_CONFLICT",
+                        "message": "The requested time slot conflicts with an existing appointment.",
+                    },
+                )
+
+            old_values["appointment_date"] = str(appointment.appointment_date)
+            old_values["start_time"] = str(appointment.start_time)
+            old_values["end_time"] = str(appointment.end_time)
+
+            appointment.appointment_date = new_date
+            appointment.start_time = new_start
+            appointment.end_time = new_end
+
         db.add(appointment)
-        db.flush()
+        try:
+            db.flush()
+        except IntegrityError as exc:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "code": "APPOINTMENT_CONFLICT",
+                    "message": "The requested time slot conflicts with an existing appointment.",
+                },
+            ) from exc
 
         new_values = {
             "status": appointment.status.value,
             "notes": appointment.notes,
             "reason": appointment.reason,
+            "appointment_date": str(appointment.appointment_date),
+            "start_time": str(appointment.start_time),
+            "end_time": str(appointment.end_time),
         }
 
         record_audit_event(

@@ -85,7 +85,13 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         elif exc.status_code == 404:
             code = "NOT_FOUND"
         elif exc.status_code == 409:
-            code = "CONFLICT"
+            code = (
+                "APPOINTMENT_CONFLICT"
+                if "appointment" in str(detail).lower()
+                or "slot" in str(detail).lower()
+                or "conflict" in str(detail).lower()
+                else "CONFLICT"
+            )
 
     return JSONResponse(
         status_code=exc.status_code,
