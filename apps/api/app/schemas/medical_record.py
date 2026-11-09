@@ -1,6 +1,5 @@
 import datetime
 import uuid
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -8,13 +7,13 @@ from pydantic import BaseModel, ConfigDict
 class MedicalRecordBase(BaseModel):
     patient_id: uuid.UUID
     doctor_id: uuid.UUID
-    appointment_id: Optional[uuid.UUID] = None
+    appointment_id: uuid.UUID | None = None
     record_date: datetime.date
-    chief_complaint: Optional[str] = None
-    clinical_notes: Optional[str] = None
-    diagnosis: Optional[str] = None
-    treatment_notes: Optional[str] = None
-    follow_up_date: Optional[datetime.date] = None
+    chief_complaint: str | None = None
+    clinical_notes: str | None = None
+    diagnosis: str | None = None
+    treatment_notes: str | None = None
+    follow_up_date: datetime.date | None = None
 
 
 class MedicalRecordCreate(MedicalRecordBase):
@@ -22,11 +21,11 @@ class MedicalRecordCreate(MedicalRecordBase):
 
 
 class MedicalRecordUpdate(BaseModel):
-    chief_complaint: Optional[str] = None
-    clinical_notes: Optional[str] = None
-    diagnosis: Optional[str] = None
-    treatment_notes: Optional[str] = None
-    follow_up_date: Optional[datetime.date] = None
+    chief_complaint: str | None = None
+    clinical_notes: str | None = None
+    diagnosis: str | None = None
+    treatment_notes: str | None = None
+    follow_up_date: datetime.date | None = None
 
 
 class MedicalRecordResponse(MedicalRecordBase):

@@ -1,8 +1,10 @@
 import uuid
+from datetime import date
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
-from app.models.prescription import Prescription
+from app.models.prescription import Prescription, PrescriptionItem, PrescriptionStatus
 
 
 class PrescriptionRepository:
@@ -19,6 +21,10 @@ class PrescriptionRepository:
     @staticmethod
     def search(
         db: Session,
+        q: str | None = None,
+        status: PrescriptionStatus | None = None,
+        start_date: date | None = None,
+        end_date: date | None = None,
         patient_id: uuid.UUID | None = None,
         doctor_id: uuid.UUID | None = None,
         appointment_id: uuid.UUID | None = None,
@@ -33,8 +39,32 @@ class PrescriptionRepository:
             query = query.filter(Prescription.doctor_id == doctor_id)
         if appointment_id:
             query = query.filter(Prescription.appointment_id == appointment_id)
+        if status:
+            query = query.filter(Prescription.status == status)
+        if start_date:
+            query = query.filter(Prescription.prescription_date >= start_date)
+        if end_date:
+            query = query.filter(Prescription.prescription_date <= end_date)
+        if q and q.strip():
+            search_pattern = f"%{q.strip()}%"
+            query = query.filter(
+                or_(
+                    Prescription.instructions.ilike(search_pattern),
+                    Prescription.items.any(
+                        PrescriptionItem.medicine_name.ilike(search_pattern)
+                    ),
+                )
+            )
 
         total = query.count()
-        items = query.order_by(Prescription.prescription_date.desc(), Prescription.created_at.desc()).offset(skip).limit(limit).all()
+        items = (
+            query.order_by(
+                Prescription.prescription_date.desc(),
+                Prescription.created_at.desc(),
+            )
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
 
         return items, total

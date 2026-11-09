@@ -1,13 +1,15 @@
 import uuid
+from datetime import date
+
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.models.prescription import Prescription, PrescriptionItem, PrescriptionStatus
 from app.models.user import User, UserRole
-from app.repositories.prescription import PrescriptionRepository
+from app.repositories.appointment import AppointmentRepository
 from app.repositories.doctor import DoctorRepository
 from app.repositories.patient import PatientRepository
-from app.repositories.appointment import AppointmentRepository
+from app.repositories.prescription import PrescriptionRepository
 from app.schemas.prescription import PrescriptionCreate, PrescriptionUpdate
 from app.services.audit import record_audit_event
 
@@ -197,6 +199,10 @@ class PrescriptionService:
         cls,
         db: Session,
         current_user: User,
+        q: str | None = None,
+        status: PrescriptionStatus | None = None,
+        start_date: date | None = None,
+        end_date: date | None = None,
         patient_id: uuid.UUID | None = None,
         doctor_id: uuid.UUID | None = None,
         appointment_id: uuid.UUID | None = None,
@@ -221,9 +227,13 @@ class PrescriptionService:
         skip = (page - 1) * page_size
         return PrescriptionRepository.search(
             db=db,
+            q=q,
+            status=status,
+            start_date=start_date,
+            end_date=end_date,
             patient_id=patient_id,
             doctor_id=doctor_id,
             appointment_id=appointment_id,
             skip=skip,
-            limit=page_size
+            limit=page_size,
         )

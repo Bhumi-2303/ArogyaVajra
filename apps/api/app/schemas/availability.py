@@ -1,5 +1,6 @@
 import datetime
 import uuid
+
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
@@ -30,9 +31,12 @@ class DoctorAvailabilityUpdate(BaseModel):
 
     @model_validator(mode="after")
     def validate_times(self) -> "DoctorAvailabilityUpdate":
-        if self.start_time and self.end_time:
-            if self.start_time >= self.end_time:
-                raise ValueError("end_time must be after start_time")
+        if (
+            self.start_time
+            and self.end_time
+            and self.start_time >= self.end_time
+        ):
+            raise ValueError("end_time must be after start_time")
         return self
 
 

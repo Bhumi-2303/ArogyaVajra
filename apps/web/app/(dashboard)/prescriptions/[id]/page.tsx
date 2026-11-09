@@ -1,13 +1,22 @@
 "use client";
 
-import { usePrescription } from "@/hooks/use-prescriptions";
-import { Skeleton } from "@/components/ui/skeleton";
+import Link from "next/link";
+import {
+  ArrowLeft,
+  Calendar,
+  FileQuestion,
+  FileText,
+  Pill,
+  Printer,
+  Shield,
+} from "lucide-react";
+
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Pill, FileText, ArrowLeft, Calendar, FileQuestion } from "lucide-react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { usePrescription } from "@/hooks/use-prescriptions";
 
 export default function PrescriptionDetailPage({
   params,
@@ -35,11 +44,9 @@ export default function PrescriptionDetailPage({
           </Link>
         </Button>
         <Alert variant="danger">
-<>Error</>
-          <>
-            {error instanceof Error ? error.message : "Prescription not found."}
-          </>
-</Alert>
+          <p className="font-semibold">Error</p>
+          <p>{error instanceof Error ? error.message : "Prescription not found."}</p>
+        </Alert>
       </div>
     );
   }
@@ -58,8 +65,32 @@ export default function PrescriptionDetailPage({
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-6 max-w-4xl mx-auto printable-document">
+      {/* Formal Medical Letterhead for Print */}
+      <div className="print-only border-b-2 border-primary pb-4 mb-6">
+        <div className="flex justify-between items-start">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-primary text-white flex items-center justify-center">
+              <Shield className="h-6 w-6" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight text-navy">
+                ArogyaVajra Healthcare Management
+              </h1>
+              <p className="text-xs text-muted-foreground">
+                Central Clinical Center • Healthcare Blvd • Tel: (555) 019-2834
+              </p>
+            </div>
+          </div>
+          <div className="text-right">
+            <span className="text-2xl font-bold text-primary">Rx</span>
+            <p className="text-xs text-muted-foreground">Medical Prescription</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Screen Header (Hidden on Print) */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 no-print">
         <div>
           <Button variant="ghost" className="mb-2 -ml-4" asChild>
             <Link href="/prescriptions">
@@ -71,7 +102,17 @@ export default function PrescriptionDetailPage({
             Prescription Details
           </h1>
         </div>
-        <div>{renderStatusBadge(prescription.status)}</div>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            onClick={() => window.print()}
+            className="flex items-center gap-2"
+          >
+            <Printer className="h-4 w-4" />
+            Print / Save as PDF
+          </Button>
+          {renderStatusBadge(prescription.status)}
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -145,7 +186,7 @@ export default function PrescriptionDetailPage({
           ) : (
             <div className="space-y-4">
               {prescription.items.map((item, idx) => (
-                <div key={item.id} className="p-4 rounded-lg border bg-card shadow-sm hover:shadow-md transition-shadow">
+                <div key={item.id} className="p-4 rounded-lg border bg-card shadow-sm">
                   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-3 border-b pb-3">
                     <h3 className="text-lg font-bold text-primary flex items-center gap-2">
                       <span className="flex items-center justify-center bg-primary/10 text-primary w-6 h-6 rounded-full text-xs">
@@ -170,13 +211,13 @@ export default function PrescriptionDetailPage({
                     </div>
                     <div>
                       <span className="text-muted-foreground block text-xs uppercase tracking-wider mb-1">Route</span>
-                      <span className="font-medium">{item.route || "N/A"}</span>
+                      <span className="font-medium">{item.route || "Oral"}</span>
                     </div>
                   </div>
 
                   {item.instructions && (
                     <div className="mt-3 bg-muted/50 p-3 rounded-md text-sm">
-                      <span className="font-semibold block mb-1">Instructions:</span>
+                      <span className="font-semibold block mb-1">Directions for Patient:</span>
                       {item.instructions}
                     </div>
                   )}
@@ -186,6 +227,20 @@ export default function PrescriptionDetailPage({
           )}
         </CardContent>
       </Card>
+
+      {/* Doctor Signature Block for Print */}
+      <div className="print-only pt-12 mt-12 border-t">
+        <div className="flex justify-between items-end">
+          <div className="text-xs text-muted-foreground">
+            <p>This is a legally valid computer-generated clinical prescription.</p>
+            <p>Issued by certified medical personnel at ArogyaVajra Healthcare Platform.</p>
+          </div>
+          <div className="text-center w-64 border-t border-black pt-2">
+            <p className="font-semibold text-sm">Attending Physician</p>
+            <p className="text-xs text-muted-foreground">Authorized Signature & Stamp</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

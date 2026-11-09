@@ -1,9 +1,9 @@
 import datetime
 import uuid
-from typing import Optional, List
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict
+
 from app.models.invoice import InvoiceStatus
 from app.schemas.payment import PaymentResponse
 
@@ -27,7 +27,7 @@ class InvoiceItemResponse(InvoiceItemBase):
 
 class InvoiceBase(BaseModel):
     patient_id: uuid.UUID
-    appointment_id: Optional[uuid.UUID] = None
+    appointment_id: uuid.UUID | None = None
     invoice_date: datetime.date
     discount: Decimal = Decimal("0.00")
     tax: Decimal = Decimal("0.00")
@@ -35,11 +35,11 @@ class InvoiceBase(BaseModel):
 
 
 class InvoiceCreate(InvoiceBase):
-    items: List[InvoiceItemCreate]
+    items: list[InvoiceItemCreate]
 
 
 class InvoiceUpdate(BaseModel):
-    status: Optional[InvoiceStatus] = None
+    status: InvoiceStatus | None = None
 
 
 class InvoiceResponse(InvoiceBase):
@@ -52,14 +52,14 @@ class InvoiceResponse(InvoiceBase):
     created_by: uuid.UUID
     created_at: datetime.datetime
     updated_at: datetime.datetime
-    items: List[InvoiceItemResponse]
-    payments: List[PaymentResponse] = []
+    items: list[InvoiceItemResponse]
+    payments: list[PaymentResponse] = []
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class InvoiceListResponse(BaseModel):
-    data: List[InvoiceResponse]
+    data: list[InvoiceResponse]
     message: str = "Invoices retrieved successfully."
     pagination: dict
 

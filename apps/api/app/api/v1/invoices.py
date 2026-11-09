@@ -1,5 +1,5 @@
 import uuid
-from typing import Optional
+from datetime import date
 
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.orm import Session
@@ -8,11 +8,15 @@ from app.api.deps import get_current_user, get_db
 from app.models.user import User
 from app.schemas.invoice import (
     InvoiceCreate,
-    InvoiceUpdate,
-    InvoiceListResponse,
     InvoiceDetailResponse,
+    InvoiceListResponse,
+    InvoiceUpdate,
 )
-from app.schemas.payment import PaymentCreate, PaymentResponse
+from app.schemas.payment import (
+    PaymentCreate,
+    PaymentReceiptResponse,
+    PaymentResponse,
+)
 from app.services.invoice import InvoiceService
 from app.services.payment import PaymentService
 
@@ -52,22 +56,39 @@ def create_invoice(
     summary="List invoices",
 )
 def list_invoices(
-    patient_id: Optional[uuid.UUID] = Query(None, description="Filter by patient ID"),
-    status: Optional[str] = Query(None, description="Filter by payment status"),
-    invoice_number: Optional[str] = Query(None, description="Filter by invoice number"),
-    date: Optional[str] = Query(None, description="Filter by invoice date"),
+    q: str | None = Query(None, description="Search invoice number or item description"),
+    status: str | None = Query(None, description="Filter by payment status"),
+    start_date: date | None = Query(None, description="Filter invoices on or after start date"),
+    end_date: date | None = Query(None, description="Filter invoices on or before end date"),
+    patient_id: uuid.UUID | None = Query(None, description="Filter by patient ID"),
+    invoice_number: str | None = Query(None, description="Filter by invoice number"),
+    invoice_date: str | None = Query(None, alias="date", description="Filter by invoice date"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    # Support either single date or date range
+    eff_start = start_date
+    eff_end = end_date
+    if invoice_date and not eff_start and not eff_end:
+        try:
+            parsed = date.fromisoformat(invoice_date)
+            eff_start = parsed
+            eff_end = parsed
+        except ValueError:
+            eff_start = None
+            eff_end = None
+
     items, total = InvoiceService.list_invoices(
         db=db,
         current_user=current_user,
+        q=q,
         patient_id=patient_id,
         status=status,
         invoice_number=invoice_number,
-        date=date,
+        start_date=eff_start,
+        end_date=eff_end,
         page=page,
         page_size=page_size,
     )
@@ -156,6 +177,26 @@ def record_payment(
     return PaymentResponse.model_validate(payment)
 
 
+@router.get(
+    "/{invoice_id}/payments/{payment_id}/receipt",
+    response_model=PaymentReceiptResponse,
+    summary="Get payment receipt",
+)
+def get_payment_receipt(
+    invoice_id: uuid.UUID,
+    payment_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> PaymentReceiptResponse:
+    receipt_data = PaymentService.get_payment_receipt(
+        db=db,
+        invoice_id=invoice_id,
+        payment_id=payment_id,
+        current_user=current_user,
+    )
+    return PaymentReceiptResponse(data=receipt_data)
+
+
 @router.post("/{invoice_id}/issue", response_model=InvoiceDetailResponse, summary="Issue an invoice")
 def issue_invoice(
     invoice_id: uuid.UUID,
@@ -166,8 +207,8 @@ def issue_invoice(
     ip_address = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
     
-    from app.schemas.invoice import InvoiceUpdate
     from app.models.invoice import InvoiceStatus
+    from app.schemas.invoice import InvoiceUpdate
     
     updated = InvoiceService.update_invoice(
         db=db,
@@ -190,8 +231,8 @@ def cancel_invoice(
     ip_address = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
     
-    from app.schemas.invoice import InvoiceUpdate
     from app.models.invoice import InvoiceStatus
+    from app.schemas.invoice import InvoiceUpdate
     
     updated = InvoiceService.update_invoice(
         db=db,

@@ -1,17 +1,17 @@
 import uuid
-from typing import Optional
+from datetime import date
 
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db
+from app.models.prescription import PrescriptionStatus
 from app.models.user import User
 from app.schemas.prescription import (
     PrescriptionCreate,
-    PrescriptionUpdate,
-    PrescriptionResponse,
-    PrescriptionListResponse,
     PrescriptionDetailResponse,
+    PrescriptionListResponse,
+    PrescriptionUpdate,
 )
 from app.services.prescription import PrescriptionService
 
@@ -51,9 +51,13 @@ def create_prescription(
     summary="List prescriptions",
 )
 def list_prescriptions(
-    patient_id: Optional[uuid.UUID] = Query(None, description="Filter by patient ID"),
-    doctor_id: Optional[uuid.UUID] = Query(None, description="Filter by doctor ID"),
-    appointment_id: Optional[uuid.UUID] = Query(None, description="Filter by appointment ID"),
+    q: str | None = Query(None, description="Search medicine name or instructions"),
+    status: PrescriptionStatus | None = Query(None, description="Filter by prescription status"),
+    start_date: date | None = Query(None, description="Filter prescriptions on or after start date"),
+    end_date: date | None = Query(None, description="Filter prescriptions on or before end date"),
+    patient_id: uuid.UUID | None = Query(None, description="Filter by patient ID"),
+    doctor_id: uuid.UUID | None = Query(None, description="Filter by doctor ID"),
+    appointment_id: uuid.UUID | None = Query(None, description="Filter by appointment ID"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
@@ -62,6 +66,10 @@ def list_prescriptions(
     items, total = PrescriptionService.list_prescriptions(
         db=db,
         current_user=current_user,
+        q=q,
+        status=status,
+        start_date=start_date,
+        end_date=end_date,
         patient_id=patient_id,
         doctor_id=doctor_id,
         appointment_id=appointment_id,
@@ -134,8 +142,8 @@ def cancel_prescription(
     ip_address = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
     
-    from app.schemas.prescription import PrescriptionUpdate
     from app.models.prescription import PrescriptionStatus
+    from app.schemas.prescription import PrescriptionUpdate
     
     updated = PrescriptionService.update_prescription(
         db=db,

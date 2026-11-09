@@ -1,8 +1,8 @@
 import datetime
 import uuid
-from typing import Optional, List
 
 from pydantic import BaseModel, ConfigDict
+
 from app.models.prescription import PrescriptionStatus
 
 
@@ -11,8 +11,8 @@ class PrescriptionItemBase(BaseModel):
     dosage: str
     frequency: str
     duration: str
-    route: Optional[str] = None
-    instructions: Optional[str] = None
+    route: str | None = None
+    instructions: str | None = None
 
 
 class PrescriptionItemCreate(PrescriptionItemBase):
@@ -28,34 +28,34 @@ class PrescriptionItemResponse(PrescriptionItemBase):
 class PrescriptionBase(BaseModel):
     patient_id: uuid.UUID
     doctor_id: uuid.UUID
-    appointment_id: Optional[uuid.UUID] = None
+    appointment_id: uuid.UUID | None = None
     prescription_date: datetime.date
-    instructions: Optional[str] = None
+    instructions: str | None = None
     status: PrescriptionStatus = PrescriptionStatus.ACTIVE
 
 
 class PrescriptionCreate(PrescriptionBase):
-    items: List[PrescriptionItemCreate]
+    items: list[PrescriptionItemCreate]
 
 
 class PrescriptionUpdate(BaseModel):
-    instructions: Optional[str] = None
-    status: Optional[PrescriptionStatus] = None
+    instructions: str | None = None
+    status: PrescriptionStatus | None = None
     # Assuming updating items means replacing the whole list of items or we just keep it simple.
-    items: Optional[List[PrescriptionItemCreate]] = None
+    items: list[PrescriptionItemCreate] | None = None
 
 
 class PrescriptionResponse(PrescriptionBase):
     id: uuid.UUID
     created_at: datetime.datetime
     updated_at: datetime.datetime
-    items: List[PrescriptionItemResponse]
+    items: list[PrescriptionItemResponse]
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class PrescriptionListResponse(BaseModel):
-    data: List[PrescriptionResponse]
+    data: list[PrescriptionResponse]
     message: str = "Prescriptions retrieved successfully."
     pagination: dict
 

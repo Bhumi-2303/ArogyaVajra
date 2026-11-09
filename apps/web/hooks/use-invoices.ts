@@ -84,3 +84,18 @@ export function useRecordPayment(invoiceId: string) {
     isRecording: recordMutation.isPending,
   };
 }
+
+export function usePaymentReceipt(invoiceId?: string | null, paymentId?: string | null) {
+  const query = useQuery({
+    queryKey: [...INVOICES_QUERY_KEY, invoiceId, "payments", paymentId, "receipt"],
+    queryFn: () => invoicesApi.getReceipt(invoiceId!, paymentId!),
+    enabled: Boolean(invoiceId && paymentId),
+  });
+
+  return {
+    receipt: query.data?.data,
+    isLoading: query.isLoading,
+    error: query.error,
+  };
+}
+

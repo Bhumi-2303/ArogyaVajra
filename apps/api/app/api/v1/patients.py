@@ -12,6 +12,13 @@ from app.api.deps import (
 )
 from app.db.session import get_db
 from app.models.user import User, UserRole
+from app.repositories.appointment import AppointmentRepository
+from app.repositories.invoice import InvoiceRepository
+from app.repositories.medical_record import MedicalRecordRepository
+from app.repositories.prescription import PrescriptionRepository
+from app.schemas.appointment import AppointmentResponse
+from app.schemas.invoice import InvoiceResponse
+from app.schemas.medical_record import MedicalRecordResponse
 from app.schemas.patient import (
     PaginationMeta,
     PatientCreate,
@@ -21,16 +28,7 @@ from app.schemas.patient import (
     PatientSubresourceListResponse,
     PatientUpdate,
 )
-
-from app.repositories.appointment import AppointmentRepository
-from app.repositories.medical_record import MedicalRecordRepository
-from app.repositories.prescription import PrescriptionRepository
-from app.repositories.invoice import InvoiceRepository
-from app.schemas.appointment import AppointmentResponse
-from app.schemas.medical_record import MedicalRecordResponse
 from app.schemas.prescription import PrescriptionResponse
-from app.schemas.invoice import InvoiceResponse
-
 from app.services.patient import PatientService
 
 router = APIRouter(prefix="/patients", tags=["Patients"])

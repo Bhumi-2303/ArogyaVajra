@@ -1,13 +1,16 @@
 import uuid
 from decimal import Decimal
+
 from fastapi import HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models.invoice import Invoice, InvoiceStatus
+from app.models.invoice import InvoiceStatus
+from app.models.patient import PatientProfile
 from app.models.payment import Payment
 from app.models.user import User, UserRole
 from app.repositories.invoice import InvoiceRepository
-from app.schemas.payment import PaymentCreate
+from app.schemas.payment import PaymentCreate, PaymentReceiptData
 from app.services.audit import record_audit_event
 
 
@@ -121,3 +124,58 @@ class PaymentService:
         )
 
         return payment
+
+    @classmethod
+    def get_payment_receipt(
+        cls,
+        db: Session,
+        invoice_id: uuid.UUID,
+        payment_id: uuid.UUID,
+        current_user: User,
+    ) -> PaymentReceiptData:
+        """Retrieve formatted payment receipt data honoring invoice read permissions."""
+        from app.services.invoice import InvoiceService
+
+        # Same authorization rules as invoice read
+        invoice = InvoiceService.get_invoice(db, invoice_id, current_user)
+
+        payment = db.scalar(
+            select(Payment).where(
+                Payment.id == payment_id,
+                Payment.invoice_id == invoice_id,
+            )
+        )
+        if not payment:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Payment receipt not found.",
+            )
+
+        patient = db.scalar(
+            select(PatientProfile).where(PatientProfile.id == invoice.patient_id)
+        )
+        patient_name = (
+            f"{patient.first_name} {patient.last_name}" if patient else None
+        )
+        patient_code = patient.patient_code if patient else None
+        receipt_number = f"REC-{invoice.invoice_number}-{payment.id.hex[:6].upper()}"
+
+        return PaymentReceiptData(
+            receipt_number=receipt_number,
+            payment_id=payment.id,
+            invoice_id=invoice.id,
+            invoice_number=invoice.invoice_number,
+            patient_id=invoice.patient_id,
+            patient_name=patient_name,
+            patient_code=patient_code,
+            amount_paid=payment.amount,
+            payment_date=payment.created_at,
+            payment_method=payment.payment_method,
+            reference=payment.reference,
+            invoice_total=invoice.total,
+            invoice_paid_amount=invoice.paid_amount,
+            invoice_balance=invoice.balance,
+            invoice_status=invoice.status.value,
+            received_by=payment.created_by,
+        )
+

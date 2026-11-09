@@ -1,13 +1,16 @@
 import uuid
+from datetime import date
 from decimal import Decimal
-from fastapi import HTTPException, status as http_status
+
+from fastapi import HTTPException
+from fastapi import status as http_status
 from sqlalchemy.orm import Session
 
 from app.models.invoice import Invoice, InvoiceItem, InvoiceStatus
 from app.models.user import User, UserRole
+from app.repositories.appointment import AppointmentRepository
 from app.repositories.invoice import InvoiceRepository
 from app.repositories.patient import PatientRepository
-from app.repositories.appointment import AppointmentRepository
 from app.schemas.invoice import InvoiceCreate, InvoiceUpdate
 from app.services.audit import record_audit_event
 
@@ -193,10 +196,12 @@ class InvoiceService:
         cls,
         db: Session,
         current_user: User,
+        q: str | None = None,
+        status: InvoiceStatus | str | None = None,
+        start_date: date | None = None,
+        end_date: date | None = None,
         patient_id: uuid.UUID | None = None,
-        status: str | None = None,
         invoice_number: str | None = None,
-        date: str | None = None,
         page: int = 1,
         page_size: int = 20,
     ) -> tuple[list[Invoice], int]:
@@ -217,10 +222,12 @@ class InvoiceService:
         skip = (page - 1) * page_size
         return InvoiceRepository.search(
             db=db,
+            q=q,
             patient_id=patient_id,
             status=status,
             invoice_number=invoice_number,
-            invoice_date=date,
+            start_date=start_date,
+            end_date=end_date,
             skip=skip,
-            limit=page_size
+            limit=page_size,
         )

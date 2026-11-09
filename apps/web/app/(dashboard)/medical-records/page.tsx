@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert } from "@/components/ui/alert";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Plus, FileText, FileSearch, Calendar } from "lucide-react";
+import { Plus, FileText, FileSearch, Calendar, Search } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -31,11 +31,17 @@ export default function MedicalRecordsPage() {
   
   const [page, setPage] = useState(1);
   const [patientFilter, setPatientFilter] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
 
   const { records, pagination, isLoading, error } = useMedicalRecords({
     page,
     page_size: 20,
     patient_id: patientFilter || undefined,
+    q: searchTerm || undefined,
+    start_date: startDate || undefined,
+    end_date: endDate || undefined,
   });
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -70,34 +76,82 @@ export default function MedicalRecordsPage() {
         </div>
       </div>
 
-      {(user!.role === "ADMIN" || user!.role === "RECEPTIONIST" || user!.role === "DOCTOR") && (
-        <div className="flex flex-col gap-4 sm:flex-row p-4 border rounded-md bg-muted/20">
-          <div className="flex flex-col space-y-1.5 flex-1">
-            <label className="text-sm font-medium">Filter by Patient ID</label>
+      <div className="flex flex-col gap-3 p-4 border rounded-md bg-muted/20">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="flex flex-col space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Search</label>
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Diagnosis, complaint..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setPage(1);
+                }}
+                className="flex h-9 w-full rounded-md border border-input bg-background pl-8 pr-3 py-1 text-sm shadow-sm"
+              />
+            </div>
+          </div>
+          {(user!.role === "ADMIN" || user!.role === "RECEPTIONIST" || user!.role === "DOCTOR") && (
+            <div className="flex flex-col space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Patient ID</label>
+              <input
+                type="text"
+                placeholder="Enter UUID..."
+                value={patientFilter}
+                onChange={(e) => {
+                  setPatientFilter(e.target.value);
+                  setPage(1);
+                }}
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm font-mono text-xs"
+              />
+            </div>
+          )}
+          <div className="flex flex-col space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">From Date</label>
             <input
-              type="text"
-              placeholder="Enter UUID..."
-              value={patientFilter}
+              type="date"
+              value={startDate}
               onChange={(e) => {
-                setPatientFilter(e.target.value);
+                setStartDate(e.target.value);
                 setPage(1);
               }}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
             />
           </div>
-          <div className="flex items-end">
-            <Button 
-              variant="outline" 
+          <div className="flex flex-col space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">To Date</label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => {
+                setEndDate(e.target.value);
+                setPage(1);
+              }}
+              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+            />
+          </div>
+        </div>
+        {(searchTerm || patientFilter || startDate || endDate) && (
+          <div className="flex justify-end pt-1">
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => {
+                setSearchTerm("");
                 setPatientFilter("");
+                setStartDate("");
+                setEndDate("");
                 setPage(1);
               }}
             >
-              Clear
+              Reset Filters
             </Button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {isLoading ? (
         <div className="space-y-4">

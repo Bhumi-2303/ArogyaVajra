@@ -1,9 +1,10 @@
 import uuid
+from datetime import date
 
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
-from app.models.invoice import Invoice
+from app.models.invoice import Invoice, InvoiceItem, InvoiceStatus
 
 
 class InvoiceRepository:
@@ -31,10 +32,12 @@ class InvoiceRepository:
     @staticmethod
     def search(
         db: Session,
+        q: str | None = None,
         patient_id: uuid.UUID | None = None,
-        status: str | None = None,
+        status: InvoiceStatus | str | None = None,
         invoice_number: str | None = None,
-        invoice_date: str | None = None,
+        start_date: date | None = None,
+        end_date: date | None = None,
         skip: int = 0,
         limit: int = 20,
     ) -> tuple[list[Invoice], int]:
@@ -46,10 +49,30 @@ class InvoiceRepository:
             query = query.filter(Invoice.status == status)
         if invoice_number:
             query = query.filter(Invoice.invoice_number.ilike(f"%{invoice_number}%"))
-        if invoice_date:
-            query = query.filter(Invoice.invoice_date == invoice_date)
+        if start_date:
+            query = query.filter(Invoice.invoice_date >= start_date)
+        if end_date:
+            query = query.filter(Invoice.invoice_date <= end_date)
+        if q and q.strip():
+            search_pattern = f"%{q.strip()}%"
+            query = query.filter(
+                or_(
+                    Invoice.invoice_number.ilike(search_pattern),
+                    Invoice.items.any(
+                        InvoiceItem.description.ilike(search_pattern)
+                    ),
+                )
+            )
 
         total = query.count()
-        items = query.order_by(Invoice.invoice_date.desc(), Invoice.created_at.desc()).offset(skip).limit(limit).all()
+        items = (
+            query.order_by(
+                Invoice.invoice_date.desc(),
+                Invoice.created_at.desc(),
+            )
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
 
         return items, total

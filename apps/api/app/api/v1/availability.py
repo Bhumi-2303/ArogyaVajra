@@ -1,4 +1,5 @@
 import uuid
+
 from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.orm import Session
 
@@ -11,7 +12,6 @@ from app.schemas.availability import (
     DoctorAvailabilityUpdate,
 )
 from app.services.availability import AvailabilityService
-
 
 router = APIRouter(prefix="/doctors/{doctor_id}/availability", tags=["Doctor Availability"])
 

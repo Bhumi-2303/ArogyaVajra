@@ -2,6 +2,7 @@
 
 import { useInvoice } from "@/hooks/use-invoices";
 import { RecordPaymentDialog } from "@/components/invoices/record-payment-dialog";
+import { PaymentReceiptDialog } from "@/components/invoices/payment-receipt-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -223,12 +224,13 @@ export default function InvoiceDetailPage({
                 <TableHead>Method</TableHead>
                 <TableHead>Reference</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
+                <TableHead className="text-right w-[100px]">Receipt</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {(!invoice.payments || invoice.payments.length === 0) ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
+                  <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
                     No payments recorded.
                   </TableCell>
                 </TableRow>
@@ -242,6 +244,9 @@ export default function InvoiceDetailPage({
                     <TableCell className="font-mono text-xs">{payment.reference || "-"}</TableCell>
                     <TableCell className="text-right font-semibold text-green-600">
                       ${Number(payment.amount).toFixed(2)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <PaymentReceiptDialog invoiceId={invoice.id} paymentId={payment.id} />
                     </TableCell>
                   </TableRow>
                 ))

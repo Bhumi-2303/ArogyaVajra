@@ -1,5 +1,5 @@
 import uuid
-from typing import Optional
+from datetime import date
 
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.orm import Session
@@ -8,10 +8,9 @@ from app.api.deps import get_current_user, get_db
 from app.models.user import User
 from app.schemas.medical_record import (
     MedicalRecordCreate,
-    MedicalRecordUpdate,
-    MedicalRecordResponse,
-    MedicalRecordListResponse,
     MedicalRecordDetailResponse,
+    MedicalRecordListResponse,
+    MedicalRecordUpdate,
 )
 from app.services.medical_record import MedicalRecordService
 
@@ -51,9 +50,12 @@ def create_medical_record(
     summary="List medical records",
 )
 def list_medical_records(
-    patient_id: Optional[uuid.UUID] = Query(None, description="Filter by patient ID"),
-    doctor_id: Optional[uuid.UUID] = Query(None, description="Filter by doctor ID"),
-    appointment_id: Optional[uuid.UUID] = Query(None, description="Filter by appointment ID"),
+    q: str | None = Query(None, description="Search chief complaint, diagnosis, or clinical notes"),
+    start_date: date | None = Query(None, description="Filter records on or after start date"),
+    end_date: date | None = Query(None, description="Filter records on or before end date"),
+    patient_id: uuid.UUID | None = Query(None, description="Filter by patient ID"),
+    doctor_id: uuid.UUID | None = Query(None, description="Filter by doctor ID"),
+    appointment_id: uuid.UUID | None = Query(None, description="Filter by appointment ID"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
@@ -62,6 +64,9 @@ def list_medical_records(
     items, total = MedicalRecordService.list_records(
         db=db,
         current_user=current_user,
+        q=q,
+        start_date=start_date,
+        end_date=end_date,
         patient_id=patient_id,
         doctor_id=doctor_id,
         appointment_id=appointment_id,

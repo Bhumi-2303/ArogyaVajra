@@ -1,13 +1,15 @@
 import uuid
+from datetime import date
+
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.models.medical_record import MedicalRecord
 from app.models.user import User, UserRole
-from app.repositories.medical_record import MedicalRecordRepository
-from app.repositories.doctor import DoctorRepository
-from app.repositories.patient import PatientRepository
 from app.repositories.appointment import AppointmentRepository
+from app.repositories.doctor import DoctorRepository
+from app.repositories.medical_record import MedicalRecordRepository
+from app.repositories.patient import PatientRepository
 from app.schemas.medical_record import MedicalRecordCreate, MedicalRecordUpdate
 from app.services.audit import record_audit_event
 
@@ -178,6 +180,9 @@ class MedicalRecordService:
         cls,
         db: Session,
         current_user: User,
+        q: str | None = None,
+        start_date: date | None = None,
+        end_date: date | None = None,
         patient_id: uuid.UUID | None = None,
         doctor_id: uuid.UUID | None = None,
         appointment_id: uuid.UUID | None = None,
@@ -204,9 +209,12 @@ class MedicalRecordService:
         skip = (page - 1) * page_size
         return MedicalRecordRepository.search(
             db=db,
+            q=q,
+            start_date=start_date,
+            end_date=end_date,
             patient_id=patient_id,
             doctor_id=doctor_id,
             appointment_id=appointment_id,
             skip=skip,
-            limit=page_size
+            limit=page_size,
         )

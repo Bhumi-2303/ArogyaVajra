@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert } from "@/components/ui/alert";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Plus, Receipt, FileSearch, Edit } from "lucide-react";
+import { Plus, Receipt, FileSearch, Edit, Search } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -32,11 +32,17 @@ export default function InvoicesPage() {
   
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
 
   const { invoices, pagination, isLoading, error } = useInvoices({
     page,
     page_size: 20,
     status: statusFilter ? (statusFilter as any) : undefined,
+    q: searchTerm || undefined,
+    start_date: startDate || undefined,
+    end_date: endDate || undefined,
   });
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -93,36 +99,84 @@ export default function InvoicesPage() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-4 sm:flex-row p-4 border rounded-md bg-muted/20">
-        <div className="flex flex-col space-y-1.5 flex-1">
-          <label className="text-sm font-medium">Filter by Status</label>
-          <select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setPage(1);
-            }}
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-          >
-            <option value="">All Statuses</option>
-            <option value="DRAFT">Draft</option>
-            <option value="ISSUED">Issued</option>
-            <option value="PARTIALLY_PAID">Partially Paid</option>
-            <option value="PAID">Paid</option>
-            <option value="CANCELLED">Cancelled</option>
-          </select>
+      <div className="flex flex-col gap-3 p-4 border rounded-md bg-muted/20">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="flex flex-col space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Search</label>
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Invoice # or patient..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setPage(1);
+                }}
+                className="flex h-9 w-full rounded-md border border-input bg-background pl-8 pr-3 py-1 text-sm shadow-sm"
+              />
+            </div>
+          </div>
+          <div className="flex flex-col space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Status</label>
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPage(1);
+              }}
+              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+            >
+              <option value="">All Statuses</option>
+              <option value="DRAFT">Draft</option>
+              <option value="ISSUED">Issued</option>
+              <option value="PARTIALLY_PAID">Partially Paid</option>
+              <option value="PAID">Paid</option>
+              <option value="CANCELLED">Cancelled</option>
+            </select>
+          </div>
+          <div className="flex flex-col space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">From Date</label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => {
+                setStartDate(e.target.value);
+                setPage(1);
+              }}
+              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+            />
+          </div>
+          <div className="flex flex-col space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">To Date</label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => {
+                setEndDate(e.target.value);
+                setPage(1);
+              }}
+              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+            />
+          </div>
         </div>
-        <div className="flex items-end">
-          <Button 
-            variant="outline" 
-            onClick={() => {
-              setStatusFilter("");
-              setPage(1);
-            }}
-          >
-            Clear
-          </Button>
-        </div>
+        {(searchTerm || statusFilter || startDate || endDate) && (
+          <div className="flex justify-end pt-1">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => {
+                setSearchTerm("");
+                setStatusFilter("");
+                setStartDate("");
+                setEndDate("");
+                setPage(1);
+              }}
+            >
+              Reset Filters
+            </Button>
+          </div>
+        )}
       </div>
 
       {isLoading ? (

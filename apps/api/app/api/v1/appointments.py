@@ -1,6 +1,5 @@
 import datetime
 import uuid
-from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.orm import Session
@@ -52,10 +51,10 @@ def create_appointment(
     summary="List appointments",
 )
 def list_appointments(
-    patient_id: Optional[uuid.UUID] = Query(None, description="Filter by patient ID"),
-    doctor_id: Optional[uuid.UUID] = Query(None, description="Filter by doctor ID"),
-    date: Optional[datetime.date] = Query(None, description="Filter by date"),
-    status: Optional[AppointmentStatus] = Query(None, description="Filter by status"),
+    patient_id: uuid.UUID | None = Query(None, description="Filter by patient ID"),
+    doctor_id: uuid.UUID | None = Query(None, description="Filter by doctor ID"),
+    date: datetime.date | None = Query(None, description="Filter by date"),
+    status: AppointmentStatus | None = Query(None, description="Filter by status"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
@@ -138,8 +137,8 @@ def confirm_appointment(
     user_agent = request.headers.get("user-agent")
     
     # Use update_appointment with status=CONFIRMED
-    from app.schemas.appointment import AppointmentUpdate
     from app.models.appointment import AppointmentStatus
+    from app.schemas.appointment import AppointmentUpdate
     
     updated = AppointmentService.update_appointment(
         db=db,
@@ -162,8 +161,8 @@ def cancel_appointment(
     ip_address = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
     
-    from app.schemas.appointment import AppointmentUpdate
     from app.models.appointment import AppointmentStatus
+    from app.schemas.appointment import AppointmentUpdate
     
     updated = AppointmentService.update_appointment(
         db=db,
@@ -186,8 +185,8 @@ def complete_appointment(
     ip_address = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
     
-    from app.schemas.appointment import AppointmentUpdate
     from app.models.appointment import AppointmentStatus
+    from app.schemas.appointment import AppointmentUpdate
     
     updated = AppointmentService.update_appointment(
         db=db,

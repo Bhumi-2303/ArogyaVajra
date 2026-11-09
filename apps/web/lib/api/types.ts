@@ -432,6 +432,9 @@ export interface MedicalRecordDetailResponse {
 }
 
 export interface MedicalRecordSearchParams {
+  q?: string;
+  start_date?: string;
+  end_date?: string;
   patient_id?: string;
   doctor_id?: string;
   appointment_id?: string;
@@ -501,10 +504,13 @@ export interface PrescriptionDetailResponse {
 }
 
 export interface PrescriptionSearchParams {
+  q?: string;
+  status?: string;
+  start_date?: string;
+  end_date?: string;
   patient_id?: string;
   doctor_id?: string;
   appointment_id?: string;
-  status?: string;
   page?: number;
   page_size?: number;
 }
@@ -527,6 +533,26 @@ export interface PaymentCreateInput {
   amount: number;
   payment_method: PaymentMethod;
   reference?: string | null;
+}
+
+export interface PaymentReceiptData {
+  receipt_number: string;
+  payment_id: string;
+  invoice_id: string;
+  invoice_number: string;
+  patient_id: string;
+  patient_name?: string | null;
+  patient_code?: string | null;
+  amount_paid: string | number;
+  payment_date: string;
+  payment_method: PaymentMethod;
+  reference?: string | null;
+  invoice_total: string | number;
+  invoice_paid_amount: string | number;
+  invoice_balance: string | number;
+  invoice_status: string;
+  received_by: string;
+  hospital_name: string;
 }
 
 export interface InvoiceItem {
@@ -589,8 +615,13 @@ export interface InvoiceDetailResponse {
 }
 
 export interface InvoiceSearchParams {
-  patient_id?: string;
+  q?: string;
   status?: string;
+  start_date?: string;
+  end_date?: string;
+  patient_id?: string;
+  invoice_number?: string;
+  date?: string;
   page?: number;
   page_size?: number;
 }
