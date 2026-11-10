@@ -71,8 +71,12 @@ export function clearStoredTokens(): void {
  * - Prefixes "http://" for private-network host:port values (e.g. Render fromService hostport: "arogyavajra-api:8000").
  * - Leaves full URLs (e.g. "https://api.example.com", "http://internal:8000") alone.
  */
-export function normalizeApiInternalUrl(rawUrl?: string): string {
-  const isProd = process.env.NODE_ENV === "production";
+export function normalizeApiInternalUrl(
+  rawUrl?: string,
+  isProdOverride?: boolean
+): string {
+  const isProd =
+    isProdOverride !== undefined ? isProdOverride : process.env.NODE_ENV === "production";
   const candidate = (rawUrl ?? process.env.API_INTERNAL_URL ?? "").trim().replace(/\/+$/, "");
 
   if (!candidate) {

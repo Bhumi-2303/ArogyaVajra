@@ -30,6 +30,59 @@ function assert(condition, message) {
   }
 }
 
+// Logic mirror of normalizeApiInternalUrl from lib/api/client.ts
+function normalizeApiInternalUrl(rawUrl, isProdOverride) {
+  const isProd =
+    isProdOverride !== undefined ? isProdOverride : process.env.NODE_ENV === "production";
+  const candidate = (rawUrl ?? process.env.API_INTERNAL_URL ?? "").trim().replace(/\/+$/, "");
+
+  if (!candidate) {
+    if (isProd) {
+      throw new Error(
+        "ConfigurationError: API_INTERNAL_URL environment variable is required in production."
+      );
+    }
+    return "http://localhost:8000";
+  }
+
+  const normalized =
+    candidate.startsWith("http://") || candidate.startsWith("https://")
+      ? candidate
+      : `http://${candidate}`;
+
+  if (isProd) {
+    try {
+      const parsed = new URL(normalized);
+      if (
+        parsed.hostname === "localhost" ||
+        parsed.hostname === "127.0.0.1" ||
+        parsed.hostname === "0.0.0.0" ||
+        parsed.hostname === "::1" ||
+        parsed.hostname === "[::1]"
+      ) {
+        throw new Error(
+          `Security validation failed: In production, API_INTERNAL_URL destination cannot point to localhost/loopback address '${candidate}'.`
+        );
+      }
+    } catch (err) {
+      if (err.message && err.message.startsWith("Security validation failed")) {
+        throw err;
+      }
+      if (
+        candidate.includes("localhost") ||
+        candidate.includes("127.0.0.1") ||
+        candidate.includes("0.0.0.0")
+      ) {
+        throw new Error(
+          `Security validation failed: In production, API_INTERNAL_URL destination cannot point to localhost/loopback address '${candidate}'.`
+        );
+      }
+    }
+  }
+
+  return normalized;
+}
+
 // Logic mirror of resolveApiUrl from lib/api/client.ts
 function resolveApiUrl(endpoint, baseUrl) {
   const isProd = process.env.NODE_ENV === "production";
@@ -66,13 +119,17 @@ async function run() {
   console.log("============================================================\n");
 
   // 1. Verify client.ts implementation
-  console.log("[1/4] Verifying resolveApiUrl implementation in lib/api/client.ts...");
+  console.log("[1/5] Verifying resolveApiUrl and normalizeApiInternalUrl in lib/api/client.ts...");
   const clientPath = path.join(webDir, "lib", "api", "client.ts");
   const clientContent = fs.readFileSync(clientPath, "utf-8");
 
   assert(
     clientContent.includes("export function resolveApiUrl"),
     "client.ts exports resolveApiUrl function"
+  );
+  assert(
+    clientContent.includes("export function normalizeApiInternalUrl"),
+    "client.ts exports normalizeApiInternalUrl function"
   );
   assert(
     clientContent.includes("resolveApiUrl(endpoint)"),
@@ -92,7 +149,7 @@ async function run() {
   );
 
   // 2. Test URL Resolution Edge Cases
-  console.log("\n[2/4] Testing resolveApiUrl resolution against edge cases...");
+  console.log("\n[2/5] Testing resolveApiUrl resolution against edge cases...");
   const defaultBase = "http://localhost:8000/api/v1";
 
   // Standard relative endpoints
@@ -225,7 +282,7 @@ async function run() {
   if (prevUrl) process.env.NEXT_PUBLIC_API_URL = prevUrl;
 
   // 3. Inspect All API Module Source Files for Duplicated Prefixes
-  console.log("\n[3/4] Inspecting domain API files to ensure NO hardcoded /api/v1 remains...");
+  console.log("\n[3/5] Inspecting domain API files to ensure NO hardcoded /api/v1 remains...");
   const apiModules = [
     "appointments.ts",
     "medical-records.ts",
@@ -253,7 +310,7 @@ async function run() {
   }
 
   // 4. Verify Critical Endpoint Patterns
-  console.log("\n[4/4] Verifying endpoint patterns in key services...");
+  console.log("\n[4/5] Verifying endpoint patterns in key services...");
   const appointmentsContent = fs.readFileSync(path.join(webDir, "lib", "api", "appointments.ts"), "utf-8");
   assert(appointmentsContent.includes("`/appointments${qs ?"), "appointments.ts uses /appointments for listing");
   assert(appointmentsContent.includes('"/appointments"'), "appointments.ts uses /appointments for creation");
@@ -266,6 +323,105 @@ async function run() {
 
   const auditContent = fs.readFileSync(path.join(webDir, "lib", "api", "audit.ts"), "utf-8");
   assert(auditContent.includes("`/audit-logs${qs ?"), "audit.ts uses /audit-logs for audit listing");
+
+  // 5. Test normalizeApiInternalUrl Scheme and Hostport Normalization
+  console.log("\n[5/5] Testing normalizeApiInternalUrl scheme and hostport normalization...");
+
+  // Render fromService hostport: prefixes http:// and strips trailing slashes
+  assert(
+    normalizeApiInternalUrl("arogyavajra-api:8000") === "http://arogyavajra-api:8000",
+    "Bare hostport: 'arogyavajra-api:8000' -> 'http://arogyavajra-api:8000'"
+  );
+  assert(
+    normalizeApiInternalUrl("arogyavajra-api:8000/") === "http://arogyavajra-api:8000",
+    "Bare hostport with trailing slash: 'arogyavajra-api:8000/' -> 'http://arogyavajra-api:8000'"
+  );
+  assert(
+    normalizeApiInternalUrl("arogyavajra-api:8000///") === "http://arogyavajra-api:8000",
+    "Bare hostport with multiple trailing slashes -> 'http://arogyavajra-api:8000'"
+  );
+  assert(
+    normalizeApiInternalUrl("  arogyavajra-api:8000  ") === "http://arogyavajra-api:8000",
+    "Trims leading/trailing whitespace around hostport"
+  );
+
+  // Private IP address formats
+  assert(
+    normalizeApiInternalUrl("10.0.1.5:8000") === "http://10.0.1.5:8000",
+    "Private IP with port: '10.0.1.5:8000' -> 'http://10.0.1.5:8000'"
+  );
+  assert(
+    normalizeApiInternalUrl("10.0.1.5") === "http://10.0.1.5",
+    "Private IP without port: '10.0.1.5' -> 'http://10.0.1.5'"
+  );
+
+  // Full URLs preserved without duplicate scheme
+  assert(
+    normalizeApiInternalUrl("http://arogyavajra-api:8000") === "http://arogyavajra-api:8000",
+    "Existing http:// URL is preserved: 'http://arogyavajra-api:8000'"
+  );
+  assert(
+    normalizeApiInternalUrl("http://arogyavajra-api:8000/") === "http://arogyavajra-api:8000",
+    "Existing http:// URL with trailing slash is normalized"
+  );
+  assert(
+    normalizeApiInternalUrl("https://api.example.com") === "https://api.example.com",
+    "Existing https:// URL is preserved: 'https://api.example.com'"
+  );
+  assert(
+    normalizeApiInternalUrl("https://api.example.com/") === "https://api.example.com",
+    "Existing https:// URL with trailing slash is normalized"
+  );
+  assert(
+    normalizeApiInternalUrl("https://internal.example.com:8443/") === "https://internal.example.com:8443",
+    "Existing https:// URL with port and trailing slash is normalized"
+  );
+
+  // Development fallback
+  assert(
+    normalizeApiInternalUrl("", false) === "http://localhost:8000",
+    "Development: Empty string defaults to 'http://localhost:8000'"
+  );
+  assert(
+    normalizeApiInternalUrl(undefined, false) === "http://localhost:8000",
+    "Development: Undefined rawUrl defaults to 'http://localhost:8000'"
+  );
+
+  // Production requirement and rejection
+  let prodMissingThrew = false;
+  try {
+    normalizeApiInternalUrl("", true);
+  } catch (err) {
+    prodMissingThrew = true;
+    assert(
+      err.message.includes("ConfigurationError: API_INTERNAL_URL environment variable is required in production"),
+      "Production: Missing URL throws ConfigurationError"
+    );
+  }
+  assert(prodMissingThrew, "Production requires API_INTERNAL_URL");
+
+  const loopbackTargets = [
+    "http://localhost:8000",
+    "localhost:8000",
+    "http://127.0.0.1:8000",
+    "127.0.0.1:8000",
+    "0.0.0.0:8000",
+    "http://[::1]:8000",
+  ];
+
+  for (const loopback of loopbackTargets) {
+    let loopbackThrew = false;
+    try {
+      normalizeApiInternalUrl(loopback, true);
+    } catch (err) {
+      loopbackThrew = true;
+      assert(
+        err.message.includes("Security validation failed"),
+        `Production rejects loopback '${loopback}'`
+      );
+    }
+    assert(loopbackThrew, `Production loopback '${loopback}' must throw`);
+  }
 
   console.log("\n------------------------------------------------------------");
   console.log(`Results: ${passed} passed, ${failed} failed`);
