@@ -34,6 +34,43 @@ function assert(condition, message) {
   }
 }
 
+// Logic mirror of resolveTrustworthyClientIp for verification
+function isValidIpAddress(ip) {
+  if (!ip) return false;
+  const clean = ip.trim();
+  const ipv4Regex =
+    /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+  if (ipv4Regex.test(clean)) return true;
+  try {
+    const unbracketed = clean.replace(/^\[|\]$/g, "");
+    if (unbracketed.includes(":") && unbracketed.split(":").length <= 8) {
+      new URL(`http://[${unbracketed}]`);
+      return true;
+    }
+  } catch {
+    return false;
+  }
+  return false;
+}
+
+function resolveTrustworthyClientIp(req, isProd) {
+  const cf = req.headers.get("cf-connecting-ip")?.trim();
+  if (cf && isValidIpAddress(cf)) return cf;
+  const tc = req.headers.get("true-client-ip")?.trim();
+  if (tc && isValidIpAddress(tc)) return tc;
+  if (!isProd) {
+    const rawXff = req.headers.get("x-forwarded-for");
+    if (rawXff) {
+      const parts = rawXff.split(",").map((p) => p.trim()).filter(Boolean);
+      for (const p of parts) {
+        if (isValidIpAddress(p)) return p;
+      }
+    }
+  }
+  if (req.ip && isValidIpAddress(req.ip)) return req.ip;
+  return isProd ? "unknown" : "127.0.0.1";
+}
+
 // Logic mirror of normalizeApiInternalUrl for verification
 function normalizeApiInternalUrl(rawUrl, isProd) {
   const candidate = (rawUrl ?? "").trim().replace(/\/+$/, "");
@@ -119,8 +156,20 @@ function run() {
     "Route handler invokes normalizeApiInternalUrl at request time"
   );
   assert(
-    routeContent.includes("x-forwarded-for"),
-    "Route handler injects/forwards X-Forwarded-For"
+    routeContent.includes("resolveTrustworthyClientIp"),
+    "Route handler invokes resolveTrustworthyClientIp"
+  );
+  assert(
+    routeContent.includes('headers.set("x-real-ip", trustworthyIp)'),
+    "Route handler injects authoritative X-Real-IP header to internal backend"
+  );
+  assert(
+    routeContent.includes('lower === "x-forwarded-for"') &&
+      routeContent.includes('lower === "x-real-ip"') &&
+      routeContent.includes('lower === "forwarded"') &&
+      routeContent.includes('lower === "true-client-ip"') &&
+      routeContent.includes('lower === "cf-connecting-ip"'),
+    "Route handler strips ALL client-supplied forwarded / IP headers"
   );
   assert(
     routeContent.includes("x-forwarded-proto"),
@@ -142,6 +191,39 @@ function run() {
       `Route handler exports ${m} HTTP method handler`
     );
   }
+
+  // 2b. Unit verification of resolveTrustworthyClientIp
+  const mockHeaders = (obj) => ({
+    get: (key) => obj[key.toLowerCase()] ?? null,
+  });
+
+  // Production: CF-Connecting-IP takes highest precedence
+  const prodCf = resolveTrustworthyClientIp(
+    { headers: mockHeaders({ "cf-connecting-ip": "203.0.113.195", "x-forwarded-for": "1.2.3.4" }) },
+    true
+  );
+  assert(prodCf === "203.0.113.195", "Production resolves client IP from CF-Connecting-IP");
+
+  // Production: True-Client-IP takes second precedence
+  const prodTc = resolveTrustworthyClientIp(
+    { headers: mockHeaders({ "true-client-ip": "198.51.100.72", "x-forwarded-for": "1.2.3.4" }) },
+    true
+  );
+  assert(prodTc === "198.51.100.72", "Production resolves client IP from True-Client-IP");
+
+  // Production: Spoofed X-Forwarded-For or X-Real-IP without platform edge headers is never trusted
+  const prodSpoof = resolveTrustworthyClientIp(
+    { headers: mockHeaders({ "x-forwarded-for": "198.51.100.99", "x-real-ip": "198.51.100.99" }) },
+    true
+  );
+  assert(prodSpoof === "unknown", "Production never trusts client-chosen X-Forwarded-For or X-Real-IP");
+
+  // Local development: Falls back to leftmost valid X-Forwarded-For entry
+  const devXff = resolveTrustworthyClientIp(
+    { headers: mockHeaders({ "x-forwarded-for": "192.168.1.50, 10.0.0.1" }) },
+    false
+  );
+  assert(devXff === "192.168.1.50", "Development falls back to leftmost valid X-Forwarded-For entry");
 
   // 3. Verify production behavior when API_INTERNAL_URL is missing
   console.log("\n[3/5] Testing production loud failure when API_INTERNAL_URL is missing...");

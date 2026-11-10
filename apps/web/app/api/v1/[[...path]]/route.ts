@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { normalizeApiInternalUrl } from "@/lib/api/client";
+import {
+  normalizeApiInternalUrl,
+  resolveTrustworthyClientIp,
+} from "@/lib/api/client";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +14,7 @@ export const dynamic = "force-dynamic";
  * 1. Reads process.env.API_INTERNAL_URL dynamically at request time (not baked into next build).
  * 2. In production, strictly validates that API_INTERNAL_URL is provided and does not point to localhost.
  * 3. Preserves HTTP method, query parameters, request headers, and streamed body.
- * 4. Injects / forwards X-Forwarded-For, X-Forwarded-Proto, and X-Forwarded-Host headers.
+ * 4. Strips ALL client-supplied forwarded headers and injects a single trustworthy X-Real-IP header.
  * 5. Passes through backend status codes and all Set-Cookie headers individually.
  */
 async function handleProxy(
@@ -41,17 +44,25 @@ async function handleProxy(
       ) {
         return;
       }
+
+      // CRITICAL: Strip ALL client-supplied forwarded / IP headers
+      // Never forward a client-chosen IP header to the backend API
+      if (
+        lower === "x-forwarded-for" ||
+        lower === "x-real-ip" ||
+        lower === "forwarded" ||
+        lower === "true-client-ip" ||
+        lower === "cf-connecting-ip"
+      ) {
+        return;
+      }
+
       headers.set(key, value);
     });
 
-    // Forward or set X-Forwarded-For
-    const existingXff = request.headers.get("x-forwarded-for");
-    const clientIp = request.ip;
-    if (existingXff) {
-      headers.set("x-forwarded-for", existingXff);
-    } else if (clientIp) {
-      headers.set("x-forwarded-for", clientIp);
-    }
+    // Inject the single trusted client IP header from the platform header
+    const trustworthyIp = resolveTrustworthyClientIp(request);
+    headers.set("x-real-ip", trustworthyIp);
 
     // Forward or set X-Forwarded-Proto
     const existingProto = request.headers.get("x-forwarded-proto");

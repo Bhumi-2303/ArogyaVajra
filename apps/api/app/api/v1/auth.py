@@ -11,7 +11,11 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.core.config import settings
-from app.core.rate_limit import check_rate_limit, get_client_identifier
+from app.core.rate_limit import (
+    check_rate_limit,
+    get_client_identifier,
+    is_trusted_proxy,
+)
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -704,3 +708,52 @@ def reset_password(
     return SimpleMessageResponse(
         message="Password has been reset successfully. You can now log in with your new password."
     )
+
+
+@router.get(
+    "/debug-client-ip",
+    summary="Echo resolved client IP and proxy headers (admin-only in production, open in dev)",
+)
+def debug_client_ip(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Temporary diagnostic endpoint to verify proxy IP resolution on Render deploys.
+
+    Protected: Accessible in development without auth, or in production by authenticated ADMIN users.
+    """
+    is_prod = settings.APP_ENV.lower() in ("production", "prod", "staging")
+    if is_prod:
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Bearer "):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required to access debug endpoint in production.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        token = auth_header.split(" ")[1]
+        user = get_current_user(token=token, db=db)
+        if user.role != UserRole.ADMIN:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Administrative privileges required to access debug endpoint.",
+            )
+
+    direct_host = (
+        request.client.host if request.client and request.client.host else "unknown"
+    )
+    resolved_ip = get_client_identifier(request)
+
+    return {
+        "resolved_client_ip": resolved_ip,
+        "direct_host": direct_host,
+        "is_trusted_proxy": is_trusted_proxy(direct_host),
+        "headers": {
+            "x-real-ip": request.headers.get("x-real-ip"),
+            "x-forwarded-for": request.headers.get("x-forwarded-for"),
+            "true-client-ip": request.headers.get("true-client-ip"),
+            "cf-connecting-ip": request.headers.get("cf-connecting-ip"),
+            "forwarded": request.headers.get("forwarded"),
+        },
+    }
+

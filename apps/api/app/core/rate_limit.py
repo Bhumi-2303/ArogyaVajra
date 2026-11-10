@@ -168,10 +168,11 @@ def validate_ip_candidate(candidate: str | None) -> str | None:
 def get_client_identifier(request: Request) -> str:
     """Extract client IP address safely from direct connection or verified trusted proxy.
 
-    Forwarded headers (X-Real-IP, X-Forwarded-For) are ONLY accepted if the immediate peer
-    (request.client.host) is an explicitly configured trusted proxy. If the request bypasses
-    the proxy or no trusted proxies are configured, client-supplied forwarded headers are
-    strictly ignored to prevent rate-limit spoofing.
+    When connecting from a verified trusted proxy (e.g. Render/Next.js edge proxy in
+    TRUSTED_PROXIES), uses ONLY the single authoritative header injected by the proxy
+    (X-Real-IP). Does NOT walk X-Forwarded-For to prevent header-injection and spoofing.
+    If connecting directly from an untrusted peer, all forwarded headers are strictly
+    ignored and the direct socket IP is returned.
     """
     direct_host = (
         request.client.host if request.client and request.client.host else "unknown"
@@ -182,13 +183,6 @@ def get_client_identifier(request: Request) -> str:
         valid_real_ip = validate_ip_candidate(real_ip)
         if valid_real_ip:
             return valid_real_ip
-
-        forwarded = request.headers.get("x-forwarded-for")
-        if forwarded:
-            parts = [p.strip() for p in forwarded.split(",") if p.strip()]
-            for candidate in reversed(parts):
-                valid_cand = validate_ip_candidate(candidate)
-                if valid_cand:
-                    return valid_cand
+        return direct_host
 
     return direct_host

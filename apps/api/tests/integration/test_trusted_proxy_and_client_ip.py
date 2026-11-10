@@ -1,11 +1,16 @@
 """Integration tests verifying trusted proxy handling, real client IP extraction,
-rate limiting bucketing, and audit logging.
+rate limiting bucketing, audit logging, and debug endpoint.
 
 Test coverage:
-1. Two different X-Forwarded-For clients from a trusted proxy get separate rate-limit buckets.
-2. The same header from an untrusted caller is ignored (rate-limited by direct peer IP,
+1. Two different clients connecting via a trusted proxy with platform/trusted X-Real-IP
+   receive separate rate-limit buckets. Spoofed client-supplied X-Forwarded-For is ignored.
+2. The same headers from an untrusted caller are ignored (rate-limited by direct peer IP,
    cannot bypass rate limiting via spoofed headers).
-3. Audit logs store the real client IP extracted from X-Forwarded-For via trusted proxy.
+3. Audit logs store the real client IP extracted from X-Real-IP via trusted proxy.
+4. Untrusted callers attempting to spoof headers have direct socket host stored in audit logs.
+5. Appointment creation audit log stores real client IP from X-Real-IP.
+6. Diagnostic endpoint /api/v1/auth/debug-client-ip echoes resolved client IP and received headers;
+   strictly requires ADMIN role in production, accessible in dev.
 """
 
 import uuid
@@ -44,9 +49,10 @@ def create_test_user(email_prefix: str, role: UserRole = UserRole.PATIENT) -> Us
 def test_two_different_forwarded_clients_from_trusted_proxy_get_separate_rate_limit_buckets(
     monkeypatch,
 ):
-    """Integration test (i): Two different X-Forwarded-For clients connecting via
+    """Integration test (i): Two different clients connecting via a trusted proxy
 
-    a trusted proxy receive independent rate-limit counters.
+    with distinct authoritative X-Real-IP headers receive independent rate-limit counters.
+    Client-supplied X-Forwarded-For is ignored and does not alter the rate-limit bucket.
     """
     # Configure Render private network range as trusted proxy and enforce rate limiting
     monkeypatch.setattr(settings, "TRUSTED_PROXIES", "10.0.0.0/8, 127.0.0.1")
@@ -62,11 +68,15 @@ def test_two_different_forwarded_clients_from_trusted_proxy_get_separate_rate_li
     client_ip_b = "198.51.100.22"
 
     # Client A consumes 5 allowed password-reset requests within 60s window
+    # Even if Client A tries to inject a spoofed X-Forwarded-For, X-Real-IP governs
     for _ in range(5):
         res_a = proxy_client.post(
             "/api/v1/auth/forgot-password",
             json={"email": user_a.email},
-            headers={"X-Forwarded-For": client_ip_a},
+            headers={
+                "X-Real-IP": client_ip_a,
+                "X-Forwarded-For": "spoofed-ip-123.45.67.89",
+            },
         )
         assert res_a.status_code == 200
 
@@ -74,7 +84,10 @@ def test_two_different_forwarded_clients_from_trusted_proxy_get_separate_rate_li
     res_a_blocked = proxy_client.post(
         "/api/v1/auth/forgot-password",
         json={"email": user_a.email},
-        headers={"X-Forwarded-For": client_ip_a},
+        headers={
+            "X-Real-IP": client_ip_a,
+            "X-Forwarded-For": "another-spoofed-ip.com",
+        },
     )
     assert res_a_blocked.status_code == 429
     assert "Rate limit exceeded" in res_a_blocked.json()["detail"]
@@ -84,16 +97,16 @@ def test_two_different_forwarded_clients_from_trusted_proxy_get_separate_rate_li
     res_b = proxy_client.post(
         "/api/v1/auth/forgot-password",
         json={"email": user_b.email},
-        headers={"X-Forwarded-For": client_ip_b},
+        headers={"X-Real-IP": client_ip_b},
     )
     assert res_b.status_code == 200
 
 
 @pytest.mark.integration
 def test_forwarded_headers_from_untrusted_caller_are_ignored(monkeypatch):
-    """Integration test (ii): An untrusted caller attempting to spoof X-Forwarded-For
+    """Integration test (ii): An untrusted caller attempting to spoof X-Real-IP
 
-    is rate-limited by its direct connection IP, preventing spoofing bypasses.
+    or X-Forwarded-For is rate-limited by its direct connection IP, preventing spoofing bypasses.
     """
     monkeypatch.setattr(settings, "TRUSTED_PROXIES", "10.0.0.0/8")
     monkeypatch.setattr(settings, "APP_ENV", "production")
@@ -102,13 +115,16 @@ def test_forwarded_headers_from_untrusted_caller_are_ignored(monkeypatch):
     untrusted_ip = "203.0.113.88"
     untrusted_client = TestClient(app, client=(untrusted_ip, 54321))
 
-    # Untrusted attacker rotates spoofed X-Forwarded-For headers
+    # Untrusted attacker rotates spoofed X-Real-IP and X-Forwarded-For headers
     for i in range(5):
         spoofed_header_ip = f"198.51.100.{100 + i}"
         res = untrusted_client.post(
             "/api/v1/auth/forgot-password",
             json={"email": f"target_{i}@example.com"},
-            headers={"X-Forwarded-For": spoofed_header_ip},
+            headers={
+                "X-Real-IP": spoofed_header_ip,
+                "X-Forwarded-For": spoofed_header_ip,
+            },
         )
         assert res.status_code == 200
 
@@ -117,7 +133,10 @@ def test_forwarded_headers_from_untrusted_caller_are_ignored(monkeypatch):
     blocked_res = untrusted_client.post(
         "/api/v1/auth/forgot-password",
         json={"email": "target_final@example.com"},
-        headers={"X-Forwarded-For": "198.51.100.200"},
+        headers={
+            "X-Real-IP": "198.51.100.200",
+            "X-Forwarded-For": "198.51.100.200",
+        },
     )
     assert blocked_res.status_code == 429
     assert "Rate limit exceeded" in blocked_res.json()["detail"]
@@ -127,7 +146,7 @@ def test_forwarded_headers_from_untrusted_caller_are_ignored(monkeypatch):
 def test_audit_logs_store_real_client_ip_from_trusted_proxy(monkeypatch):
     """Integration test (iii): Mutating endpoints persist the real client IP
 
-    from X-Forwarded-For into the audit_logs table when called through a trusted proxy.
+    from X-Real-IP into the audit_logs table when called through a trusted proxy.
     """
     monkeypatch.setattr(settings, "TRUSTED_PROXIES", "10.0.0.0/8")
 
@@ -140,7 +159,10 @@ def test_audit_logs_store_real_client_ip_from_trusted_proxy(monkeypatch):
     res = proxy_client.post(
         "/api/v1/auth/forgot-password",
         json={"email": user.email},
-        headers={"X-Forwarded-For": real_client_ip},
+        headers={
+            "X-Real-IP": real_client_ip,
+            "X-Forwarded-For": "client-spoofed-attacker-ip",
+        },
     )
     assert res.status_code == 200
 
@@ -161,9 +183,9 @@ def test_audit_logs_store_real_client_ip_from_trusted_proxy(monkeypatch):
 
 @pytest.mark.integration
 def test_audit_logs_untrusted_caller_stores_direct_host_not_spoofed_ip(monkeypatch):
-    """Integration test: Untrusted caller attempting to spoof X-Forwarded-For
+    """Integration test: Untrusted caller attempting to spoof X-Real-IP / X-Forwarded-For
 
-    has its direct socket IP recorded in audit_logs, NOT the spoofed header.
+    has its direct socket IP recorded in audit_logs, NOT the spoofed headers.
     """
     monkeypatch.setattr(settings, "TRUSTED_PROXIES", "10.0.0.0/8")
 
@@ -176,7 +198,10 @@ def test_audit_logs_untrusted_caller_stores_direct_host_not_spoofed_ip(monkeypat
     res = untrusted_client.post(
         "/api/v1/auth/forgot-password",
         json={"email": user.email},
-        headers={"X-Forwarded-For": spoofed_ip},
+        headers={
+            "X-Real-IP": spoofed_ip,
+            "X-Forwarded-For": spoofed_ip,
+        },
     )
     assert res.status_code == 200
 
@@ -198,7 +223,7 @@ def test_audit_logs_untrusted_caller_stores_direct_host_not_spoofed_ip(monkeypat
 def test_appointment_creation_audit_log_stores_real_client_ip(monkeypatch):
     """Integration test: Creating an appointment through a trusted proxy logs
 
-    the client's real IP address from X-Forwarded-For into the AuditLog entry.
+    the client's real IP address from X-Real-IP into the AuditLog entry.
     """
     monkeypatch.setattr(settings, "TRUSTED_PROXIES", "10.0.0.0/8")
 
@@ -279,7 +304,8 @@ def test_appointment_creation_audit_log_stores_real_client_ip(monkeypatch):
         "/api/v1/appointments",
         headers={
             "Authorization": f"Bearer {pat_token}",
-            "X-Forwarded-For": real_client_ip,
+            "X-Real-IP": real_client_ip,
+            "X-Forwarded-For": "spoofed-bypass-attempt",
         },
         json={
             "patient_id": str(patient_id),
@@ -306,3 +332,63 @@ def test_appointment_creation_audit_log_stores_real_client_ip(monkeypatch):
         assert audit is not None
         assert audit.ip_address == real_client_ip
         assert audit.ip_address != trusted_proxy_ip
+
+
+@pytest.mark.integration
+def test_debug_client_ip_endpoint(monkeypatch):
+    """Test diagnostic endpoint /api/v1/auth/debug-client-ip:
+
+    - Echoes resolved client IP and received headers.
+    - Open without authentication in development / testing.
+    - In production: strictly requires authenticated ADMIN role.
+    """
+    monkeypatch.setattr(settings, "TRUSTED_PROXIES", "10.0.0.0/8")
+
+    # In development/test mode: accessible without authentication
+    monkeypatch.setattr(settings, "APP_ENV", "development")
+    proxy_client = TestClient(app, client=("10.0.1.25", 55555))
+    res = proxy_client.get(
+        "/api/v1/auth/debug-client-ip",
+        headers={"X-Real-IP": "198.51.100.44"},
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert data["resolved_client_ip"] == "198.51.100.44"
+    assert data["direct_host"] == "10.0.1.25"
+    assert data["is_trusted_proxy"] is True
+    assert data["headers"]["x-real-ip"] == "198.51.100.44"
+
+    # In production mode: enforce authentication and admin authorization
+    monkeypatch.setattr(settings, "APP_ENV", "production")
+
+    # Anonymous request in production -> 401
+    res_unauth = proxy_client.get("/api/v1/auth/debug-client-ip")
+    assert res_unauth.status_code == 401
+    assert "Authentication required" in res_unauth.json()["detail"]
+
+    # Non-admin user (Patient) in production -> 403
+    patient_user = create_test_user("debug_patient", UserRole.PATIENT)
+    from app.core.security import create_access_token
+
+    patient_token = create_access_token(patient_user.id, UserRole.PATIENT.value)
+    res_forbidden = proxy_client.get(
+        "/api/v1/auth/debug-client-ip",
+        headers={"Authorization": f"Bearer {patient_token}"},
+    )
+    assert res_forbidden.status_code == 403
+    assert "Administrative privileges required" in res_forbidden.json()["detail"]
+
+    # Admin user in production -> 200 with debug info
+    admin_user = create_test_user("debug_admin", UserRole.ADMIN)
+    admin_token = create_access_token(admin_user.id, UserRole.ADMIN.value)
+    res_admin = proxy_client.get(
+        "/api/v1/auth/debug-client-ip",
+        headers={
+            "Authorization": f"Bearer {admin_token}",
+            "X-Real-IP": "198.51.100.88",
+        },
+    )
+    assert res_admin.status_code == 200
+    admin_data = res_admin.json()
+    assert admin_data["resolved_client_ip"] == "198.51.100.88"
+    assert admin_data["is_trusted_proxy"] is True

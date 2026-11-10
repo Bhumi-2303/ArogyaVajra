@@ -272,7 +272,7 @@ def test_get_client_identifier_safe_default_when_no_proxy_configured(monkeypatch
     assert get_client_identifier(req) == "127.0.0.1"
 
 
-def test_get_client_identifier_trusts_configured_proxy_and_extracts_rightmost(
+def test_get_client_identifier_trusts_configured_proxy_and_uses_single_header(
     monkeypatch,
 ):
     from starlette.requests import Request
@@ -283,7 +283,7 @@ def test_get_client_identifier_trusts_configured_proxy_and_extracts_rightmost(
     # Configure trusted reverse proxies (single IP and CIDR range)
     monkeypatch.setattr(settings, "TRUSTED_PROXIES", "127.0.0.1, 10.0.0.0/8")
 
-    # Case 1: X-Real-IP through trusted proxy
+    # Case 1: X-Real-IP through trusted proxy is respected
     scope = {
         "type": "http",
         "client": ("10.0.0.1", 1234),
@@ -292,14 +292,17 @@ def test_get_client_identifier_trusts_configured_proxy_and_extracts_rightmost(
     req = Request(scope)
     assert get_client_identifier(req) == "198.51.100.22"
 
-    # Case 2: X-Forwarded-For through trusted proxy extracts rightmost (proxy-appended) IP
+    # Case 2: X-Forwarded-For through trusted proxy is NOT walked; only X-Real-IP is used
     scope = {
         "type": "http",
         "client": ("127.0.0.1", 1234),
-        "headers": [(b"x-forwarded-for", b"client-spoofed, 198.51.100.50")],
+        "headers": [
+            (b"x-real-ip", b"198.51.100.33"),
+            (b"x-forwarded-for", b"client-spoofed, 198.51.100.50"),
+        ],
     }
     req = Request(scope)
-    assert get_client_identifier(req) == "198.51.100.50"
+    assert get_client_identifier(req) == "198.51.100.33"
 
 
 def test_rate_limiter_cannot_be_bypassed_in_production(monkeypatch):
@@ -327,7 +330,7 @@ def test_rate_limiter_cannot_be_bypassed_in_production(monkeypatch):
     assert mock_db.execute.called
 
 
-def test_get_client_identifier_multiple_proxy_hops(monkeypatch):
+def test_get_client_identifier_does_not_walk_forwarded_for(monkeypatch):
     from starlette.requests import Request
 
     from app.core.config import settings
@@ -335,15 +338,15 @@ def test_get_client_identifier_multiple_proxy_hops(monkeypatch):
 
     monkeypatch.setattr(settings, "TRUSTED_PROXIES", "10.0.0.1, 10.0.0.2")
 
-    # Multi-hop proxy chain: client (203.0.113.5) -> Proxy 1 (10.0.0.2) -> Proxy 2 (10.0.0.1)
+    # When connecting from trusted proxy without X-Real-IP, X-Forwarded-For is NOT walked.
+    # It safely falls back to the direct peer IP (10.0.0.1).
     scope = {
         "type": "http",
         "client": ("10.0.0.1", 1234),
         "headers": [(b"x-forwarded-for", b"203.0.113.5, 10.0.0.2")],
     }
     req = Request(scope)
-    # Extracts the closest hop before Proxy 2 (10.0.0.2) or client IP
-    assert get_client_identifier(req) == "10.0.0.2"
+    assert get_client_identifier(req) == "10.0.0.1"
 
 
 def test_get_client_identifier_malformed_and_edge_case_headers(monkeypatch):
@@ -354,23 +357,23 @@ def test_get_client_identifier_malformed_and_edge_case_headers(monkeypatch):
 
     monkeypatch.setattr(settings, "TRUSTED_PROXIES", "127.0.0.1")
 
-    # Subcase A: Malformed script tags in X-Forwarded-For -> falls back to direct_host
+    # Subcase A: Malformed script tags in X-Real-IP -> falls back to direct_host
     scope = {
         "type": "http",
         "client": ("127.0.0.1", 1234),
-        "headers": [(b"x-forwarded-for", b"<script>alert(1)</script>")],
+        "headers": [(b"x-real-ip", b"<script>alert(1)</script>")],
     }
     assert get_client_identifier(Request(scope)) == "127.0.0.1"
 
-    # Subcase B: Empty / whitespace comma chain -> falls back to direct_host
+    # Subcase B: Empty / whitespace X-Real-IP -> falls back to direct_host
     scope = {
         "type": "http",
         "client": ("127.0.0.1", 1234),
-        "headers": [(b"x-forwarded-for", b" , ,   , ")],
+        "headers": [(b"x-real-ip", b"   ")],
     }
     assert get_client_identifier(Request(scope)) == "127.0.0.1"
 
-    # Subcase C: Forwarded IP containing port -> strips port cleanly
+    # Subcase C: Forwarded IP containing port in X-Real-IP -> strips port cleanly
     scope = {
         "type": "http",
         "client": ("127.0.0.1", 1234),
@@ -378,7 +381,7 @@ def test_get_client_identifier_malformed_and_edge_case_headers(monkeypatch):
     }
     assert get_client_identifier(Request(scope)) == "203.0.113.88"
 
-    # Subcase D: Malformed X-Real-IP falls through to valid candidate in X-Forwarded-For
+    # Subcase D: Malformed X-Real-IP does NOT fall back to X-Forwarded-For (no walking)
     scope = {
         "type": "http",
         "client": ("127.0.0.1", 1234),
@@ -387,7 +390,7 @@ def test_get_client_identifier_malformed_and_edge_case_headers(monkeypatch):
             (b"x-forwarded-for", b"spoofed-entry, 203.0.113.99"),
         ],
     }
-    assert get_client_identifier(Request(scope)) == "203.0.113.99"
+    assert get_client_identifier(Request(scope)) == "127.0.0.1"
 
 
 def test_alembic_url_resolution_deterministic():

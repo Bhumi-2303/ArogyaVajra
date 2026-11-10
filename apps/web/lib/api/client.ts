@@ -64,6 +64,83 @@ export function clearStoredTokens(): void {
 }
 
 /**
+ * Validate that an IP string is a syntactically valid IPv4 or IPv6 address.
+ */
+export function isValidIpAddress(ip?: string | null): boolean {
+  if (!ip) return false;
+  const clean = ip.trim();
+  // IPv4 check: 4 octets between 0 and 255
+  const ipv4Regex =
+    /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+  if (ipv4Regex.test(clean)) {
+    return true;
+  }
+  // IPv6 check
+  try {
+    const unbracketed = clean.replace(/^\[|\]$/g, "");
+    if (unbracketed.includes(":") && unbracketed.split(":").length <= 8) {
+      new URL(`http://[${unbracketed}]`);
+      return true;
+    }
+  } catch {
+    return false;
+  }
+  return false;
+}
+
+export interface ClientIpResolvableRequest {
+  headers: {
+    get(name: string): string | null;
+  };
+  ip?: string;
+}
+
+/**
+ * Resolve trustworthy client IP from Cloudflare/Render edge platform headers.
+ * - In production: uses CF-Connecting-IP or True-Client-IP set by Cloudflare edge.
+ * - In local development: falls back to the leftmost valid X-Forwarded-For entry.
+ * - Never returns or trusts client-chosen spoofed headers.
+ */
+export function resolveTrustworthyClientIp(
+  request: ClientIpResolvableRequest,
+  isProdOverride?: boolean
+): string {
+  const isProd =
+    isProdOverride !== undefined ? isProdOverride : process.env.NODE_ENV === "production";
+
+  // 1. Non-spoofable platform edge headers (Cloudflare / Render proxy edge)
+  const cfConnectingIp = request.headers.get("cf-connecting-ip")?.trim();
+  if (cfConnectingIp && isValidIpAddress(cfConnectingIp)) {
+    return cfConnectingIp;
+  }
+
+  const trueClientIp = request.headers.get("true-client-ip")?.trim();
+  if (trueClientIp && isValidIpAddress(trueClientIp)) {
+    return trueClientIp;
+  }
+
+  // 2. In local development only, fall back to leftmost valid X-Forwarded-For entry
+  if (!isProd) {
+    const rawXff = request.headers.get("x-forwarded-for");
+    if (rawXff) {
+      const parts = rawXff.split(",").map((p) => p.trim()).filter(Boolean);
+      for (const part of parts) {
+        if (isValidIpAddress(part)) {
+          return part;
+        }
+      }
+    }
+  }
+
+  // 3. Fallback to runtime request.ip or standard local loopback
+  if (request.ip && isValidIpAddress(request.ip)) {
+    return request.ip;
+  }
+
+  return isProd ? "unknown" : "127.0.0.1";
+}
+
+/**
  * Normalize API_INTERNAL_URL for server-side runtime proxying.
  * - Trims whitespace and trailing slashes.
  * - In production, throws loudly if API_INTERNAL_URL is unset/empty or points to localhost.
