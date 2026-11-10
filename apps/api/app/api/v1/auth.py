@@ -76,6 +76,19 @@ def clear_refresh_cookie(response: Response) -> None:
     )
 
 
+def is_non_browser_client(request: Request) -> bool:
+    """Determine whether client explicitly opted into non-browser token body flow.
+
+    Default browser flow: refresh token is delivered exclusively via httpOnly cookie,
+    and refresh_token is strictly omitted from the JSON response body to protect against XSS exfiltration.
+    Non-browser clients (native mobile apps, CLI, automated tests) opt in via:
+    - Header `X-Client-Type: non-browser` OR `X-Auth-Flow: token-body`
+    """
+    client_type = request.headers.get("x-client-type", "").lower().strip()
+    auth_flow = request.headers.get("x-auth-flow", "").lower().strip()
+    return client_type == "non-browser" or auth_flow == "token-body"
+
+
 def issue_and_persist_tokens(
     db: Session,
     user: User,
@@ -112,6 +125,7 @@ def issue_and_persist_tokens(
 @router.post(
     "/register",
     response_model=APIResponse[AuthData],
+    response_model_exclude_none=True,
     status_code=status.HTTP_201_CREATED,
     summary="Register a new user",
 )
@@ -191,12 +205,13 @@ def register(
     # Issue tracked token pair with new session family
     access_token, refresh_token = issue_and_persist_tokens(db=db, user=user)
     set_refresh_cookie(response, refresh_token)
+    non_browser = is_non_browser_client(request)
 
     return APIResponse(
         data=AuthData(
             user=UserResponse.model_validate(user),
             access_token=access_token,
-            refresh_token=refresh_token,
+            refresh_token=refresh_token if non_browser else None,
             token_type="bearer",
         ),
         message="Registration successful.",
@@ -206,6 +221,7 @@ def register(
 @router.post(
     "/login",
     response_model=APIResponse[AuthData],
+    response_model_exclude_none=True,
     status_code=status.HTTP_200_OK,
     summary="Authenticate user and obtain JWT tokens",
 )
@@ -257,12 +273,13 @@ def login(
 
     access_token, refresh_token = issue_and_persist_tokens(db=db, user=user)
     set_refresh_cookie(response, refresh_token)
+    non_browser = is_non_browser_client(request)
 
     return APIResponse(
         data=AuthData(
             user=UserResponse.model_validate(user),
             access_token=access_token,
-            refresh_token=refresh_token,
+            refresh_token=refresh_token if non_browser else None,
             token_type="bearer",
         ),
         message="Login successful.",
@@ -272,6 +289,7 @@ def login(
 @router.post(
     "/refresh",
     response_model=APIResponse[TokenResponse],
+    response_model_exclude_none=True,
     status_code=status.HTTP_200_OK,
     summary="Renew access token using refresh token",
 )
@@ -296,9 +314,17 @@ def refresh_token(
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-    raw_token = (
-        payload.refresh_token if payload and payload.refresh_token else None
-    ) or request.cookies.get("refresh_token")
+    non_browser = is_non_browser_client(request)
+    if non_browser:
+        # Non-browser opt-in: accepts refresh_token from JSON payload or cookie fallback
+        raw_token = (
+            payload.refresh_token if payload and payload.refresh_token else None
+        ) or request.cookies.get("refresh_token")
+    else:
+        # Browser client flow: strictly enforce reading exclusively from httpOnly cookie.
+        # Ignores payload.refresh_token to prevent token confusion or body leakage.
+        raw_token = request.cookies.get("refresh_token")
+
     if not raw_token:
         raise credentials_exception
 
@@ -413,7 +439,7 @@ def refresh_token(
     return APIResponse(
         data=TokenResponse(
             access_token=new_access,
-            refresh_token=new_refresh,
+            refresh_token=new_refresh if non_browser else None,
             token_type="bearer",
         ),
         message="Token refreshed successfully.",

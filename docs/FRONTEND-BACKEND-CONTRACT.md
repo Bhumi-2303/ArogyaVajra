@@ -586,6 +586,28 @@ The frontend should never depend on parsing arbitrary backend exception strings.
 
 # 17. Authentication Contract
 
+## Token Lifecycle and Client Flows
+
+Arogyavajra enforces a hardened, defense-in-depth JWT token lifecycle:
+- **Short-Lived Access Tokens**: Lifetime of 15 minutes. Stored strictly in frontend memory (`memoryAccessToken`) and attached via `Authorization: Bearer <token>`. Never stored in `localStorage` or `sessionStorage` to mitigate exfiltration via Cross-Site Scripting (XSS).
+- **Long-Lived Refresh Tokens**: Lifetime of 7 days. Enforces single-use cryptographic rotation with atomic family tracking and replay detection.
+
+### 1. Browser Client Flow (Default)
+For web application and browser clients:
+- **No Refresh Token in Response Body**: On `/api/v1/auth/login`, `/api/v1/auth/register`, and `/api/v1/auth/refresh`, the `refresh_token` field is **strictly omitted** from the response JSON body (`response_model_exclude_none=True`).
+- **First-Party httpOnly Cookie**: The refresh token is transmitted exclusively in a first-party `Set-Cookie: refresh_token=...; HttpOnly; Secure; SameSite=Lax; Path=/` header. Because the browser communicates with the same-origin Next.js proxy (`/api/v1/*`), cookies remain first-party.
+- **Cookie-Only Silent Refresh**: The `/api/v1/auth/refresh` endpoint reads the refresh token **exclusively from the incoming `refresh_token` cookie**. Any client-supplied token in the request body is strictly ignored for browser clients.
+- **Security Tradeoff**: Browser JavaScript has zero access to the long-lived refresh token (`document.cookie` cannot read httpOnly cookies), eliminating XSS credential harvesting.
+
+### 2. Non-Browser Client Flow (Explicit Opt-In)
+For non-browser clients (native mobile applications, CLI utilities, machine-to-machine integrations):
+- **Opt-In Header**: Non-browser clients must explicitly supply the request header `X-Client-Type: non-browser` (or `X-Auth-Flow: token-body`).
+- **Response Body Token**: When opted in, the backend includes `refresh_token` directly in the JSON response body (`data.refresh_token`).
+- **Payload Token on Refresh**: Non-browser clients provide `{ "refresh_token": "<token>" }` in the POST request body of `/api/v1/auth/refresh`.
+- **Security Tradeoff**: Non-browser platforms lack native browser cookie jar semantics and must persist refresh tokens in OS-level secure storage (e.g., iOS Keychain, Android Keystore). This flow must NEVER be enabled or used by web browser clients.
+
+---
+
 ## Login
 
 ```http

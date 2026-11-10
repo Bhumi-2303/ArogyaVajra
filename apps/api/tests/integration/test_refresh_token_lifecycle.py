@@ -15,7 +15,7 @@ from app.main import app
 from app.models.rate_limit import RateLimitBucket
 from app.models.refresh_token import RefreshToken
 
-client = TestClient(app)
+client = TestClient(app, headers={"X-Client-Type": "non-browser"})
 
 
 @pytest.mark.integration
@@ -319,7 +319,7 @@ def test_login_account_rate_limiting(monkeypatch):
         res = client.post(
             "/api/v1/auth/login",
             json={"email": target_email, "password": "WrongPassword999!"},
-            headers={"X-Forwarded-For": f"198.51.100.{i + 1}"},
+            headers={"X-Real-IP": f"198.51.100.{i + 1}"},
         )
         statuses.append(res.status_code)
 
@@ -333,7 +333,7 @@ def test_login_account_rate_limiting(monkeypatch):
     res_diff_ip = client.post(
         "/api/v1/auth/login",
         json={"email": target_email, "password": "WrongPassword999!"},
-        headers={"X-Forwarded-For": "203.0.113.99"},
+        headers={"X-Real-IP": "203.0.113.99"},
     )
     assert res_diff_ip.status_code == 429
 
@@ -341,7 +341,7 @@ def test_login_account_rate_limiting(monkeypatch):
     res_correct_pw = client.post(
         "/api/v1/auth/login",
         json={"email": target_email, "password": "CorrectPassword123!"},
-        headers={"X-Forwarded-For": "203.0.113.100"},
+        headers={"X-Real-IP": "203.0.113.100"},
     )
     assert res_correct_pw.status_code == 429
 
@@ -360,7 +360,7 @@ def test_login_account_rate_limiting(monkeypatch):
     login_other = client.post(
         "/api/v1/auth/login",
         json={"email": other_email, "password": "CorrectPassword123!"},
-        headers={"X-Forwarded-For": "198.51.100.1"},
+        headers={"X-Real-IP": "198.51.100.1"},
     )
     assert login_other.status_code == 200
     assert "access_token" in login_other.json()["data"]

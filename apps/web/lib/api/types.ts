@@ -57,7 +57,7 @@ export interface UserSearchParams {
 
 export interface AuthTokens {
   access_token: string;
-  refresh_token: string;
+  refresh_token?: string;
   token_type: string;
 }
 
@@ -67,7 +67,7 @@ export type UserResponse = User;
 export interface AuthData {
   user: User;
   access_token: string;
-  refresh_token: string;
+  refresh_token?: string;
   token_type: string;
 }
 

@@ -43,7 +43,8 @@ def test_register_and_login_lifecycle():
     assert reg_data["data"]["user"]["email"] == unique_email
     assert reg_data["data"]["user"]["role"] == "PATIENT"
     assert "access_token" in reg_data["data"]
-    assert "refresh_token" in reg_data["data"]
+    assert "refresh_token" not in reg_data["data"]
+    assert "refresh_token" in reg_response.cookies
     assert "password_hash" not in reg_data["data"]["user"]
 
     # 2. Duplicate registration with same email should return 409 Conflict
@@ -69,8 +70,9 @@ def test_register_and_login_lifecycle():
     login_data = login_response.json()
     assert login_data["message"] == "Login successful."
     assert login_data["data"]["user"]["email"] == unique_email
+    assert "refresh_token" not in login_data["data"]
+    assert "refresh_token" in login_response.cookies
     access_token = login_data["data"]["access_token"]
-    refresh_token = login_data["data"]["refresh_token"]
 
     # 4. Get Current User profile (/me)
     headers = {"Authorization": f"Bearer {access_token}"}
@@ -80,15 +82,13 @@ def test_register_and_login_lifecycle():
     assert me_data["data"]["email"] == unique_email
     assert me_data["data"]["role"] == "PATIENT"
 
-    # 5. Token Refresh (/refresh)
-    refresh_response = client.post(
-        "/api/v1/auth/refresh",
-        json={"refresh_token": refresh_token},
-    )
+    # 5. Token Refresh (/refresh) using httpOnly cookie
+    refresh_response = client.post("/api/v1/auth/refresh")
     assert refresh_response.status_code == 200
     new_tokens = refresh_response.json()
     assert "access_token" in new_tokens["data"]
-    assert "refresh_token" in new_tokens["data"]
+    assert "refresh_token" not in new_tokens["data"]
+    assert "refresh_token" in refresh_response.cookies
 
     # 6. Change Password (/change-password)
     new_password = "BrandNewStrongPassword456!"
@@ -336,3 +336,90 @@ def test_register_age_validation():
         json={"email": unique_email, "password": password, "age": 150},
     )
     assert res_high.status_code == 422
+
+
+@pytest.mark.integration
+def test_no_refresh_token_in_body_browser_vs_non_browser():
+    """Verify that browser clients never receive refresh_token in response body,
+
+    while non-browser clients opting in receive the token in the body.
+    """
+    email_browser = f"browser_{uuid.uuid4().hex[:8]}@example.com"
+    email_non_browser = f"nonbrowser_{uuid.uuid4().hex[:8]}@example.com"
+    pwd = "SecurePassword123!"
+
+    # 1. BROWSER CLIENT (Default):
+    # Register: body has no refresh_token; cookie is set
+    reg_b = client.post(
+        "/api/v1/auth/register",
+        json={"email": email_browser, "password": pwd, "role": "PATIENT"},
+    )
+    assert reg_b.status_code == 201
+    assert "refresh_token" not in reg_b.json()["data"]
+    assert "refresh_token" in reg_b.cookies
+
+    # Login: body has no refresh_token; cookie is set
+    login_b = client.post(
+        "/api/v1/auth/login",
+        json={"email": email_browser, "password": pwd},
+    )
+    assert login_b.status_code == 200
+    assert "refresh_token" not in login_b.json()["data"]
+    assert "refresh_token" in login_b.cookies
+    cookie_val = login_b.cookies["refresh_token"]
+
+    # Browser client without cookie sending body refresh token -> 401
+    isolated_client = TestClient(app)
+    unauth_b = isolated_client.post(
+        "/api/v1/auth/refresh",
+        json={"refresh_token": cookie_val},
+    )
+    assert unauth_b.status_code == 401
+    assert "Invalid or expired" in unauth_b.json()["detail"]
+
+    # Browser client with cookie -> 200, body has NO refresh_token, cookie is rotated
+    cookie_client = TestClient(app, cookies={"refresh_token": cookie_val})
+    ref_b = cookie_client.post(
+        "/api/v1/auth/refresh",
+        json={"refresh_token": "spoofed_ignored_body_token"},
+    )
+    assert ref_b.status_code == 200
+    assert "refresh_token" not in ref_b.json()["data"]
+    assert "access_token" in ref_b.json()["data"]
+    assert "refresh_token" in ref_b.cookies
+
+    # 2. NON-BROWSER CLIENT (Explicit Opt-In via X-Client-Type: non-browser):
+    nb_headers = {"X-Client-Type": "non-browser"}
+    nb_client = TestClient(app)
+
+    # Register: body HAS refresh_token
+    reg_nb = nb_client.post(
+        "/api/v1/auth/register",
+        headers=nb_headers,
+        json={"email": email_non_browser, "password": pwd, "role": "PATIENT"},
+    )
+    assert reg_nb.status_code == 201
+    assert "refresh_token" in reg_nb.json()["data"]
+    nb_rt = reg_nb.json()["data"]["refresh_token"]
+    assert isinstance(nb_rt, str) and len(nb_rt) > 20
+
+    # Login: body HAS refresh_token
+    login_nb = nb_client.post(
+        "/api/v1/auth/login",
+        headers=nb_headers,
+        json={"email": email_non_browser, "password": pwd},
+    )
+    assert login_nb.status_code == 200
+    assert "refresh_token" in login_nb.json()["data"]
+    nb_login_rt = login_nb.json()["data"]["refresh_token"]
+
+    # Refresh via body payload without cookie -> 200, body HAS refresh_token
+    isolated_nb = TestClient(app)
+    ref_nb = isolated_nb.post(
+        "/api/v1/auth/refresh",
+        headers=nb_headers,
+        json={"refresh_token": nb_login_rt},
+    )
+    assert ref_nb.status_code == 200
+    assert "refresh_token" in ref_nb.json()["data"]
+    assert "access_token" in ref_nb.json()["data"]

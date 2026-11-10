@@ -43,7 +43,8 @@ def test_forgot_password_and_reset_password_lifecycle():
     )
     assert reg_res.status_code == 201
     user_id = uuid.UUID(reg_res.json()["data"]["user"]["id"])
-    initial_rt = reg_res.json()["data"]["refresh_token"]
+    initial_rt = reg_res.cookies["refresh_token"]
+    assert "refresh_token" not in reg_res.json()["data"]
 
     # 2. Forgot password for existing email
     forgot_res = client.post(
@@ -168,7 +169,7 @@ def test_forgot_password_and_reset_password_lifecycle():
     # 9. Prior refresh token is revoked
     refresh_attempt = client.post(
         "/api/v1/auth/refresh",
-        json={"refresh_token": initial_rt},
+        cookies={"refresh_token": initial_rt},
     )
     assert refresh_attempt.status_code == 401
 
@@ -214,21 +215,23 @@ def test_cookie_based_refresh_and_logout():
     email = f"cookie_{uuid.uuid4().hex[:8]}@example.com"
     password = "SecurePassword123!"
 
-    # 1. Register and verify Set-Cookie header
+    # 1. Register and verify Set-Cookie header and no refresh_token in response body
     reg_res = client.post(
         "/api/v1/auth/register",
         json={"email": email, "password": password, "role": "PATIENT"},
     )
     assert reg_res.status_code == 201
     assert "refresh_token" in reg_res.cookies
+    assert "refresh_token" not in reg_res.json()["data"]
 
-    # 2. Login and verify cookie
+    # 2. Login and verify cookie and no refresh_token in response body
     login_res = client.post(
         "/api/v1/auth/login",
         json={"email": email, "password": password},
     )
     assert login_res.status_code == 200
     assert "refresh_token" in login_res.cookies
+    assert "refresh_token" not in login_res.json()["data"]
     initial_cookie = login_res.cookies["refresh_token"]
 
     # 3. Call refresh without body, passing cookie
@@ -236,6 +239,7 @@ def test_cookie_based_refresh_and_logout():
     ref_res = cookie_client.post("/api/v1/auth/refresh")
     assert ref_res.status_code == 200
     assert "access_token" in ref_res.json()["data"]
+    assert "refresh_token" not in ref_res.json()["data"]
     assert "refresh_token" in ref_res.cookies
     new_cookie = ref_res.cookies["refresh_token"]
     assert new_cookie != initial_cookie

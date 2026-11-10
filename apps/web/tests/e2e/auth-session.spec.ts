@@ -70,4 +70,56 @@ test.describe("Authentication Session & Silent Refresh", () => {
     expect(refreshCount).toBeGreaterThan(initialRefreshCount);
     await expect(page.locator("h1")).toContainText("Appointments");
   });
+
+  test("3. Response body of login and refresh never exposes refresh_token, and document.cookie / localStorage never expose it", async ({ page }) => {
+    let loginBodyHasRefreshToken = false;
+    let refreshBodyHasRefreshToken = false;
+
+    await page.route("**/api/v1/auth/login", async (route) => {
+      const response = await route.fetch();
+      const json = await response.json();
+      if (json?.data && "refresh_token" in json.data) {
+        loginBodyHasRefreshToken = true;
+      }
+      await route.fulfill({ response });
+    });
+
+    await page.route("**/api/v1/auth/refresh", async (route) => {
+      const response = await route.fetch();
+      const json = await response.json();
+      if (json?.data && "refresh_token" in json.data) {
+        refreshBodyHasRefreshToken = true;
+      }
+      await route.fulfill({ response });
+    });
+
+    // Login
+    await page.goto("/login");
+    await page.waitForLoadState("domcontentloaded");
+    await page.fill('input[type="email"]', "patient@arogyavajra.com");
+    await page.fill('input[type="password"]', SEED_PASSWORD);
+    await page.click('button[type="submit"]');
+    await expect(page).toHaveURL(/\/(dashboard|patient)/, { timeout: 10000 });
+
+    // Assert login response body never contained refresh_token
+    expect(loginBodyHasRefreshToken).toBe(false);
+
+    // Assert document.cookie never exposes refresh_token (it is httpOnly)
+    const clientCookies = await page.evaluate(() => document.cookie);
+    expect(clientCookies).not.toContain("refresh_token");
+
+    // Assert localStorage never exposes refresh_token or access_token
+    const localRefreshToken = await page.evaluate(() => localStorage.getItem("refresh_token"));
+    const localAccessToken = await page.evaluate(() => localStorage.getItem("access_token"));
+    expect(localRefreshToken).toBeNull();
+    expect(localAccessToken).toBeNull();
+
+    // Trigger page reload which invokes /auth/refresh
+    await page.reload();
+    await page.waitForLoadState("domcontentloaded");
+    await expect(page).toHaveURL(/\/(dashboard|patient)/);
+
+    // Assert refresh response body never contained refresh_token
+    expect(refreshBodyHasRefreshToken).toBe(false);
+  });
 });

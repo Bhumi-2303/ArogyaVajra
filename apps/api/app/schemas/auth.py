@@ -81,7 +81,7 @@ class TokenResponse(BaseModel):
     """JWT token pair representation."""
 
     access_token: str
-    refresh_token: str
+    refresh_token: str | None = None
     token_type: str = "bearer"
 
 
@@ -90,7 +90,7 @@ class AuthData(BaseModel):
 
     user: UserResponse
     access_token: str
-    refresh_token: str
+    refresh_token: str | None = None
     token_type: str = "bearer"
 
 
