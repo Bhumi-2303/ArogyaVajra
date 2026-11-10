@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db
+from app.core.rate_limit import get_client_identifier
 from app.models.appointment import AppointmentStatus
 from app.models.user import User
 from app.schemas.appointment import (
@@ -30,7 +31,7 @@ def create_appointment(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    ip_address = request.client.host if request.client else None
+    ip_address = get_client_identifier(request)
     user_agent = request.headers.get("user-agent")
 
     appointment = AppointmentService.create_appointment(
@@ -110,7 +111,7 @@ def update_appointment(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    ip_address = request.client.host if request.client else None
+    ip_address = get_client_identifier(request)
     user_agent = request.headers.get("user-agent")
 
     appointment = AppointmentService.update_appointment(
@@ -137,7 +138,7 @@ def confirm_appointment(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    ip_address = request.client.host if request.client else None
+    ip_address = get_client_identifier(request)
     user_agent = request.headers.get("user-agent")
 
     # Use update_appointment with status=CONFIRMED
@@ -167,7 +168,7 @@ def cancel_appointment(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    ip_address = request.client.host if request.client else None
+    ip_address = get_client_identifier(request)
     user_agent = request.headers.get("user-agent")
 
     from app.models.appointment import AppointmentStatus
@@ -196,7 +197,7 @@ def complete_appointment(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    ip_address = request.client.host if request.client else None
+    ip_address = get_client_identifier(request)
     user_agent = request.headers.get("user-agent")
 
     from app.models.appointment import AppointmentStatus

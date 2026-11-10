@@ -10,6 +10,7 @@ from app.api.deps import (
     get_current_user,
     require_admin,
 )
+from app.core.rate_limit import get_client_identifier
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.doctor import (
@@ -86,7 +87,7 @@ def create_doctor(
     db: Session = Depends(get_db),
 ):
     """Register a new doctor profile with auto-generated code DOC-00001 and audit trail."""
-    ip_address = request.client.host if request.client else None
+    ip_address = get_client_identifier(request)
     user_agent = request.headers.get("user-agent")
 
     doctor = DoctorService.create_doctor(
@@ -166,7 +167,7 @@ def update_doctor(
     db: Session = Depends(get_db),
 ):
     """Update doctor profile details (Admin or self doctor only)."""
-    ip_address = request.client.host if request.client else None
+    ip_address = get_client_identifier(request)
     user_agent = request.headers.get("user-agent")
 
     updated = DoctorService.update_doctor(
@@ -196,7 +197,7 @@ def delete_doctor(
     db: Session = Depends(get_db),
 ):
     """Delete doctor profile (restricted to administrators only)."""
-    ip_address = request.client.host if request.client else None
+    ip_address = get_client_identifier(request)
     user_agent = request.headers.get("user-agent")
 
     DoctorService.delete_doctor(

@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_roles
+from app.core.rate_limit import get_client_identifier
 from app.db.session import get_db
 from app.models.user import User, UserRole
 from app.schemas.patient import PaginationMeta
@@ -35,7 +36,7 @@ def create_user(
     db: Session = Depends(get_db),
 ):
     """Provision a new staff or system user account with audit trail."""
-    ip_address = request.client.host if request.client else None
+    ip_address = get_client_identifier(request)
     user_agent = request.headers.get("user-agent")
 
     user, temp_pw = UserManagementService.create_user(
@@ -132,7 +133,7 @@ def update_user(
     db: Session = Depends(get_db),
 ):
     """Update role or account status with safety invariants and audit logging."""
-    ip_address = request.client.host if request.client else None
+    ip_address = get_client_identifier(request)
     user_agent = request.headers.get("user-agent")
 
     user = UserManagementService.update_user(
@@ -163,7 +164,7 @@ def activate_user(
     db: Session = Depends(get_db),
 ):
     """Reactivate a previously deactivated user account."""
-    ip_address = request.client.host if request.client else None
+    ip_address = get_client_identifier(request)
     user_agent = request.headers.get("user-agent")
 
     user = UserManagementService.activate_user(
@@ -193,7 +194,7 @@ def deactivate_user(
     db: Session = Depends(get_db),
 ):
     """Deactivate a user account, preventing further authentication."""
-    ip_address = request.client.host if request.client else None
+    ip_address = get_client_identifier(request)
     user_agent = request.headers.get("user-agent")
 
     user = UserManagementService.deactivate_user(

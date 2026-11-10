@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db
+from app.core.rate_limit import get_client_identifier
 from app.models.user import User
 from app.schemas.medical_record import (
     MedicalRecordCreate,
@@ -29,7 +30,7 @@ def create_medical_record(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    ip_address = request.client.host if request.client else None
+    ip_address = get_client_identifier(request)
     user_agent = request.headers.get("user-agent")
 
     record = MedicalRecordService.create_record(
@@ -121,7 +122,7 @@ def update_medical_record(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    ip_address = request.client.host if request.client else None
+    ip_address = get_client_identifier(request)
     user_agent = request.headers.get("user-agent")
 
     record = MedicalRecordService.update_record(

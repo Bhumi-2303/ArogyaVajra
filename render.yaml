@@ -35,7 +35,7 @@ services:
           name: arogyavajra-web
           property: host
       - key: TRUSTED_PROXIES
-        value: ""
+        value: "10.0.0.0/8" # Render internal private network CIDR (RFC 1918 10.0.0.0/8 per Render private networking docs)
 
   # Frontend Web Service
   - type: web

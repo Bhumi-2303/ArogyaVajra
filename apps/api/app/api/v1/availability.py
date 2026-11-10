@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db
+from app.core.rate_limit import get_client_identifier
 from app.models.user import User
 from app.schemas.availability import (
     DoctorAvailabilityCreate,
@@ -47,7 +48,7 @@ def create_availability(
     db: Session = Depends(get_db),
 ):
     """Create a new recurring availability slot for a doctor."""
-    ip_address = request.client.host if request.client else None
+    ip_address = get_client_identifier(request)
     user_agent = request.headers.get("user-agent")
 
     slot = AvailabilityService.create_availability(
@@ -78,7 +79,7 @@ def update_availability(
     db: Session = Depends(get_db),
 ):
     """Update an existing recurring availability slot."""
-    ip_address = request.client.host if request.client else None
+    ip_address = get_client_identifier(request)
     user_agent = request.headers.get("user-agent")
 
     slot = AvailabilityService.update_availability(
@@ -108,7 +109,7 @@ def delete_availability(
     db: Session = Depends(get_db),
 ):
     """Delete an availability slot."""
-    ip_address = request.client.host if request.client else None
+    ip_address = get_client_identifier(request)
     user_agent = request.headers.get("user-agent")
 
     AvailabilityService.delete_availability(

@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db
+from app.core.rate_limit import get_client_identifier
 from app.models.prescription import PrescriptionStatus
 from app.models.user import User
 from app.schemas.prescription import (
@@ -30,7 +31,7 @@ def create_prescription(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    ip_address = request.client.host if request.client else None
+    ip_address = get_client_identifier(request)
     user_agent = request.headers.get("user-agent")
 
     prescription = PrescriptionService.create_prescription(
@@ -126,7 +127,7 @@ def update_prescription(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    ip_address = request.client.host if request.client else None
+    ip_address = get_client_identifier(request)
     user_agent = request.headers.get("user-agent")
 
     prescription = PrescriptionService.update_prescription(
@@ -153,7 +154,7 @@ def cancel_prescription(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    ip_address = request.client.host if request.client else None
+    ip_address = get_client_identifier(request)
     user_agent = request.headers.get("user-agent")
 
     from app.models.prescription import PrescriptionStatus

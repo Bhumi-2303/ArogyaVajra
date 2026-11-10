@@ -10,6 +10,7 @@ from app.api.deps import (
     verify_billing_resource_access,
     verify_patient_resource_access,
 )
+from app.core.rate_limit import get_client_identifier
 from app.db.session import get_db
 from app.models.user import User, UserRole
 from app.repositories.appointment import AppointmentRepository
@@ -85,7 +86,7 @@ def create_patient(
     db: Session = Depends(get_db),
 ):
     """Register a new patient profile with auto-generated patient code (e.g., PAT-00001)."""
-    ip_address = request.client.host if request.client else None
+    ip_address = get_client_identifier(request)
     user_agent = request.headers.get("user-agent")
 
     patient = PatientService.create_patient(
@@ -138,7 +139,7 @@ def update_patient(
     db: Session = Depends(get_db),
 ):
     """Update patient demographic information and log audit event."""
-    ip_address = request.client.host if request.client else None
+    ip_address = get_client_identifier(request)
     user_agent = request.headers.get("user-agent")
 
     updated = PatientService.update_patient(
@@ -165,7 +166,7 @@ def delete_patient(
     db: Session = Depends(get_db),
 ):
     """Delete patient profile (restricted to administrators only)."""
-    ip_address = request.client.host if request.client else None
+    ip_address = get_client_identifier(request)
     user_agent = request.headers.get("user-agent")
 
     PatientService.delete_patient(
