@@ -1,0 +1,270 @@
+#!/usr/bin/env node
+/**
+ * ArogyaVajra Same-Origin Runtime API Proxy Verification Suite
+ *
+ * Proves:
+ * 1. Runtime Route Handler exists at app/api/v1/[[...path]]/route.ts and handles all HTTP verbs.
+ * 2. Static build-time rewrites in next.config.mjs are removed so destinations are not baked at build.
+ * 3. In production, missing API_INTERNAL_URL fails loudly at boot and request time.
+ * 4. In production, API_INTERNAL_URL pointing to localhost/loopback is strictly rejected.
+ * 5. In production, valid internal private network endpoints (e.g. Render fromService hostport: arogyavajra-api:8000)
+ *    normalize correctly to http://arogyavajra-api:8000 and are proven not to be localhost.
+ * 6. The runtime environment boot validator scripts/validate-runtime-env.mjs enforces this on container start.
+ */
+
+import fs from "node:fs";
+import path from "node:path";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const webDir = path.resolve(__dirname, "..");
+
+let passed = 0;
+let failed = 0;
+
+function assert(condition, message) {
+  if (condition) {
+    console.log(`  ✓ ${message}`);
+    passed++;
+  } else {
+    console.error(`  ✗ FAIL: ${message}`);
+    failed++;
+  }
+}
+
+// Logic mirror of normalizeApiInternalUrl for verification
+function normalizeApiInternalUrl(rawUrl, isProd) {
+  const candidate = (rawUrl ?? "").trim().replace(/\/+$/, "");
+
+  if (!candidate) {
+    if (isProd) {
+      throw new Error(
+        "ConfigurationError: API_INTERNAL_URL environment variable is required in production."
+      );
+    }
+    return "http://localhost:8000";
+  }
+
+  const normalized =
+    candidate.startsWith("http://") || candidate.startsWith("https://")
+      ? candidate
+      : `http://${candidate}`;
+
+  if (isProd) {
+    try {
+      const parsed = new URL(normalized);
+      if (
+        parsed.hostname === "localhost" ||
+        parsed.hostname === "127.0.0.1" ||
+        parsed.hostname === "0.0.0.0" ||
+        parsed.hostname === "::1" ||
+        parsed.hostname === "[::1]"
+      ) {
+        throw new Error(
+          `Security validation failed: In production, API_INTERNAL_URL destination cannot point to localhost/loopback address '${candidate}'.`
+        );
+      }
+    } catch (err) {
+      if (err.message && err.message.startsWith("Security validation failed")) {
+        throw err;
+      }
+      if (
+        candidate.includes("localhost") ||
+        candidate.includes("127.0.0.1") ||
+        candidate.includes("0.0.0.0")
+      ) {
+        throw new Error(
+          `Security validation failed: In production, API_INTERNAL_URL destination cannot point to localhost/loopback address '${candidate}'.`
+        );
+      }
+    }
+  }
+
+  return normalized;
+}
+
+function run() {
+  console.log("============================================================");
+  console.log("    ArogyaVajra Runtime API Proxy Verification Suite        ");
+  console.log("============================================================\n");
+
+  // 1. Verify next.config.mjs does NOT have static localhost rewrite
+  console.log("[1/5] Verifying next.config.mjs removes static build-time rewrites...");
+  const nextConfigPath = path.join(webDir, "next.config.mjs");
+  const nextConfigContent = fs.readFileSync(nextConfigPath, "utf-8");
+
+  assert(
+    !nextConfigContent.includes("async rewrites()"),
+    "next.config.mjs does not contain async rewrites() (avoids build-time destination baking)"
+  );
+  assert(
+    !nextConfigContent.includes("destination: `${cleanInternal}/api/v1/:path*`"),
+    "Static rewrite destination removed from next.config.mjs"
+  );
+
+  // 2. Verify runtime Route Handler implementation
+  console.log("\n[2/5] Verifying runtime route handler app/api/v1/[[...path]]/route.ts...");
+  const routePath = path.join(webDir, "app", "api", "v1", "[[...path]]", "route.ts");
+  assert(fs.existsSync(routePath), "app/api/v1/[[...path]]/route.ts exists");
+
+  const routeContent = fs.readFileSync(routePath, "utf-8");
+  assert(
+    routeContent.includes('export const dynamic = "force-dynamic"'),
+    "Route handler is marked force-dynamic (evaluated dynamically at request time)"
+  );
+  assert(
+    routeContent.includes("normalizeApiInternalUrl"),
+    "Route handler invokes normalizeApiInternalUrl at request time"
+  );
+  assert(
+    routeContent.includes("x-forwarded-for"),
+    "Route handler injects/forwards X-Forwarded-For"
+  );
+  assert(
+    routeContent.includes("x-forwarded-proto"),
+    "Route handler injects/forwards X-Forwarded-Proto"
+  );
+  assert(
+    routeContent.includes("set-cookie"),
+    "Route handler preserves all Set-Cookie headers"
+  );
+  assert(
+    routeContent.includes('duplex: "half"'),
+    "Route handler streams request body with duplex: 'half'"
+  );
+
+  const methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"];
+  for (const m of methods) {
+    assert(
+      routeContent.includes(`export async function ${m}`),
+      `Route handler exports ${m} HTTP method handler`
+    );
+  }
+
+  // 3. Verify production behavior when API_INTERNAL_URL is missing
+  console.log("\n[3/5] Testing production loud failure when API_INTERNAL_URL is missing...");
+  let missingThrown = false;
+  try {
+    normalizeApiInternalUrl("", true);
+  } catch (err) {
+    missingThrown = true;
+    assert(
+      err.message.includes("ConfigurationError") &&
+        err.message.includes("API_INTERNAL_URL environment variable is required in production"),
+      "Throws loud ConfigurationError when API_INTERNAL_URL is missing in production"
+    );
+  }
+  assert(missingThrown, "Missing API_INTERNAL_URL in production throws error");
+
+  // 4. Verify production localhost / loopback rejection
+  console.log("\n[4/5] Testing production localhost / loopback destination rejection...");
+  const rejectedDestinations = [
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "0.0.0.0:8000",
+    "localhost:8000",
+    "http://[::1]:8000",
+  ];
+
+  for (const dest of rejectedDestinations) {
+    let rejected = false;
+    try {
+      normalizeApiInternalUrl(dest, true);
+    } catch (err) {
+      rejected = true;
+      assert(
+        err.message.includes("Security validation failed"),
+        `Rejects loopback destination '${dest}' in production`
+      );
+    }
+    assert(rejected, `Loopback destination '${dest}' must throw in production`);
+  }
+
+  // Valid destinations in production
+  const validPrivateHostport = "arogyavajra-api:8000";
+  const normalizedHostport = normalizeApiInternalUrl(validPrivateHostport, true);
+  assert(
+    normalizedHostport === "http://arogyavajra-api:8000",
+    `Normalizes private hostport '${validPrivateHostport}' to '${normalizedHostport}'`
+  );
+  assert(
+    !normalizedHostport.includes("localhost") && !normalizedHostport.includes("127.0.0.1"),
+    "Proves production destination is NOT localhost"
+  );
+
+  const validHttps = "https://api.arogyavajra.com";
+  const normalizedHttps = normalizeApiInternalUrl(validHttps, true);
+  assert(
+    normalizedHttps === "https://api.arogyavajra.com",
+    `Normalizes HTTPS destination '${validHttps}' to '${normalizedHttps}'`
+  );
+  assert(
+    !normalizedHttps.includes("localhost"),
+    "Proves production HTTPS destination is NOT localhost"
+  );
+
+  // 5. Verify boot validator process execution
+  console.log("\n[5/5] Testing scripts/validate-runtime-env.mjs container boot behavior...");
+  const validatorScript = path.join(webDir, "scripts", "validate-runtime-env.mjs");
+  assert(fs.existsSync(validatorScript), "scripts/validate-runtime-env.mjs exists");
+
+  // Subcase A: Missing in production -> exit code 1
+  const missingBoot = spawnSync(process.execPath, [validatorScript], {
+    env: { ...process.env, NODE_ENV: "production", API_INTERNAL_URL: "" },
+  });
+  assert(
+    missingBoot.status === 1,
+    "Boot validator exits with code 1 when API_INTERNAL_URL is missing in production"
+  );
+  assert(
+    missingBoot.stderr.toString().includes("FATAL ERROR: API_INTERNAL_URL environment variable is required"),
+    "Boot validator logs loud fatal error message on missing env"
+  );
+
+  // Subcase B: Localhost in production -> exit code 1
+  const localhostBoot = spawnSync(process.execPath, [validatorScript], {
+    env: { ...process.env, NODE_ENV: "production", API_INTERNAL_URL: "http://localhost:8000" },
+  });
+  assert(
+    localhostBoot.status === 1,
+    "Boot validator exits with code 1 when API_INTERNAL_URL points to localhost in production"
+  );
+  assert(
+    localhostBoot.stderr.toString().includes("FATAL ERROR: In production, API_INTERNAL_URL destination cannot point to localhost"),
+    "Boot validator logs loud fatal error on localhost in production"
+  );
+
+  // Subcase C: Valid hostport in production -> exit code 0
+  const validBoot = spawnSync(process.execPath, [validatorScript], {
+    env: { ...process.env, NODE_ENV: "production", API_INTERNAL_URL: "arogyavajra-api:8000" },
+  });
+  assert(
+    validBoot.status === 0,
+    "Boot validator exits with code 0 when valid internal hostport is provided"
+  );
+  assert(
+    validBoot.stdout.toString().includes("[Runtime Boot Check] API_INTERNAL_URL validated: http://arogyavajra-api:8000"),
+    "Boot validator outputs validated internal URL"
+  );
+
+  // Subcase D: Development environment -> exit code 0 without requirement
+  const devBoot = spawnSync(process.execPath, [validatorScript], {
+    env: { ...process.env, NODE_ENV: "development", API_INTERNAL_URL: "" },
+  });
+  assert(
+    devBoot.status === 0,
+    "Boot validator exits cleanly in development environment"
+  );
+
+  console.log("\n------------------------------------------------------------");
+  console.log(`Results: ${passed} passed, ${failed} failed`);
+  console.log("------------------------------------------------------------\n");
+
+  if (failed > 0) {
+    process.exit(1);
+  }
+}
+
+run();

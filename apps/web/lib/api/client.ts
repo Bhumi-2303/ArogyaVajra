@@ -64,6 +64,65 @@ export function clearStoredTokens(): void {
 }
 
 /**
+ * Normalize API_INTERNAL_URL for server-side runtime proxying.
+ * - Trims whitespace and trailing slashes.
+ * - In production, throws loudly if API_INTERNAL_URL is unset/empty or points to localhost.
+ * - In development, defaults to "http://localhost:8000" if unset.
+ * - Prefixes "http://" for private-network host:port values (e.g. Render fromService hostport: "arogyavajra-api:8000").
+ * - Leaves full URLs (e.g. "https://api.example.com", "http://internal:8000") alone.
+ */
+export function normalizeApiInternalUrl(rawUrl?: string): string {
+  const isProd = process.env.NODE_ENV === "production";
+  const candidate = (rawUrl ?? process.env.API_INTERNAL_URL ?? "").trim().replace(/\/+$/, "");
+
+  if (!candidate) {
+    if (isProd) {
+      throw new Error(
+        "ConfigurationError: API_INTERNAL_URL environment variable is required in production."
+      );
+    }
+    return "http://localhost:8000";
+  }
+
+  const normalized =
+    candidate.startsWith("http://") || candidate.startsWith("https://")
+      ? candidate
+      : `http://${candidate}`;
+
+  if (isProd) {
+    try {
+      const parsed = new URL(normalized);
+      if (
+        parsed.hostname === "localhost" ||
+        parsed.hostname === "127.0.0.1" ||
+        parsed.hostname === "0.0.0.0" ||
+        parsed.hostname === "::1" ||
+        parsed.hostname === "[::1]"
+      ) {
+        throw new Error(
+          `Security validation failed: In production, API_INTERNAL_URL destination cannot point to localhost/loopback address '${candidate}'.`
+        );
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message.startsWith("Security validation failed")) {
+        throw err;
+      }
+      if (
+        candidate.includes("localhost") ||
+        candidate.includes("127.0.0.1") ||
+        candidate.includes("0.0.0.0")
+      ) {
+        throw new Error(
+          `Security validation failed: In production, API_INTERNAL_URL destination cannot point to localhost/loopback address '${candidate}'.`
+        );
+      }
+    }
+  }
+
+  return normalized;
+}
+
+/**
  * Resolve endpoint to full or relative API URL ensuring /api/v1 is always present exactly once.
  * In production (when NEXT_PUBLIC_API_URL is unset), returns relative /api/v1 paths
  * so requests are same-origin and proxied via Next.js rewrites to prevent cross-site cookie drop.

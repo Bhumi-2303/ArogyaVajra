@@ -5,9 +5,10 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "node scripts/validate-runtime-env.mjs && next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
+    "verify:proxy": "node scripts/verify-api-proxy-runtime.mjs",
     "verify:shell": "node scripts/verify-responsive-shell.mjs",
     "verify:public": "node scripts/verify-public-experience.mjs",
     "verify:auth": "node scripts/verify-auth-experience.mjs",
@@ -15,7 +16,7 @@
     "verify:patients": "node scripts/verify-patient-experience.mjs",
     "verify:users": "node scripts/verify-admin-users.mjs",
     "verify:doctors": "node scripts/verify-doctor-experience.mjs",
-    "verify:all": "npm run verify:shell && npm run verify:public && npm run verify:auth && npm run verify:authz && npm run verify:patients && npm run verify:users && npm run verify:doctors",
+    "verify:all": "npm run verify:proxy && npm run verify:shell && npm run verify:public && npm run verify:auth && npm run verify:authz && npm run verify:patients && npm run verify:users && npm run verify:doctors",
     "test:e2e": "playwright test"
   },
   "dependencies": {

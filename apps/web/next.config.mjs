@@ -93,21 +93,6 @@ const nextConfig = {
       },
     ];
   },
-  async rewrites() {
-    const rawInternal = process.env.API_INTERNAL_URL || "http://localhost:8000";
-    const cleanInternal = (
-      rawInternal.startsWith("http://") || rawInternal.startsWith("https://")
-        ? rawInternal
-        : `http://${rawInternal}`
-    ).replace(/\/+$/, "");
-
-    return [
-      {
-        source: "/api/v1/:path*",
-        destination: `${cleanInternal}/api/v1/:path*`,
-      },
-    ];
-  },
 };
 
 export default nextConfig;
