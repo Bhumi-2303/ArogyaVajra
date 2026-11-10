@@ -48,12 +48,13 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    environment:
+      - API_INTERNAL_URL=${API_INTERNAL_URL:-http://api:8000}
     ports:
       - "${WEB_PORT:-3000}:3000"
     volumes:
       - ./apps/web:/app
       - /app/node_modules
-      - /app/.next
     depends_on:
       - api
     networks:
