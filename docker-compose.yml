@@ -50,6 +50,7 @@ services:
       - .env
     environment:
       - API_INTERNAL_URL=${API_INTERNAL_URL:-http://api:8000}
+      - TRUST_PLATFORM_IP_HEADERS=${TRUST_PLATFORM_IP_HEADERS:-true}
     ports:
       - "${WEB_PORT:-3000}:3000"
     volumes:

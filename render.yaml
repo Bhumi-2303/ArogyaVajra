@@ -52,3 +52,5 @@ services:
           type: web
           name: arogyavajra-api
           property: hostport
+      - key: TRUST_PLATFORM_IP_HEADERS
+        value: "true"

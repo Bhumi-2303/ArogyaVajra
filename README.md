@@ -445,7 +445,8 @@ Arogyavajra provides an automated [Render Blueprint](https://render.com/docs/blu
 | Variable | Type | Description |
 | :--- | :---: | :--- |
 | `NODE_ENV` | Env Var | Node environment (`production`) |
-| `API_INTERNAL_URL` | Env Var | Internal address of the backend service (`hostport`), wired from `arogyavajra-api`. Requests to `/api/v1/*` are proxied same-origin via Next.js rewrites, guaranteeing first-party `httpOnly` refresh cookie persistence. |
+| `API_INTERNAL_URL` | Env Var | Internal address of the backend service (`hostport`), wired from `arogyavajra-api`. Requests to `/api/v1/*` are proxied same-origin via the runtime Route Handler at `app/api/v1/[[...path]]/route.ts`, guaranteeing first-party `httpOnly` refresh cookie persistence. |
+| `TRUST_PLATFORM_IP_HEADERS` | Env Var | Edge header trust toggle (`true`/`false`, default `false`). When `true`, the Next.js runtime proxy trusts Cloudflare platform edge headers (`CF-Connecting-IP` / `True-Client-IP`) to resolve real client IP and inject authoritative `X-Real-IP`. Set to `true` on Render. |
 
 ### Cold-Start Notice
 On Render free or starter tiers, instances spin down after 15 minutes of inactivity. When a new request arrives, a cold start takes approximately **30–50 seconds** while the Docker container boots and completes database readiness probes. Subsequent requests are served with sub-100ms latency.
@@ -503,6 +504,51 @@ curl -f -s https://<api-service>.onrender.com/ready
 curl -f -s https://<api-service>.onrender.com/api/v1
 # Expected response (HTTP 200):
 # {"data":{"name":"Arogyavajra API","version":"v1","status":"active"},"message":"Welcome..."}
+```
+
+### Edge Platform Header Trust & Real Client IP Resolution
+
+Behind the Next.js runtime proxy on Render, the backend API communicates directly with the Next.js server over the Render private network (RFC 1918 addresses such as `10.x.x.x`). To prevent IP spoofing while preserving accurate client IP attribution in audit logs and rate-limiting buckets:
+
+1. **Header Stripping at Web Proxy**:
+   The runtime proxy (`apps/web/app/api/v1/[[...path]]/route.ts`) strips **all client-supplied forwarded and IP headers** (`X-Forwarded-For`, `X-Real-IP`, `Forwarded`, `True-Client-IP`, `CF-Connecting-IP`) as well as auth bypass opt-in headers (`X-Client-Type`, `X-Auth-Flow`).
+2. **Explicit Platform Edge Header Trust (`TRUST_PLATFORM_IP_HEADERS`)**:
+   - `TRUST_PLATFORM_IP_HEADERS` defaults to `false`. In `render.yaml`, it is explicitly set to `"true"`.
+   - When `TRUST_PLATFORM_IP_HEADERS="true"`, the Next.js proxy extracts the client IP from Cloudflare's non-spoofable edge headers (`CF-Connecting-IP` / `True-Client-IP`) and injects a single authoritative `X-Real-IP` to the internal API service.
+   - When `TRUST_PLATFORM_IP_HEADERS="false"`, edge headers are ignored, and the system falls back to development logic (leftmost valid `X-Forwarded-For` in development, or `unknown` in production).
+3. **Architectural Security Assumption**:
+   This trust model strictly assumes the web service is reachable **exclusively through Render's Cloudflare edge**, where edge headers cannot be injected or modified by public callers. If the origin service is ever exposed directly to the public internet bypassing Cloudflare edge termination, `TRUST_PLATFORM_IP_HEADERS` must remain `false`.
+4. **Backend Single-Header Enforcement**:
+   When the incoming peer IP is in `TRUSTED_PROXIES` (e.g. `10.0.0.0/8`), `get_client_identifier` in `apps/api/app/core/rate_limit.py` trusts **only** `X-Real-IP`. It does not walk `X-Forwarded-For`, preventing header spoofing attacks.
+
+### Verifying Client IP Attribution on Render
+
+You can verify that the real client IP is properly extracted and forwarded behind Render's proxy using the diagnostic endpoint `/api/v1/auth/debug-client-ip`:
+
+```bash
+# Step 1: Log in as an administrator to obtain an access token
+TOKEN=$(curl -s -X POST https://<web-service>.onrender.com/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@hospital.org","password":"<AdminPassword>"}' \
+  | jq -r '.data.access_token')
+
+# Step 2: Query the debug-client-ip endpoint
+curl -s https://<web-service>.onrender.com/api/v1/auth/debug-client-ip \
+  -H "Authorization: Bearer $TOKEN" | jq .
+
+# Expected Response:
+# {
+#   "resolved_client_ip": "203.0.113.195",   <-- Your actual public IP
+#   "direct_host": "10.0.1.25",             <-- Render web service private container IP
+#   "is_trusted_proxy": true,               <-- Matches TRUSTED_PROXIES
+#   "headers": {
+#     "x-real-ip": "203.0.113.195",
+#     "cf-connecting-ip": null,
+#     "true-client-ip": null,
+#     "x-forwarded-for": null,
+#     "forwarded": null
+#   }
+# }
 ```
 
 ---

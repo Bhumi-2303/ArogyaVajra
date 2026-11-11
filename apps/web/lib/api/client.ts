@@ -97,26 +97,36 @@ export interface ClientIpResolvableRequest {
 
 /**
  * Resolve trustworthy client IP from Cloudflare/Render edge platform headers.
- * - In production: uses CF-Connecting-IP or True-Client-IP set by Cloudflare edge.
+ * - When TRUST_PLATFORM_IP_HEADERS is true (e.g. Render production behind Cloudflare):
+ *   uses CF-Connecting-IP or True-Client-IP set by Cloudflare edge.
+ * - When TRUST_PLATFORM_IP_HEADERS is false (default): ignores edge platform headers.
  * - In local development: falls back to the leftmost valid X-Forwarded-For entry.
  * - Never returns or trusts client-chosen spoofed headers.
  */
 export function resolveTrustworthyClientIp(
   request: ClientIpResolvableRequest,
-  isProdOverride?: boolean
+  isProdOverride?: boolean,
+  trustPlatformHeadersOverride?: boolean
 ): string {
   const isProd =
     isProdOverride !== undefined ? isProdOverride : process.env.NODE_ENV === "production";
+  const trustPlatformHeaders =
+    trustPlatformHeadersOverride !== undefined
+      ? trustPlatformHeadersOverride
+      : process.env.TRUST_PLATFORM_IP_HEADERS === "true";
 
   // 1. Non-spoofable platform edge headers (Cloudflare / Render proxy edge)
-  const cfConnectingIp = request.headers.get("cf-connecting-ip")?.trim();
-  if (cfConnectingIp && isValidIpAddress(cfConnectingIp)) {
-    return cfConnectingIp;
-  }
+  // Only trusted when TRUST_PLATFORM_IP_HEADERS is explicitly enabled (e.g. on Render)
+  if (trustPlatformHeaders) {
+    const cfConnectingIp = request.headers.get("cf-connecting-ip")?.trim();
+    if (cfConnectingIp && isValidIpAddress(cfConnectingIp)) {
+      return cfConnectingIp;
+    }
 
-  const trueClientIp = request.headers.get("true-client-ip")?.trim();
-  if (trueClientIp && isValidIpAddress(trueClientIp)) {
-    return trueClientIp;
+    const trueClientIp = request.headers.get("true-client-ip")?.trim();
+    if (trueClientIp && isValidIpAddress(trueClientIp)) {
+      return trueClientIp;
+    }
   }
 
   // 2. In local development only, fall back to leftmost valid X-Forwarded-For entry

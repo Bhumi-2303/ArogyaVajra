@@ -53,11 +53,13 @@ function isValidIpAddress(ip) {
   return false;
 }
 
-function resolveTrustworthyClientIp(req, isProd) {
-  const cf = req.headers.get("cf-connecting-ip")?.trim();
-  if (cf && isValidIpAddress(cf)) return cf;
-  const tc = req.headers.get("true-client-ip")?.trim();
-  if (tc && isValidIpAddress(tc)) return tc;
+function resolveTrustworthyClientIp(req, isProd, trustPlatformHeaders = false) {
+  if (trustPlatformHeaders) {
+    const cf = req.headers.get("cf-connecting-ip")?.trim();
+    if (cf && isValidIpAddress(cf)) return cf;
+    const tc = req.headers.get("true-client-ip")?.trim();
+    if (tc && isValidIpAddress(tc)) return tc;
+  }
   if (!isProd) {
     const rawXff = req.headers.get("x-forwarded-for");
     if (rawXff) {
@@ -210,30 +212,42 @@ function run() {
     get: (key) => obj[key.toLowerCase()] ?? null,
   });
 
-  // Production: CF-Connecting-IP takes highest precedence
+  // Production with TRUST_PLATFORM_IP_HEADERS=true: CF-Connecting-IP takes highest precedence
   const prodCf = resolveTrustworthyClientIp(
     { headers: mockHeaders({ "cf-connecting-ip": "203.0.113.195", "x-forwarded-for": "1.2.3.4" }) },
+    true,
     true
   );
-  assert(prodCf === "203.0.113.195", "Production resolves client IP from CF-Connecting-IP");
+  assert(prodCf === "203.0.113.195", "Production with TRUST_PLATFORM_IP_HEADERS=true resolves client IP from CF-Connecting-IP");
 
-  // Production: True-Client-IP takes second precedence
+  // Production with TRUST_PLATFORM_IP_HEADERS=true: True-Client-IP takes second precedence
   const prodTc = resolveTrustworthyClientIp(
     { headers: mockHeaders({ "true-client-ip": "198.51.100.72", "x-forwarded-for": "1.2.3.4" }) },
+    true,
     true
   );
-  assert(prodTc === "198.51.100.72", "Production resolves client IP from True-Client-IP");
+  assert(prodTc === "198.51.100.72", "Production with TRUST_PLATFORM_IP_HEADERS=true resolves client IP from True-Client-IP");
+
+  // Production with TRUST_PLATFORM_IP_HEADERS=false (default): Platform edge headers are strictly ignored
+  const prodNoTrust = resolveTrustworthyClientIp(
+    { headers: mockHeaders({ "cf-connecting-ip": "203.0.113.195", "true-client-ip": "198.51.100.72" }) },
+    true,
+    false
+  );
+  assert(prodNoTrust === "unknown", "Production with TRUST_PLATFORM_IP_HEADERS=false strictly ignores edge headers");
 
   // Production: Spoofed X-Forwarded-For or X-Real-IP without platform edge headers is never trusted
   const prodSpoof = resolveTrustworthyClientIp(
     { headers: mockHeaders({ "x-forwarded-for": "198.51.100.99", "x-real-ip": "198.51.100.99" }) },
+    true,
     true
   );
   assert(prodSpoof === "unknown", "Production never trusts client-chosen X-Forwarded-For or X-Real-IP");
 
-  // Local development: Falls back to leftmost valid X-Forwarded-For entry
+  // Local development (TRUST_PLATFORM_IP_HEADERS=false): Falls back to leftmost valid X-Forwarded-For entry
   const devXff = resolveTrustworthyClientIp(
     { headers: mockHeaders({ "x-forwarded-for": "192.168.1.50, 10.0.0.1" }) },
+    false,
     false
   );
   assert(devXff === "192.168.1.50", "Development falls back to leftmost valid X-Forwarded-For entry");
