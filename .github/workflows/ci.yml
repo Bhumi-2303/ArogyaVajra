@@ -176,6 +176,18 @@ jobs:
             echo "All services are up and healthy."
           '
 
+      - name: Dump Docker Logs on Service Readiness Failure
+        if: failure()
+        run: |
+          echo "=== ArogyaVajra Containers Status ==="
+          docker compose ps -a
+          echo "=== ArogyaVajra Web Container Logs ==="
+          docker compose logs web
+          echo "=== ArogyaVajra API Container Logs ==="
+          docker compose logs api
+          echo "=== ArogyaVajra DB Container Logs ==="
+          docker compose logs db
+
       - name: Seed Database with Initial Data
         run: |
           docker compose exec -T api python scripts/seed_dev_accounts.py
