@@ -12,6 +12,7 @@ const PUBLIC_EXACT_PATHS = new Set([
   "/register",
   "/forgot-password",
   "/reset-password",
+  "/design-system",
 ]);
 
 export function middleware(request: NextRequest) {
