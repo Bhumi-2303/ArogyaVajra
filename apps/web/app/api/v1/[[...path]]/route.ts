@@ -137,20 +137,11 @@ async function handleProxy(
       headers: responseHeaders,
     });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Internal proxy error";
-    const status =
-      message.includes("ConfigurationError") || message.includes("Security validation failed")
-        ? 500
-        : 502;
-
     console.error(`[API Proxy Error] ${request.method} ${request.nextUrl.pathname}:`, error);
 
     return NextResponse.json(
-      {
-        detail: "API Proxy Gateway Error",
-        error: message,
-      },
-      { status }
+      { detail: "Bad gateway" },
+      { status: 502 }
     );
   }
 }

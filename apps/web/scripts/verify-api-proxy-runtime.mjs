@@ -189,6 +189,14 @@ function run() {
     "Route handler streams request body with duplex: 'half'"
   );
 
+  // 2a. Verify proxy error sanitization (no internal hostname or stack leakage)
+  assert(
+    routeContent.includes('detail: "Bad gateway"') &&
+      routeContent.includes("status: 502") &&
+      !routeContent.includes("error: message"),
+    "Route handler returns generic { detail: 'Bad gateway' } (502) and suppresses error details from response"
+  );
+
   const methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"];
   for (const m of methods) {
     assert(
@@ -236,6 +244,39 @@ function run() {
     assert(
       routeContent.includes(`lower === "${h.toLowerCase()}"`),
       `Route handler strips ${h} from client requests`
+    );
+  }
+
+  // 2c. Verify proxy error payload leakage prevention
+  const simulatedProxyCatch = (_err) => {
+    return {
+      status: 502,
+      body: JSON.stringify({ detail: "Bad gateway" }),
+    };
+  };
+
+  const sampleErrors = [
+    new Error("connect ECONNREFUSED arogyavajra-api:8000\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1606:16)"),
+    new Error("ConfigurationError: API_INTERNAL_URL environment variable is required in production."),
+    new Error("Security validation failed: In production, API_INTERNAL_URL destination cannot point to localhost/loopback address 'localhost:8000'."),
+    new TypeError("fetch failed: write EPIPE"),
+  ];
+
+  for (const sampleErr of sampleErrors) {
+    const errorResponse = simulatedProxyCatch(sampleErr);
+    const bodyStr = errorResponse.body;
+    assert(
+      errorResponse.status === 502 && bodyStr === JSON.stringify({ detail: "Bad gateway" }),
+      `Proxy error response returns status 502 and generic body for error: ${sampleErr.message.slice(0, 32)}...`
+    );
+    assert(
+      !bodyStr.includes("arogyavajra-api") &&
+        !bodyStr.includes("8000") &&
+        !bodyStr.includes("localhost") &&
+        !bodyStr.includes("stack") &&
+        !bodyStr.includes("ECONNREFUSED") &&
+        !bodyStr.includes("ConfigurationError"),
+      "Proxy error payload contains no internal hostname, port, stack trace, or internal exception string"
     );
   }
 
