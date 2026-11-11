@@ -12,10 +12,26 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 
-function LoginFormContent() {
-  const router = useRouter();
+function RedirectHandler({
+  onRedirect,
+}: {
+  onRedirect: (param: string | null) => void;
+}) {
   const searchParams = useSearchParams();
-  const redirectParam = searchParams.get("redirect");
+  const redirect = searchParams.get("redirect");
+  React.useEffect(() => {
+    onRedirect(redirect);
+  }, [redirect, onRedirect]);
+  return null;
+}
+
+export default function LoginPage() {
+  const router = useRouter();
+  const [redirectParam, setRedirectParam] = React.useState<string | null>(null);
+
+  const handleRedirect = React.useCallback((param: string | null) => {
+    setRedirectParam(param);
+  }, []);
 
   const { user, login, logout, isLoading: sessionLoading, isAuthenticated } = useAuth();
 
@@ -101,7 +117,11 @@ function LoginFormContent() {
         : "/patient";
 
     return (
-      <Card className="shadow-card">
+      <>
+        <React.Suspense fallback={null}>
+          <RedirectHandler onRedirect={handleRedirect} />
+        </React.Suspense>
+        <Card className="shadow-card">
         <CardHeader className="text-center pb-4">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-success-light text-success mb-3">
             <CheckCircle2 className="h-6 w-6" aria-hidden="true" />
@@ -161,11 +181,16 @@ function LoginFormContent() {
           </Link>
         </CardFooter>
       </Card>
-    );
-  }
+    </>
+  );
+}
 
   return (
-    <Card className="shadow-card">
+    <>
+      <React.Suspense fallback={null}>
+        <RedirectHandler onRedirect={handleRedirect} />
+      </React.Suspense>
+      <Card className="shadow-card">
       <CardHeader className="space-y-1 text-center">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-soft text-primary mb-2 shadow-subtle">
           <ShieldCheck className="h-6 w-6" aria-hidden="true" />
@@ -295,20 +320,6 @@ setSuccessMessage(null)}>
         </CardFooter>
       </form>
     </Card>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <React.Suspense
-      fallback={
-        <Card className="shadow-card p-6 text-center">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto mb-2" />
-          <p className="text-xs text-app-muted">Loading authentication form...</p>
-        </Card>
-      }
-    >
-      <LoginFormContent />
-    </React.Suspense>
+    </>
   );
 }
