@@ -31,8 +31,6 @@ services:
       - .env
     ports:
       - "${API_PORT:-8000}:8000"
-    volumes:
-      - ./apps/api:/app
     depends_on:
       db:
         condition: service_healthy
@@ -53,10 +51,6 @@ services:
       - TRUST_PLATFORM_IP_HEADERS=${TRUST_PLATFORM_IP_HEADERS:-true}
     ports:
       - "${WEB_PORT:-3000}:3000"
-    volumes:
-      - ./apps/web:/app
-      - /app/node_modules
-      - /app/.next
     depends_on:
       - api
     networks:

@@ -199,6 +199,10 @@ jobs:
           cache: "npm"
           cache-dependency-path: apps/web/package-lock.json
 
+      - name: Ensure Host Workspace Permissions
+        run: |
+          sudo chown -R $USER:$USER .
+
       - name: Install Frontend Dependencies & Playwright
         run: |
           cd apps/web
