@@ -755,6 +755,7 @@ def debug_client_ip(
     """Temporary diagnostic endpoint to verify proxy IP resolution on Render deploys.
 
     Protected: Accessible in development without auth, or in production by authenticated ADMIN users.
+    Decommissioning: Follow the step-by-step procedure in README.md to remove after deployment verification.
     """
     is_prod = settings.APP_ENV.lower() in ("production", "prod", "staging")
     if is_prod:

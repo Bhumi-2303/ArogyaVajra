@@ -551,6 +551,29 @@ curl -s https://<web-service>.onrender.com/api/v1/auth/debug-client-ip \
 # }
 ```
 
+### Decommissioning / Deleting Debug Endpoint after Verifying on Render
+
+The diagnostic endpoint `/api/v1/auth/debug-client-ip` is strictly restricted to authenticated administrators in production environments (returning HTTP 401 for unauthenticated requests and HTTP 403 for non-admin accounts). Follow these steps to delete the endpoint after verifying on Render:
+
+1. **Delete Endpoint from Backend**:
+   In `apps/api/app/api/v1/auth.py`, delete the `debug_client_ip` route handler (`@router.get("/debug-client-ip", ...)`).
+2. **Remove Integration Test**:
+   In `apps/api/tests/integration/test_trusted_proxy_and_client_ip.py`, delete `test_debug_client_ip_endpoint`.
+3. **Execute Verification Baseline**:
+   Verify that all quality gates remain green:
+   ```bash
+   cd apps/api
+   python scripts/lint_gate.py
+   alembic upgrade head
+   pytest -q
+   ```
+4. **Commit and Deploy Deletion**:
+   ```bash
+   git add apps/api/app/api/v1/auth.py apps/api/tests/integration/test_trusted_proxy_and_client_ip.py
+   git commit -m "chore(auth): delete temporary debug-client-ip endpoint after render verification"
+   git push origin main
+   ```
+
 ---
 
 ## 🧪 Testing and Quality Assurance

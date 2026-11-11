@@ -378,6 +378,16 @@ def test_debug_client_ip_endpoint(monkeypatch):
     assert res_forbidden.status_code == 403
     assert "Administrative privileges required" in res_forbidden.json()["detail"]
 
+    # Non-admin user (Doctor) in production -> 403
+    doctor_user = create_test_user("debug_doctor", UserRole.DOCTOR)
+    doctor_token = create_access_token(doctor_user.id, UserRole.DOCTOR.value)
+    res_forbidden_doc = proxy_client.get(
+        "/api/v1/auth/debug-client-ip",
+        headers={"Authorization": f"Bearer {doctor_token}"},
+    )
+    assert res_forbidden_doc.status_code == 403
+    assert "Administrative privileges required" in res_forbidden_doc.json()["detail"]
+
     # Admin user in production -> 200 with debug info
     admin_user = create_test_user("debug_admin", UserRole.ADMIN)
     admin_token = create_access_token(admin_user.id, UserRole.ADMIN.value)
