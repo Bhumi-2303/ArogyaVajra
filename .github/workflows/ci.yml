@@ -207,7 +207,7 @@ jobs:
         run: |
           cd apps/web
           npm ci
-          npx playwright install --with-deps chromium
+          npx playwright install chromium
 
       - name: Run Live Integration Verification Suites
         run: |
