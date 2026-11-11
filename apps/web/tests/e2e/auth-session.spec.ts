@@ -122,4 +122,42 @@ test.describe("Authentication Session & Silent Refresh", () => {
     // Assert refresh response body never contained refresh_token
     expect(refreshBodyHasRefreshToken).toBe(false);
   });
+
+  test("4. Malicious script scenario: fetch() with X-Client-Type: non-browser cannot exfiltrate refresh token in response body", async ({ page }) => {
+    // 1. Authenticate user to obtain session and httpOnly cookie
+    await page.goto("/login");
+    await page.waitForLoadState("domcontentloaded");
+    await page.fill('input[type="email"]', "patient@arogyavajra.com");
+    await page.fill('input[type="password"]', SEED_PASSWORD);
+    await page.click('button[type="submit"]');
+    await expect(page).toHaveURL(/\/(dashboard|patient)/, { timeout: 10000 });
+
+    // 2. Simulate malicious in-page XSS script executing fetch with X-Client-Type: non-browser and credentials: include
+    const exfilResult = await page.evaluate(async () => {
+      try {
+        const res = await fetch("/api/v1/auth/refresh", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Client-Type": "non-browser",
+            "X-Auth-Flow": "token-body",
+          },
+          credentials: "include",
+          body: JSON.stringify({}),
+        });
+        const data = await res.json();
+        return {
+          status: res.status,
+          hasRefreshToken: Boolean(data?.data && "refresh_token" in data.data),
+          data,
+        };
+      } catch (err: unknown) {
+        return { error: err instanceof Error ? err.message : String(err) };
+      }
+    });
+
+    // 3. Must succeed or return valid refresh, but MUST NEVER expose refresh_token in response body
+    expect(exfilResult.hasRefreshToken).toBe(false);
+    expect(exfilResult.data?.data?.refresh_token).toBeUndefined();
+  });
 });

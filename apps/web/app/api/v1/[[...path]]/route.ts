@@ -45,14 +45,16 @@ async function handleProxy(
         return;
       }
 
-      // CRITICAL: Strip ALL client-supplied forwarded / IP headers
-      // Never forward a client-chosen IP header to the backend API
+      // CRITICAL: Strip ALL client-supplied forwarded / IP headers and client auth-flow bypass headers
+      // Never forward a client-chosen IP or client opt-in header to the backend API
       if (
         lower === "x-forwarded-for" ||
         lower === "x-real-ip" ||
         lower === "forwarded" ||
         lower === "true-client-ip" ||
-        lower === "cf-connecting-ip"
+        lower === "cf-connecting-ip" ||
+        lower === "x-client-type" ||
+        lower === "x-auth-flow"
       ) {
         return;
       }

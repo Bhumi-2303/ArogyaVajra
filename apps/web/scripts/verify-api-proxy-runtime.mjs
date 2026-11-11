@@ -172,6 +172,11 @@ function run() {
     "Route handler strips ALL client-supplied forwarded / IP headers"
   );
   assert(
+    routeContent.includes('lower === "x-client-type"') &&
+      routeContent.includes('lower === "x-auth-flow"'),
+    "Route handler strips client-supplied X-Client-Type and X-Auth-Flow headers"
+  );
+  assert(
     routeContent.includes("x-forwarded-proto"),
     "Route handler injects/forwards X-Forwarded-Proto"
   );
@@ -224,6 +229,15 @@ function run() {
     false
   );
   assert(devXff === "192.168.1.50", "Development falls back to leftmost valid X-Forwarded-For entry");
+
+  // Verify stripping of client auth-flow bypass headers
+  const strippedHeaders = ["X-Client-Type", "X-Auth-Flow", "x-client-type", "x-auth-flow"];
+  for (const h of strippedHeaders) {
+    assert(
+      routeContent.includes(`lower === "${h.toLowerCase()}"`),
+      `Route handler strips ${h} from client requests`
+    );
+  }
 
   // 3. Verify production behavior when API_INTERNAL_URL is missing
   console.log("\n[3/5] Testing production loud failure when API_INTERNAL_URL is missing...");

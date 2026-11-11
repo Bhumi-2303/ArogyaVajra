@@ -77,13 +77,19 @@ def clear_refresh_cookie(response: Response) -> None:
 
 
 def is_non_browser_client(request: Request) -> bool:
-    """Determine whether client explicitly opted into non-browser token body flow.
+    """Determine whether client is a genuine non-browser client requesting token body flow.
 
-    Default browser flow: refresh token is delivered exclusively via httpOnly cookie,
-    and refresh_token is strictly omitted from the JSON response body to protect against XSS exfiltration.
-    Non-browser clients (native mobile apps, CLI, automated tests) opt in via:
-    - Header `X-Client-Type: non-browser` OR `X-Auth-Flow: token-body`
+    CRITICAL SECURITY INVARIANT:
+    - If a request carries a `refresh_token` cookie, it is strictly treated as a browser
+      request regardless of any headers, and will NEVER receive a refresh token in the body.
+      This prevents malicious scripts (e.g. via XSS) from sending `X-Client-Type: non-browser`
+      with ambient cookies to exfiltrate refresh tokens into response bodies.
+    - Only requests without a refresh cookie that explicitly supply `X-Client-Type: non-browser`
+      or `X-Auth-Flow: token-body` are treated as non-browser clients.
     """
+    if request.cookies.get("refresh_token"):
+        return False
+
     client_type = request.headers.get("x-client-type", "").lower().strip()
     auth_flow = request.headers.get("x-auth-flow", "").lower().strip()
     return client_type == "non-browser" or auth_flow == "token-body"
@@ -204,8 +210,9 @@ def register(
 
     # Issue tracked token pair with new session family
     access_token, refresh_token = issue_and_persist_tokens(db=db, user=user)
-    set_refresh_cookie(response, refresh_token)
     non_browser = is_non_browser_client(request)
+    if not non_browser:
+        set_refresh_cookie(response, refresh_token)
 
     return APIResponse(
         data=AuthData(
@@ -272,8 +279,9 @@ def login(
     db.refresh(user)
 
     access_token, refresh_token = issue_and_persist_tokens(db=db, user=user)
-    set_refresh_cookie(response, refresh_token)
     non_browser = is_non_browser_client(request)
+    if not non_browser:
+        set_refresh_cookie(response, refresh_token)
 
     return APIResponse(
         data=AuthData(
@@ -316,10 +324,9 @@ def refresh_token(
 
     non_browser = is_non_browser_client(request)
     if non_browser:
-        # Non-browser opt-in: accepts refresh_token from JSON payload or cookie fallback
-        raw_token = (
-            payload.refresh_token if payload and payload.refresh_token else None
-        ) or request.cookies.get("refresh_token")
+        # Non-browser client path: strictly require refresh_token in JSON body;
+        # do NOT fall back to cookies.
+        raw_token = payload.refresh_token if payload and payload.refresh_token else None
     else:
         # Browser client flow: strictly enforce reading exclusively from httpOnly cookie.
         # Ignores payload.refresh_token to prevent token confusion or body leakage.
@@ -434,7 +441,8 @@ def refresh_token(
         db.rollback()
         raise
 
-    set_refresh_cookie(response, new_refresh)
+    if not non_browser:
+        set_refresh_cookie(response, new_refresh)
 
     return APIResponse(
         data=TokenResponse(

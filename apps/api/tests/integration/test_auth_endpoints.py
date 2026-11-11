@@ -388,11 +388,33 @@ def test_no_refresh_token_in_body_browser_vs_non_browser():
     assert "access_token" in ref_b.json()["data"]
     assert "refresh_token" in ref_b.cookies
 
-    # 2. NON-BROWSER CLIENT (Explicit Opt-In via X-Client-Type: non-browser):
+    # Scenario (a): Malicious / browser script sends cookie + X-Client-Type: non-browser
+    # CRITICAL: Because request carries a refresh_token cookie, it is strictly treated as a
+    # browser request and MUST NEVER receive a refresh_token in the response body.
+    exfil_client = TestClient(app, cookies={"refresh_token": cookie_val})
+    exfil_res = exfil_client.post(
+        "/api/v1/auth/refresh",
+        headers={"X-Client-Type": "non-browser", "X-Auth-Flow": "token-body"},
+        json={},
+    )
+    assert exfil_res.status_code == 200
+    assert "refresh_token" not in exfil_res.json()["data"]
+    assert "access_token" in exfil_res.json()["data"]
+
+    # The same invariant holds for /login when a browser cookie is present
+    exfil_login = exfil_client.post(
+        "/api/v1/auth/login",
+        headers={"X-Client-Type": "non-browser"},
+        json={"email": email_browser, "password": pwd},
+    )
+    assert exfil_login.status_code == 200
+    assert "refresh_token" not in exfil_login.json()["data"]
+
+    # 2. NON-BROWSER CLIENT (Explicit Opt-In via X-Client-Type: non-browser, NO cookie):
     nb_headers = {"X-Client-Type": "non-browser"}
     nb_client = TestClient(app)
 
-    # Register: body HAS refresh_token
+    # Register: body HAS refresh_token, no cookie set
     reg_nb = nb_client.post(
         "/api/v1/auth/register",
         headers=nb_headers,
@@ -400,10 +422,11 @@ def test_no_refresh_token_in_body_browser_vs_non_browser():
     )
     assert reg_nb.status_code == 201
     assert "refresh_token" in reg_nb.json()["data"]
+    assert "refresh_token" not in reg_nb.cookies
     nb_rt = reg_nb.json()["data"]["refresh_token"]
     assert isinstance(nb_rt, str) and len(nb_rt) > 20
 
-    # Login: body HAS refresh_token
+    # Login: body HAS refresh_token, no cookie set
     login_nb = nb_client.post(
         "/api/v1/auth/login",
         headers=nb_headers,
@@ -411,11 +434,21 @@ def test_no_refresh_token_in_body_browser_vs_non_browser():
     )
     assert login_nb.status_code == 200
     assert "refresh_token" in login_nb.json()["data"]
+    assert "refresh_token" not in login_nb.cookies
     nb_login_rt = login_nb.json()["data"]["refresh_token"]
 
-    # Refresh via body payload without cookie -> 200, body HAS refresh_token
-    isolated_nb = TestClient(app)
-    ref_nb = isolated_nb.post(
+    # Genuine non-browser client without refresh_token in JSON body -> 401
+    # Does NOT fall back to cookies in non-browser mode
+    no_body_nb = nb_client.post(
+        "/api/v1/auth/refresh",
+        headers=nb_headers,
+        json={},
+    )
+    assert no_body_nb.status_code == 401
+    assert "Invalid or expired" in no_body_nb.json()["detail"]
+
+    # Genuine non-browser client with refresh_token in body works end to end
+    ref_nb = nb_client.post(
         "/api/v1/auth/refresh",
         headers=nb_headers,
         json={"refresh_token": nb_login_rt},
@@ -423,3 +456,4 @@ def test_no_refresh_token_in_body_browser_vs_non_browser():
     assert ref_nb.status_code == 200
     assert "refresh_token" in ref_nb.json()["data"]
     assert "access_token" in ref_nb.json()["data"]
+    assert "refresh_token" not in ref_nb.cookies
