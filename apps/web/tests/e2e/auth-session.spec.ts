@@ -67,7 +67,7 @@ test.describe("Authentication Session & Silent Refresh", () => {
     await page.waitForLoadState("domcontentloaded");
 
     // apiClient catches the 401, executes silent refresh to acquire fresh token, and retries the request
-    expect(refreshCount).toBeGreaterThan(initialRefreshCount);
+    await expect.poll(() => refreshCount, { timeout: 10000 }).toBeGreaterThan(initialRefreshCount);
     await expect(page.locator("h1")).toContainText("Appointments");
   });
 
