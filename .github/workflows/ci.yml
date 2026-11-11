@@ -111,6 +111,11 @@ jobs:
           cd apps/web
           npm run type-check
 
+      - name: Run Next.js Build
+        run: |
+          cd apps/web
+          npm run build
+
       - name: Run API URL Regression Suite
         run: |
           cd apps/web
@@ -120,6 +125,11 @@ jobs:
         run: |
           cd apps/web
           node scripts/verify-security-headers.mjs
+
+      - name: Run Runtime API Proxy Regression Suite
+        run: |
+          cd apps/web
+          node scripts/verify-api-proxy-runtime.mjs
 
       - name: Run Demo Credentials Isolation Verification
         run: |
@@ -135,11 +145,6 @@ jobs:
         run: |
           cd apps/web
           node scripts/verify-responsive-shell.mjs
-
-      - name: Run Next.js Build
-        run: |
-          cd apps/web
-          npm run build
 
   e2e-qa:
     name: End-to-End Playwright & Live Verification
@@ -196,6 +201,8 @@ jobs:
           node scripts/verify-patient-experience.mjs
           node scripts/verify-doctor-experience.mjs
           node scripts/verify-admin-users.mjs
+          node scripts/verify-public-experience.mjs
+          node scripts/verify-responsive-shell.mjs
 
       - name: Run Playwright End-to-End Tests
         run: |

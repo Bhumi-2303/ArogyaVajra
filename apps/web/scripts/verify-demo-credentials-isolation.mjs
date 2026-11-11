@@ -14,6 +14,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import http from "node:http";
+import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -99,7 +100,19 @@ async function run() {
 
   // --- Step 2: Production Build Artifacts Verification ---
   console.log("\n[2/3] Verifying Production Build Output Excludes Demo Credentials...");
-  const serverPageHtml = path.join(webDir, ".next", "server", "app", "login.html");
+  let serverPageHtml = path.join(webDir, ".next", "server", "app", "login.html");
+  if (!fs.existsSync(serverPageHtml)) {
+    console.log("  ℹ Production build not found at .next/server/app/login.html. Running next build...");
+    const buildResult = spawnSync("npm", ["run", "build"], {
+      cwd: webDir,
+      stdio: "inherit",
+      env: { ...process.env, NODE_ENV: "production" },
+    });
+    if (buildResult.status !== 0) {
+      assert(false, "npm run build failed during demo credentials verification");
+    }
+  }
+
   if (fs.existsSync(serverPageHtml)) {
     const htmlContent = fs.readFileSync(serverPageHtml, "utf8");
     assert(
