@@ -31,6 +31,12 @@ services:
       - .env
     ports:
       - "${API_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
     depends_on:
       db:
         condition: service_healthy
@@ -51,8 +57,15 @@ services:
       - TRUST_PLATFORM_IP_HEADERS=${TRUST_PLATFORM_IP_HEADERS:-true}
     ports:
       - "${WEB_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     networks:
       - arogyavajra-network
 

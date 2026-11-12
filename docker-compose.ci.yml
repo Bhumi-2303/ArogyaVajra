@@ -1,0 +1,5 @@
+services:
+  api:
+    environment:
+      - APP_ENV=ci
+      - RATE_LIMIT_MULTIPLIER=100.0

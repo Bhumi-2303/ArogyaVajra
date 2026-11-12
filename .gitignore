@@ -85,6 +85,8 @@ apps/api/.mypy_cache/
 apps/api/.ruff_cache/
 playwright-report/
 test-results/
+.auth/
+apps/web/tests/e2e/.auth/
 
 # Virtual Environments
 .venv/
