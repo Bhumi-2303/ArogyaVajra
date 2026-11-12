@@ -75,22 +75,27 @@ test.describe("Authentication Session & Silent Refresh", () => {
     let loginBodyHasRefreshToken = false;
     let refreshBodyHasRefreshToken = false;
 
-    await page.route("**/api/v1/auth/login", async (route) => {
-      const response = await route.fetch();
-      const json = await response.json();
-      if (json?.data && "refresh_token" in json.data) {
-        loginBodyHasRefreshToken = true;
+    page.on("response", async (response) => {
+      const url = response.url();
+      if (url.includes("/api/v1/auth/login")) {
+        try {
+          const json = await response.json();
+          if (json?.data && "refresh_token" in json.data) {
+            loginBodyHasRefreshToken = true;
+          }
+        } catch {
+          // Ignore aborted or non-JSON responses
+        }
+      } else if (url.includes("/api/v1/auth/refresh")) {
+        try {
+          const json = await response.json();
+          if (json?.data && "refresh_token" in json.data) {
+            refreshBodyHasRefreshToken = true;
+          }
+        } catch {
+          // Ignore aborted or non-JSON responses
+        }
       }
-      await route.fulfill({ response });
-    });
-
-    await page.route("**/api/v1/auth/refresh", async (route) => {
-      const response = await route.fetch();
-      const json = await response.json();
-      if (json?.data && "refresh_token" in json.data) {
-        refreshBodyHasRefreshToken = true;
-      }
-      await route.fulfill({ response });
     });
 
     // Login
