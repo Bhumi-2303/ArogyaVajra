@@ -355,6 +355,28 @@ def _run_seed_on_session(db: Session, password: str) -> dict[str, str]:
         print(f"[+] Seeded Invoice {inv.invoice_number} and Settled UPI Payment")
 
     db.commit()
+
+    # Assert that all 5 seeded accounts exist and are active
+    expected_accounts = {
+        "admin@arogyavajra.com": UserRole.ADMIN,
+        "doctor@arogyavajra.com": UserRole.DOCTOR,
+        "receptionist@arogyavajra.com": UserRole.RECEPTIONIST,
+        "billing@arogyavajra.com": UserRole.BILLING_STAFF,
+        "patient@arogyavajra.com": UserRole.PATIENT,
+    }
+    missing = []
+    for exp_email, exp_role in expected_accounts.items():
+        u = db.scalar(select(User).where(User.email == exp_email))
+        if not u:
+            missing.append(f"{exp_email} (missing)")
+        elif u.role != exp_role:
+            missing.append(f"{exp_email} (expected {exp_role}, got {u.role})")
+        elif not u.is_active:
+            missing.append(f"{exp_email} (inactive)")
+    if missing:
+        raise RuntimeError(f"Seed verification failure: {', '.join(missing)}")
+    print("[✓] Verified all 5 authoritative development accounts exist and are active.")
+
     print("\n=== All Development & Role Demonstration Accounts Successfully Seeded ===")
     print(f"Default Password for all accounts: {password}")
     print("Accounts provisioned:")
