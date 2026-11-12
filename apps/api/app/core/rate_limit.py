@@ -75,6 +75,9 @@ def check_rate_limit(
         fail_closed: If True, reject requests when rate limiter storage is unreachable.
     """
     is_prod = settings.APP_ENV.lower() in ("production", "prod", "staging")
+    if not is_prod and not settings.RATE_LIMIT_ENABLED:
+        return
+
     if (
         not is_prod
         and bypass_in_test
@@ -84,6 +87,10 @@ def check_rate_limit(
         )
     ):
         return
+
+    # In production and staging, multiplier is strictly 1.0; in test/ci environments it may be scaled
+    multiplier = settings.RATE_LIMIT_MULTIPLIER if not is_prod else 1.0
+    effective_max = max(1, int(max_requests * multiplier))
 
     now = datetime.now(UTC)
     window_bucket = int(now.timestamp()) // window_seconds
@@ -107,7 +114,7 @@ def check_rate_limit(
         db.commit()
         row = result.fetchone()
 
-        if row and row[0] > max_requests:
+        if row and row[0] > effective_max:
             retry_after = max(1, int((window_expires - now).total_seconds()))
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,

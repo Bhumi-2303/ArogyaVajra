@@ -82,6 +82,10 @@ class Settings(BaseSettings):
     # If empty or unset, no proxy is trusted by default and forwarded headers are strictly ignored.
     TRUSTED_PROXIES: str = ""
 
+    # Rate Limiting Configuration
+    RATE_LIMIT_MULTIPLIER: float = 1.0
+    RATE_LIMIT_ENABLED: bool = True
+
     # Operator Administration & Bootstrap Authorization
     BOOTSTRAP_SECRET: str | None = None
 
@@ -106,7 +110,16 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def validate_production_configuration(self) -> "Settings":
         """Ensure production environment enforces fail-safe security settings."""
-        if self.APP_ENV.lower() in ("production", "prod"):
+        if self.APP_ENV.lower() in ("production", "prod", "staging"):
+            if not self.RATE_LIMIT_ENABLED:
+                raise ValueError(
+                    "Security validation failed: In production/staging environment, RATE_LIMIT_ENABLED must be True."
+                )
+            if self.RATE_LIMIT_MULTIPLIER != 1.0:
+                raise ValueError(
+                    "Security validation failed: In production/staging environment, RATE_LIMIT_MULTIPLIER must be 1.0."
+                )
+
             if (
                 self.JWT_SECRET_KEY in INSECURE_DEFAULT_JWT_SECRETS
                 or len(self.JWT_SECRET_KEY.strip()) < 32

@@ -417,3 +417,48 @@ def test_alembic_url_resolution_deterministic():
     resolved_url2 = cfg2.get_main_option("sqlalchemy.url") or settings.DATABASE_URL
     assert resolved_url2 == disposable_url
     assert resolved_url2 != settings.DATABASE_URL
+
+
+def test_production_config_refuses_loosened_rate_limits():
+    """Verify production-config validator refuses loosened rate limits in production and staging."""
+    import pytest
+
+    from app.core.config import Settings
+
+    valid_prod_kwargs = {
+        "APP_ENV": "production",
+        "APP_DEBUG": False,
+        "JWT_SECRET_KEY": "a" * 32,
+        "CORS_ORIGINS": "https://arogyavajra.onrender.com",
+        "DATABASE_URL": "postgresql+psycopg://user:prod_secret@db.prod.internal:5432/arogyavajra",
+    }
+
+    # Case 1: RATE_LIMIT_ENABLED=False in production must raise ValueError
+    with pytest.raises(ValueError, match="RATE_LIMIT_ENABLED must be True"):
+        Settings(**{**valid_prod_kwargs, "RATE_LIMIT_ENABLED": False})
+
+    # Case 2: RATE_LIMIT_MULTIPLIER != 1.0 in production must raise ValueError
+    with pytest.raises(ValueError, match="RATE_LIMIT_MULTIPLIER must be 1.0"):
+        Settings(**{**valid_prod_kwargs, "RATE_LIMIT_MULTIPLIER": 10.0})
+
+    # Case 3: In staging, RATE_LIMIT_MULTIPLIER != 1.0 must also raise ValueError
+    staging_kwargs = {**valid_prod_kwargs, "APP_ENV": "staging"}
+    with pytest.raises(ValueError, match="RATE_LIMIT_MULTIPLIER must be 1.0"):
+        Settings(**{**staging_kwargs, "RATE_LIMIT_MULTIPLIER": 5.0})
+
+    # Case 4: In test/ci environments, loosened rate limits are permitted
+    ci_settings = Settings(
+        APP_ENV="ci",
+        APP_DEBUG=True,
+        JWT_SECRET_KEY="dev-secret-key-change-in-production",
+        RATE_LIMIT_MULTIPLIER=100.0,
+    )
+    assert ci_settings.RATE_LIMIT_MULTIPLIER == 100.0
+
+    test_settings = Settings(
+        APP_ENV="test",
+        APP_DEBUG=True,
+        JWT_SECRET_KEY="dev-secret-key-change-in-production",
+        RATE_LIMIT_ENABLED=False,
+    )
+    assert test_settings.RATE_LIMIT_ENABLED is False
