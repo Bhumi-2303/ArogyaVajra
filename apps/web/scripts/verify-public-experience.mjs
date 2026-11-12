@@ -18,6 +18,7 @@
  */
 
 import http from "node:http";
+import https from "node:https";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -25,6 +26,11 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const webDir = path.resolve(__dirname, "..");
+
+const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
+const parsedBase = new URL(BASE_URL);
+const isCi = !!process.env.CI;
+const requireStack = isCi || process.env.REQUIRE_LIVE_STACK === "true";
 
 let passed = 0;
 let failed = 0;
@@ -40,14 +46,29 @@ function assert(condition, message) {
 }
 
 async function fetchRoute(route) {
+  const isHttps = parsedBase.protocol === "https:";
+  const client = isHttps ? https : http;
+  const basePath = parsedBase.pathname === "/" ? "" : parsedBase.pathname.replace(/\/+$/, "");
+  const normalizedPath = route.startsWith("/") ? route : `/${route}`;
+
   return new Promise((resolve, reject) => {
-    http
-      .get(`http://localhost:3000${route}`, (res) => {
-        let data = "";
-        res.on("data", (chunk) => (data += chunk));
-        res.on("end", () => resolve({ statusCode: res.statusCode, body: data }));
-      })
-      .on("error", reject);
+    client
+      .get(
+        {
+          protocol: parsedBase.protocol,
+          hostname: parsedBase.hostname,
+          port: parsedBase.port || (isHttps ? 443 : 80),
+          path: `${basePath}${normalizedPath}`,
+        },
+        (res) => {
+          let data = "";
+          res.on("data", (chunk) => (data += chunk));
+          res.on("end", () => resolve({ statusCode: res.statusCode, body: data }));
+        }
+      )
+      .on("error", (err) => {
+        reject(new Error(`Failed to connect to ${parsedBase.origin}${basePath}${normalizedPath}: ${err.message}`));
+      });
   });
 }
 
@@ -136,8 +157,8 @@ async function run() {
         `${item.name} rendered expected text snippet`
       );
     } catch (err) {
-      if (err.code === "ECONNREFUSED" || err.message?.includes("ECONNREFUSED") || !err.message) {
-        console.warn(`  ! Live web server at http://localhost:3000 not running (${err.message || "connection refused"}). Live route HTTP checks bypassed in static mode.`);
+      if (!requireStack && (err.code === "ECONNREFUSED" || err.message?.includes("ECONNREFUSED") || !err.message)) {
+        console.warn(`  ! Live web server at ${parsedBase.origin} not running (${err.message || "connection refused"}). Live route HTTP checks bypassed in static mode.`);
         break;
       }
       assert(false, `${item.name} connection failed: ${err.message}`);

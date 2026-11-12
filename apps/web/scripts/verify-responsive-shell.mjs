@@ -10,6 +10,7 @@
  */
 
 import http from "node:http";
+import https from "node:https";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -17,6 +18,11 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const webDir = path.resolve(__dirname, "..");
+
+const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
+const parsedBase = new URL(BASE_URL);
+const isCi = !!process.env.CI;
+const requireStack = isCi || process.env.REQUIRE_LIVE_STACK === "true";
 
 let passed = 0;
 let failed = 0;
@@ -31,15 +37,30 @@ function assert(condition, message) {
   }
 }
 
-async function fetchPage(url) {
+async function fetchPage(targetPath) {
+  const isHttps = parsedBase.protocol === "https:";
+  const client = isHttps ? https : http;
+  const basePath = parsedBase.pathname === "/" ? "" : parsedBase.pathname.replace(/\/+$/, "");
+  const normalizedPath = targetPath.startsWith("/") ? targetPath : `/${targetPath}`;
+
   return new Promise((resolve, reject) => {
-    http
-      .get(url, (res) => {
-        let data = "";
-        res.on("data", (chunk) => (data += chunk));
-        res.on("end", () => resolve({ statusCode: res.statusCode, body: data }));
-      })
-      .on("error", reject);
+    client
+      .get(
+        {
+          protocol: parsedBase.protocol,
+          hostname: parsedBase.hostname,
+          port: parsedBase.port || (isHttps ? 443 : 80),
+          path: `${basePath}${normalizedPath}`,
+        },
+        (res) => {
+          let data = "";
+          res.on("data", (chunk) => (data += chunk));
+          res.on("end", () => resolve({ statusCode: res.statusCode, body: data }));
+        }
+      )
+      .on("error", (err) => {
+        reject(new Error(`Failed to connect to ${parsedBase.origin}${basePath}${normalizedPath}: ${err.message}`));
+      });
   });
 }
 
@@ -135,9 +156,9 @@ async function run() {
   assert(sidebarContent.includes("ADMIN:"), "Configured navigation items for ADMIN role");
 
   // 5. Verify Live Server DOM & Rendered HTML on /design-system
-  console.log("\n[5/5] Verifying Live Next.js Web Server (http://localhost:3000/design-system)...");
+  console.log("\n[5/5] Verifying Live Next.js Web Server (/design-system)...");
   try {
-    const res = await fetchPage("http://localhost:3000/design-system");
+    const res = await fetchPage("/design-system");
     assert(res.statusCode === 200, `Next.js server responds with HTTP ${res.statusCode}`);
     assert(res.body.includes("skip-to-content"), "Rendered HTML contains skip-to-content landmark");
     assert(res.body.includes('id="main-content"'), "Rendered HTML contains id='main-content'");
@@ -145,10 +166,10 @@ async function run() {
     assert(res.body.includes("Shared Frontend Infrastructure"), "Rendered HTML contains PageHeader title");
     assert(res.body.includes("Deep Navy"), "Rendered HTML contains Palette tokens showcase");
   } catch (err) {
-    if (err.code === "ECONNREFUSED" || err.message?.includes("ECONNREFUSED") || !err.message) {
-      console.warn(`  ! Live web server at http://localhost:3000 not running (${err.message || "connection refused"}). Live server DOM check bypassed in static mode.`);
+    if (!requireStack && (err.code === "ECONNREFUSED" || err.message?.includes("ECONNREFUSED") || !err.message)) {
+      console.warn(`  ! Live web server at ${parsedBase.origin} not running (${err.message || "connection refused"}). Live server DOM check bypassed in static mode.`);
     } else {
-      assert(false, `Could not connect to http://localhost:3000/design-system: ${err.message}`);
+      assert(false, `Could not connect to ${parsedBase.origin}/design-system: ${err.message}`);
     }
   }
 

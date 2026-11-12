@@ -15,6 +15,7 @@
  */
 
 import http from "node:http";
+import https from "node:https";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -23,6 +24,14 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const webDir = path.resolve(__dirname, "..");
+
+const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
+const API_URL = process.env.API_URL || "http://localhost:8000";
+const parsedBase = new URL(BASE_URL);
+const parsedApi = new URL(API_URL);
+
+const isCi = !!process.env.CI;
+const requireStack = isCi || process.env.REQUIRE_LIVE_STACK === "true";
 
 let passed = 0;
 let failed = 0;
@@ -38,12 +47,24 @@ function assert(condition, message) {
 }
 
 async function fetchRoute(host, port, reqPath, options = {}) {
+  let targetUrlObj = parsedApi;
+  if (port === 3000 || port === "3000" || (host === parsedBase.hostname && String(port) === String(parsedBase.port))) {
+    targetUrlObj = parsedBase;
+  }
+  const isHttps = targetUrlObj.protocol === "https:";
+  const client = isHttps ? https : http;
+  const targetHost = targetUrlObj.hostname;
+  const targetPort = targetUrlObj.port || (isHttps ? 443 : 80);
+  const basePath = targetUrlObj.pathname === "/" ? "" : targetUrlObj.pathname.replace(/\/+$/, "");
+  const fullPath = `${basePath}${reqPath.startsWith("/") ? reqPath : `/${reqPath}`}`;
+
   return new Promise((resolve, reject) => {
-    const req = http.request(
+    const req = client.request(
       {
-        host,
-        port,
-        path: reqPath,
+        protocol: targetUrlObj.protocol,
+        hostname: targetHost,
+        port: targetPort,
+        path: fullPath,
         method: options.method || "GET",
         headers: {
           "Content-Type": "application/json",
@@ -60,12 +81,14 @@ async function fetchRoute(host, port, reqPath, options = {}) {
           } catch {
             // Leave raw
           }
-          resolve({ statusCode: res.statusCode, body: data, json: parsed });
+          resolve({ statusCode: res.statusCode, headers: res.headers, body: data, json: parsed });
         });
       }
     );
 
-    req.on("error", reject);
+    req.on("error", (err) => {
+      reject(new Error(`Failed to connect to ${targetUrlObj.origin}${fullPath}: ${err.message}`));
+    });
 
     if (options.body) {
       req.write(

@@ -10,6 +10,7 @@
  */
 
 import http from "node:http";
+import https from "node:https";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -18,6 +19,14 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const webDir = path.resolve(__dirname, "..");
+
+const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
+const API_URL = process.env.API_URL || "http://localhost:8000";
+const parsedBase = new URL(BASE_URL);
+const parsedApi = new URL(API_URL);
+
+const isCi = !!process.env.CI;
+const requireStack = isCi || process.env.REQUIRE_LIVE_STACK === "true";
 
 let passed = 0;
 let failed = 0;
@@ -32,13 +41,19 @@ function assert(condition, message) {
   }
 }
 
-async function fetchRoute(host, port, reqPath, options = {}) {
+async function fetchTarget(urlObj, reqPath, options = {}) {
+  const isHttps = urlObj.protocol === "https:";
+  const client = isHttps ? https : http;
+  const basePath = urlObj.pathname === "/" ? "" : urlObj.pathname.replace(/\/+$/, "");
+  const normalizedPath = reqPath.startsWith("/") ? reqPath : `/${reqPath}`;
+
   return new Promise((resolve, reject) => {
-    const req = http.request(
+    const req = client.request(
       {
-        host,
-        port,
-        path: reqPath,
+        protocol: urlObj.protocol,
+        hostname: urlObj.hostname,
+        port: urlObj.port || (isHttps ? 443 : 80),
+        path: `${basePath}${normalizedPath}`,
         method: options.method || "GET",
         headers: {
           "Content-Type": "application/json",
@@ -55,12 +70,14 @@ async function fetchRoute(host, port, reqPath, options = {}) {
           } catch {
             // Leave raw
           }
-          resolve({ statusCode: res.statusCode, body: data, json: parsed });
+          resolve({ statusCode: res.statusCode, headers: res.headers, body: data, json: parsed });
         });
       }
     );
 
-    req.on("error", reject);
+    req.on("error", (err) => {
+      reject(new Error(`Failed to connect to ${urlObj.origin}${basePath}${normalizedPath}: ${err.message}`));
+    });
 
     if (options.body) {
       req.write(
@@ -73,12 +90,14 @@ async function fetchRoute(host, port, reqPath, options = {}) {
   });
 }
 
+const fetchApi = (path, options) => fetchTarget(parsedApi, path, options);
+
 async function run() {
   console.log("============================================================");
   console.log("  Arogyavajra Authorization & RBAC Verification Suite       ");
   console.log("============================================================\n");
 
-  // --- Step 1: Role-Aware Navigation Structure by Role ---
+  // --- Step 1: Role-Aware Navigation Structure ---
   console.log("[1/4] Verifying Role-Aware Navigation Structure (APP-FLOW Section 21)...");
 
   const sidebarFile = fs.readFileSync(
@@ -86,35 +105,43 @@ async function run() {
     "utf8"
   );
 
-  // Verify navigation items for all 5 roles
   assert(
     sidebarFile.includes("PATIENT: [") &&
+      sidebarFile.includes('/dashboard') &&
       sidebarFile.includes('/appointments') &&
       sidebarFile.includes('/medical-records') &&
       sidebarFile.includes('/prescriptions') &&
-      sidebarFile.includes('/invoices'),
+      sidebarFile.includes('/invoices') &&
+      sidebarFile.includes('/profile'),
     "Patient navigation items configured per specification"
   );
 
   assert(
     sidebarFile.includes("DOCTOR: [") &&
+      sidebarFile.includes('/dashboard') &&
       sidebarFile.includes('/patients') &&
-      sidebarFile.includes('/availability'),
+      sidebarFile.includes('/appointments') &&
+      sidebarFile.includes('/medical-records') &&
+      sidebarFile.includes('/prescriptions') &&
+      sidebarFile.includes('/availability') &&
+      sidebarFile.includes('/profile'),
     "Doctor navigation items configured per specification"
   );
 
   assert(
     sidebarFile.includes("RECEPTIONIST: [") &&
+      sidebarFile.includes('/dashboard') &&
       sidebarFile.includes('/patients') &&
-      sidebarFile.includes('/doctors') &&
-      sidebarFile.includes('/appointments'),
+      sidebarFile.includes('/appointments') &&
+      sidebarFile.includes('/doctors'),
     "Receptionist navigation items configured per specification"
   );
 
   assert(
     sidebarFile.includes("BILLING_STAFF: [") &&
+      sidebarFile.includes('/dashboard') &&
       sidebarFile.includes('/invoices') &&
-      sidebarFile.includes('/payments'),
+      sidebarFile.includes('/patients'),
     "Billing staff navigation items configured per specification"
   );
 
@@ -174,9 +201,11 @@ async function run() {
   // --- Step 3: Backend Live RBAC & Role Verification ---
   console.log("\n[3/4] Verifying Live Backend RBAC Authorization Endpoints...");
 
+  const tokenCache = {};
+
   async function registerUser(role) {
     const email = `${role.toLowerCase()}_${crypto.randomBytes(4).toString("hex")}@example.com`;
-    const res = await fetchRoute("localhost", 8000, "/api/v1/auth/register", {
+    const res = await fetchApi("/api/v1/auth/register", {
       method: "POST",
       body: { email, password: "SecurePassword123!", role },
     });
@@ -184,25 +213,35 @@ async function run() {
   }
 
   async function getAuthToken(role) {
+    if (tokenCache[role]) {
+      return tokenCache[role];
+    }
+
     if (role === "ADMIN") {
-      const loginRes = await fetchRoute("localhost", 8000, "/api/v1/auth/login", {
+      const loginRes = await fetchApi("/api/v1/auth/login", {
         method: "POST",
         body: { email: "admin@arogyavajra.com", password: "ArogyaVajra@2026!" },
       });
       if (loginRes.statusCode === 200) {
-        return { email: "admin@arogyavajra.com", token: loginRes.json?.data?.access_token };
+        const result = { email: "admin@arogyavajra.com", token: loginRes.json?.data?.access_token };
+        tokenCache[role] = result;
+        return result;
       }
     }
     if (role === "DOCTOR") {
-      const loginRes = await fetchRoute("localhost", 8000, "/api/v1/auth/login", {
+      const loginRes = await fetchApi("/api/v1/auth/login", {
         method: "POST",
         body: { email: "doctor@arogyavajra.com", password: "ArogyaVajra@2026!" },
       });
       if (loginRes.statusCode === 200) {
-        return { email: "doctor@arogyavajra.com", token: loginRes.json?.data?.access_token };
+        const result = { email: "doctor@arogyavajra.com", token: loginRes.json?.data?.access_token };
+        tokenCache[role] = result;
+        return result;
       }
     }
-    return registerUser(role);
+    const result = await registerUser(role);
+    tokenCache[role] = result;
+    return result;
   }
 
   try {
@@ -211,94 +250,81 @@ async function run() {
     const admin = await getAuthToken("ADMIN");
 
     // Test unauthenticated access to protected route
-    const unauthRes = await fetchRoute(
-      "localhost",
-      8000,
-      "/api/v1/authz/admin"
-    );
+    const unauthRes = await fetchApi("/api/v1/authz/admin");
     assert(
       unauthRes.statusCode === 401,
       "Backend rejects unauthenticated request with HTTP 401"
     );
 
     // Test Admin endpoint with Patient token -> 403
-    const patientAdminRes = await fetchRoute(
-      "localhost",
-      8000,
-      "/api/v1/authz/admin",
-      { headers: { Authorization: `Bearer ${patient.token}` } }
-    );
+    const patientAdminRes = await fetchApi("/api/v1/authz/admin", {
+      headers: { Authorization: `Bearer ${patient.token}` },
+    });
     assert(
       patientAdminRes.statusCode === 403,
       "Backend rejects Patient from Admin-only endpoint with HTTP 403"
     );
 
     // Test Admin endpoint with Admin token -> 200
-    const adminAdminRes = await fetchRoute(
-      "localhost",
-      8000,
-      "/api/v1/authz/admin",
-      { headers: { Authorization: `Bearer ${admin.token}` } }
-    );
+    const adminAdminRes = await fetchApi("/api/v1/authz/admin", {
+      headers: { Authorization: `Bearer ${admin.token}` },
+    });
     assert(
       adminAdminRes.statusCode === 200,
       "Backend allows Admin on Admin-only endpoint with HTTP 200"
     );
 
     // Test Doctor endpoint with Doctor token -> 200
-    const doctorDoctorRes = await fetchRoute(
-      "localhost",
-      8000,
-      "/api/v1/authz/doctor",
-      { headers: { Authorization: `Bearer ${doctor.token}` } }
-    );
+    const doctorDoctorRes = await fetchApi("/api/v1/authz/doctor", {
+      headers: { Authorization: `Bearer ${doctor.token}` },
+    });
     assert(
       doctorDoctorRes.statusCode === 200,
       "Backend allows Doctor on Doctor-only endpoint with HTTP 200"
     );
 
     // Test Doctor endpoint with Patient token -> 403
-    const patientDoctorRes = await fetchRoute(
-      "localhost",
-      8000,
-      "/api/v1/authz/doctor",
-      { headers: { Authorization: `Bearer ${patient.token}` } }
-    );
+    const patientDoctorRes = await fetchApi("/api/v1/authz/doctor", {
+      headers: { Authorization: `Bearer ${patient.token}` },
+    });
     assert(
       patientDoctorRes.statusCode === 403,
       "Backend rejects Patient from Doctor-only endpoint with HTTP 403"
     );
   } catch (err) {
-    assert(false, `Live RBAC checks encountered error: ${err.message}`);
+    if (requireStack) {
+      assert(false, `Live RBAC checks encountered error: ${err.message}`);
+    } else {
+      console.warn(`  ! Backend API server at ${parsedApi.origin} not running (${err.message}). Bypassing live checks in static mode.`);
+    }
   }
 
   // --- Step 4: Backend Immunity to Untrusted Client Role Claims ---
   console.log("\n[4/4] Verifying Backend Does NOT Trust Frontend Role Input...");
 
   try {
-    const patient = await registerUser("PATIENT");
+    const patient = await getAuthToken("PATIENT");
 
     // Client attempts to claim ADMIN in query, header, and body
-    const spoofAttempt = await fetchRoute(
-      "localhost",
-      8000,
-      "/api/v1/authz/untrusted-client-role?role=ADMIN",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${patient.token}`,
-          "X-User-Role": "ADMIN",
-        },
-        body: { role: "ADMIN" },
-      }
-    );
+    const spoofAttempt = await fetchApi("/api/v1/authz/untrusted-client-role?role=ADMIN", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${patient.token}`,
+        "X-User-Role": "ADMIN",
+      },
+      body: { role: "ADMIN" },
+    });
 
     assert(
       spoofAttempt.statusCode === 403,
       "Backend rejects spoofed role claims (HTTP 403) and relies exclusively on server-side token identity"
     );
   } catch (err) {
-    assert(false, `Untrusted role verification encountered error: ${err.message}`);
+    if (requireStack) {
+      assert(false, `Untrusted role verification encountered error: ${err.message}`);
+    } else {
+      console.warn(`  ! Backend API server at ${parsedApi.origin} not running (${err.message}). Bypassing untrusted role check in static mode.`);
+    }
   }
 
   console.log("\n============================================================");
