@@ -11,10 +11,19 @@ from app.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
 
 
 class RefreshToken(Base, UUIDPrimaryKeyMixin, TimestampMixin):
-    """Stores issued refresh tokens to enforce rotation, family revocation, and replay detection."""
+    """Stores issued refresh tokens to enforce rotation, family revocation, and
+    replay detection.
+    """
 
     __tablename__ = "refresh_tokens"
 
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        server_default=None,
+        sort_order=-100,
+    )
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
@@ -39,6 +48,7 @@ class RefreshToken(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     is_revoked: Mapped[bool] = mapped_column(
         Boolean,
         default=False,
+        server_default="false",
         nullable=False,
         index=True,
     )

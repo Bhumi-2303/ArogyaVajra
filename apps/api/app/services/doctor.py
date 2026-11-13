@@ -74,7 +74,9 @@ class DoctorService:
         if current_user.role != UserRole.ADMIN:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Administrator authorization required to register doctor profiles.",
+                detail=(
+                    "Administrator authorization required to register doctor profiles."
+                ),
             )
 
         target_user_id: uuid.UUID
@@ -118,7 +120,9 @@ class DoctorService:
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Either user_id or email is required to associate doctor profile.",
+                detail=(
+                    "Either user_id or email is required to associate doctor profile."
+                ),
             )
 
         # 3. Check if doctor profile already exists for this user
@@ -191,7 +195,9 @@ class DoctorService:
         ip_address: str | None = None,
         user_agent: str | None = None,
     ) -> DoctorProfile:
-        """Update doctor profile attributes with authorization checks and audit logging."""
+        """Update doctor profile attributes with authorization checks and audit
+        logging.
+        """
         doctor = cls.get_doctor(db, doctor_id, current_user)
 
         # Authorize: Only Admin or the Doctor themselves can update
@@ -302,7 +308,9 @@ class DoctorService:
         slot_date: datetime.date,
         current_user: User,
     ) -> tuple[DoctorProfile, list[dict]]:
-        """Calculate discrete availability time slots and overlap status for a given date."""
+        """Calculate discrete availability time slots and overlap status for a
+        given date.
+        """
         doctor = cls.get_doctor(db, doctor_id, current_user)
         if doctor.user and not doctor.user.is_active:
             raise HTTPException(

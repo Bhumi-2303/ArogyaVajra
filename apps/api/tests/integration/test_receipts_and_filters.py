@@ -22,7 +22,9 @@ def auth_headers(token: str) -> dict[str, str]:
 
 
 def create_user(role: UserRole) -> tuple[uuid.UUID, str, str]:
-    """Helper creating a test user with assigned role, returning (user_id, email, token)."""
+    """Helper creating a test user with assigned role, returning
+    (user_id, email, token).
+    """
     email = f"{role.value.lower()}_{uuid.uuid4().hex[:8]}@example.com"
     password = "SecurePassword123!"
 
@@ -139,7 +141,9 @@ def test_payment_receipt_generation_and_authorization():
 
 @pytest.mark.integration
 def test_search_and_filtering_across_entities():
-    """Verify q, status, and date range filters on medical records, prescriptions, and invoices."""
+    """Verify q, status, and date range filters on medical records, prescriptions,
+    and invoices.
+    """
     _, _, admin_token = create_user(UserRole.ADMIN)
     doc_user_id, _, doc_token = create_user(UserRole.DOCTOR)
     p_user_id, _, p_token = create_user(UserRole.PATIENT)

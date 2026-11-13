@@ -15,6 +15,13 @@ class PasswordResetToken(Base, UUIDPrimaryKeyMixin, TimestampMixin):
 
     __tablename__ = "password_reset_tokens"
 
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        server_default=None,
+        sort_order=-100,
+    )
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
@@ -34,6 +41,7 @@ class PasswordResetToken(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     is_used: Mapped[bool] = mapped_column(
         Boolean,
         default=False,
+        server_default="false",
         nullable=False,
         index=True,
     )

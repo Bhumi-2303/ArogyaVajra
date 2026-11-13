@@ -62,7 +62,7 @@ def get_current_user(
 
         user_id = uuid.UUID(user_id_str)
     except (JWTError, ValueError):
-        raise credentials_exception
+        raise credentials_exception from None
 
     user = db.get(User, user_id)
     if not user:
@@ -120,7 +120,8 @@ def require_permissions(*required_permissions: Permission) -> Callable[[User], U
         *required_permissions: Permitted Permission values required for the operation.
 
     Returns:
-        Callable dependency validating that current user's role grants all required permissions.
+        Callable dependency validating that current user's role grants all
+        required permissions.
     """
 
     def permission_checker(

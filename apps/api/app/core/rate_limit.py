@@ -59,9 +59,11 @@ def check_rate_limit(
     bypass_in_test: bool = True,
     fail_closed: bool = False,
 ) -> None:
-    """Atomic fixed-window rate limit check shared across workers and container replicas.
+    """Atomic fixed-window rate limit check shared across workers and container
+    replicas.
 
-    Uses PostgreSQL atomic upsert to increment request count within a fixed-window bucket.
+    Uses PostgreSQL atomic upsert to increment request count within a fixed-window
+    bucket.
     Guarantees that production environments never bypass rate limiting even if test
     environment variables are present.
 
@@ -71,7 +73,8 @@ def check_rate_limit(
         identifier: Client IP or account identifier.
         max_requests: Maximum requests permitted within window_seconds.
         window_seconds: Window duration in seconds.
-        bypass_in_test: Allow automated testing suites to bypass when in test environment.
+        bypass_in_test: Allow automated testing suites to bypass when in test
+            environment.
         fail_closed: If True, reject requests when rate limiter storage is unreachable.
     """
     is_prod = settings.APP_ENV.lower() in ("production", "prod", "staging")
@@ -88,7 +91,8 @@ def check_rate_limit(
     ):
         return
 
-    # In production and staging, multiplier is strictly 1.0; in test/ci environments it may be scaled
+    # In production and staging, multiplier is strictly 1.0; in test/ci
+    # environments it may be scaled
     multiplier = settings.RATE_LIMIT_MULTIPLIER if not is_prod else 1.0
     effective_max = max(1, int(max_requests * multiplier))
 
@@ -118,7 +122,10 @@ def check_rate_limit(
             retry_after = max(1, int((window_expires - now).total_seconds()))
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail=f"Rate limit exceeded for {key_prefix}. Try again in {retry_after}s.",
+                detail=(
+                    f"Rate limit exceeded for {key_prefix}. Try again in "
+                    f"{retry_after}s."
+                ),
                 headers={"Retry-After": str(retry_after)},
             )
     except HTTPException:
@@ -133,7 +140,10 @@ def check_rate_limit(
         if fail_closed:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Authentication service temporarily unavailable. Please retry shortly.",
+                detail=(
+                    "Authentication service temporarily unavailable. Please "
+                    "retry shortly."
+                ),
             ) from err
 
 
@@ -150,7 +160,9 @@ def cleanup_expired_rate_limit_buckets(db: Session) -> int:
 
 
 def validate_ip_candidate(candidate: str | None) -> str | None:
-    """Validate that candidate string is a well-formed IP address or recognized hostname."""
+    """Validate that candidate string is a well-formed IP address or recognized
+    hostname.
+    """
     if not candidate:
         return None
     cleaned = candidate.strip()
@@ -173,7 +185,8 @@ def validate_ip_candidate(candidate: str | None) -> str | None:
 
 
 def get_client_identifier(request: Request) -> str:
-    """Extract client IP address safely from direct connection or verified trusted proxy.
+    """Extract client IP address safely from direct connection or verified
+    trusted proxy.
 
     When connecting from a verified trusted proxy (e.g. Render/Next.js edge proxy in
     TRUSTED_PROXIES), uses ONLY the single authoritative header injected by the proxy

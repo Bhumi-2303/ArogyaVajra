@@ -5,11 +5,16 @@ This script provisions the initial system administrator or promotes an existing 
 when NO active administrator exists in the target database.
 
 Security guarantees:
-1. One-time execution: Strictly refuses to overwrite, modify, or demote existing administrators.
-2. Verified deployment-time authorization: Requires an operator-controlled BOOTSTRAP_SECRET.
-3. Target database verification: Confirms database connectivity and displays safe target host before modifying.
-4. Robust credentials: Enforces strict password complexity requirements (min 12 chars, mixed case, numbers, symbols).
-5. Immutable audit logging: Records an audit trail entry in the database without logging secrets or passwords.
+1. One-time execution: Strictly refuses to overwrite, modify, or demote existing
+   administrators.
+2. Verified deployment-time authorization: Requires an operator-controlled
+   BOOTSTRAP_SECRET.
+3. Target database verification: Confirms database connectivity and displays
+   safe target host before modifying.
+4. Robust credentials: Enforces strict password complexity requirements (min 12
+   chars, mixed case, numbers, symbols).
+5. Immutable audit logging: Records an audit trail entry in the database without
+   logging secrets or passwords.
 6. Safe error recovery: Does not leave orphaned or partially modified state on failure.
 """
 
@@ -80,9 +85,11 @@ def validate_bootstrap_secret(
 
     Security guarantees:
     1. Fails closed in production if expected_secret is missing or empty.
-    2. Enforces minimum 16 characters and non-trivial complexity for expected_secret in production.
+    2. Enforces minimum 16 characters and non-trivial complexity for
+       expected_secret in production.
     3. Fails if supplied_secret is missing or empty.
-    4. Compares supplied_secret against expected_secret using constant-time comparison (secrets.compare_digest).
+    4. Compares supplied_secret against expected_secret using constant-time
+       comparison (secrets.compare_digest).
     5. Never includes secret values in exception strings or error logs.
     """
     effective_env = (app_env or "").lower().strip()
@@ -100,7 +107,8 @@ def validate_bootstrap_secret(
     if is_prod:
         if len(clean_expected) < 16:
             raise ValueError(
-                "In production, trusted bootstrap secret must be at least 16 characters in length."
+                "In production, trusted bootstrap secret must be at least 16 "
+                "characters in length."
             )
         lowered = clean_expected.lower()
         trivial_patterns = (
@@ -115,7 +123,8 @@ def validate_bootstrap_secret(
         )
         if lowered in trivial_patterns or len(set(lowered)) <= 3:
             raise ValueError(
-                "In production, trusted bootstrap secret cannot be a trivial or default value."
+                "In production, trusted bootstrap secret cannot be a trivial or "
+                "default value."
             )
 
     if not supplied_secret or not supplied_secret.strip():
@@ -151,11 +160,13 @@ def bootstrap_initial_admin(
 
     Raises:
         RuntimeError: If an active administrator already exists and force is False.
-        ValueError: If configuration, authorization secret, or credentials fail validation checks.
+        ValueError: If configuration, authorization secret, or credentials fail
+            validation checks.
     """
     effective_env = app_env or os.environ.get("APP_ENV") or settings.APP_ENV
 
-    # 1. Resolve and validate authorization secret (essential safety check - cannot be bypassed by force)
+    # 1. Resolve and validate authorization secret (essential safety check -
+    # cannot be bypassed by force)
     trusted_secret = (
         expected_secret
         or os.environ.get("EXPECTED_BOOTSTRAP_SECRET")
@@ -176,9 +187,12 @@ def bootstrap_initial_admin(
     active_admins_count = UserRepository.count_active_admins(db)
     if active_admins_count > 0 and not force:
         raise RuntimeError(
-            "Bootstrap aborted: The database already contains one or more active administrators. "
-            "Bootstrap is strictly a one-time operation and will not overwrite existing administrative accounts. "
-            "To perform an emergency recovery of an administrative account, supply the --force flag."
+            "Bootstrap aborted: The database already contains one or more active "
+            "administrators. "
+            "Bootstrap is strictly a one-time operation and will not overwrite "
+            "existing administrative accounts. "
+            "To perform an emergency recovery of an administrative account, "
+            "supply the --force flag."
         )
 
     # 4. Check if target email already exists (e.g., operator registered as patient)
@@ -264,20 +278,29 @@ def main() -> None:
         "--password",
         "-p",
         default=os.environ.get("ADMIN_BOOTSTRAP_PASSWORD"),
-        help="Administrator password (or set ADMIN_BOOTSTRAP_PASSWORD; will prompt if omitted)",
+        help=(
+            "Administrator password (or set ADMIN_BOOTSTRAP_PASSWORD; will "
+            "prompt if omitted)"
+        ),
     )
     parser.add_argument(
         "--expected-secret",
         default=os.environ.get("EXPECTED_BOOTSTRAP_SECRET")
         or os.environ.get("BOOTSTRAP_SECRET"),
-        help="Trusted expected authorization secret (or set EXPECTED_BOOTSTRAP_SECRET / BOOTSTRAP_SECRET env var)",
+        help=(
+            "Trusted expected authorization secret (or set "
+            "EXPECTED_BOOTSTRAP_SECRET / BOOTSTRAP_SECRET env var)"
+        ),
     )
     parser.add_argument(
         "--secret",
         "-s",
         default=os.environ.get("OPERATOR_BOOTSTRAP_SECRET")
         or os.environ.get("BOOTSTRAP_SECRET"),
-        help="Supplied operator authorization secret (prefer interactive prompt or OPERATOR_BOOTSTRAP_SECRET / BOOTSTRAP_SECRET)",
+        help=(
+            "Supplied operator authorization secret (prefer interactive prompt "
+            "or OPERATOR_BOOTSTRAP_SECRET / BOOTSTRAP_SECRET)"
+        ),
     )
     parser.add_argument(
         "--db-url",
@@ -293,7 +316,11 @@ def main() -> None:
     parser.add_argument(
         "--force",
         action="store_true",
-        help="Emergency recovery: allow administrative provisioning or reset even when active administrators exist. Essential safety checks (secret, password complexity) are still strictly enforced.",
+        help=(
+            "Emergency recovery: allow administrative provisioning or reset "
+            "even when active administrators exist. Essential safety checks "
+            "(secret, password complexity) are still strictly enforced."
+        ),
     )
 
     args = parser.parse_args()
@@ -340,7 +367,8 @@ def main() -> None:
     if not password:
         if not sys.stdin.isatty():
             print(
-                "[!] Error: Password is required (--password or ADMIN_BOOTSTRAP_PASSWORD).",
+                "[!] Error: Password is required (--password or "
+                "ADMIN_BOOTSTRAP_PASSWORD).",
                 file=sys.stderr,
             )
             sys.exit(1)
@@ -360,8 +388,9 @@ def main() -> None:
     is_prod = (app_env or "").lower().strip() in ("production", "prod")
     if is_prod and not trusted_secret:
         print(
-            "[!] Error: Trusted bootstrap secret is not configured in the environment "
-            "(EXPECTED_BOOTSTRAP_SECRET or BOOTSTRAP_SECRET). Bootstrap fails closed in production.",
+            "[!] Error: Trusted bootstrap secret is not configured in the "
+            "environment (EXPECTED_BOOTSTRAP_SECRET or BOOTSTRAP_SECRET). "
+            "Bootstrap fails closed in production.",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -371,7 +400,8 @@ def main() -> None:
     if not secret:
         if not sys.stdin.isatty():
             print(
-                "[!] Error: Operator authorization secret is required (--secret or OPERATOR_BOOTSTRAP_SECRET).",
+                "[!] Error: Operator authorization secret is required (--secret "
+                "or OPERATOR_BOOTSTRAP_SECRET).",
                 file=sys.stderr,
             )
             sys.exit(1)
@@ -406,15 +436,18 @@ def main() -> None:
         print("\n------------------------------------------------------------")
         if action_type == "RECOVERED":
             print(
-                f"[!] RECOVERY: Administrator account '{admin_user.email}' recovered successfully via --force."
+                f"[!] RECOVERY: Administrator account '{admin_user.email}' "
+                "recovered successfully via --force."
             )
         elif action_type == "PROMOTED":
             print(
-                f"[*] SUCCESS: Existing user '{admin_user.email}' elevated to Administrator role."
+                f"[*] SUCCESS: Existing user '{admin_user.email}' elevated to "
+                "Administrator role."
             )
         else:
             print(
-                f"[+] SUCCESS: Initial Administrator '{admin_user.email}' created successfully."
+                f"[+] SUCCESS: Initial Administrator '{admin_user.email}' "
+                "created successfully."
             )
         print(f"    User ID: {admin_user.id}")
         print(f"    Role:    {admin_user.role}")
@@ -425,10 +458,12 @@ def main() -> None:
         )
         print("2. Navigate to /admin to access the system administration workspace.")
         print(
-            "3. Unset or revoke BOOTSTRAP_SECRET from environment variables to prevent repeat use."
+            "3. Unset or revoke BOOTSTRAP_SECRET from environment variables to "
+            "prevent repeat use."
         )
         print(
-            "4. Onboard clinical practitioners and support staff via the User Management panel.\n"
+            "4. Onboard clinical practitioners and support staff via the "
+            "User Management panel.\n"
         )
     except RuntimeError as r_err:
         print(

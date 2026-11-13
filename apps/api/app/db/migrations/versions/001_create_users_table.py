@@ -18,7 +18,8 @@ down_revision: str | None = None
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
-# Authoritative enum definition with create_type=False so create_table does not re-issue CREATE TYPE
+# Authoritative enum definition with create_type=False so create_table does not
+# re-issue CREATE TYPE
 user_role_enum = postgresql.ENUM(
     "PATIENT",
     "DOCTOR",
@@ -38,7 +39,8 @@ def upgrade() -> None:
             DO $$
             BEGIN
                 IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
-                    CREATE TYPE user_role AS ENUM ('PATIENT', 'DOCTOR', 'RECEPTIONIST', 'BILLING_STAFF', 'ADMIN');
+                    CREATE TYPE user_role AS ENUM ('PATIENT', 'DOCTOR', \
+'RECEPTIONIST', 'BILLING_STAFF', 'ADMIN');
                 END IF;
             END$$;
             """

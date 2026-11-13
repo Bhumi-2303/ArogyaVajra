@@ -152,7 +152,9 @@ def test_non_admins_forbidden_from_provisioning():
 
 @pytest.mark.integration
 def test_duplicate_email_conflict_rejected():
-    """Verify attempting to create a user with an already registered email returns 409."""
+    """Verify attempting to create a user with an already registered email
+    returns 409.
+    """
     _, admin_token = create_authenticated_user(UserRole.ADMIN)
     headers = {"Authorization": f"Bearer {admin_token}"}
 

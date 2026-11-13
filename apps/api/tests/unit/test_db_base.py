@@ -46,7 +46,9 @@ def test_uuid_primary_key_mixin():
 
 
 def test_timestamp_mixin():
-    """Verify TimestampMixin configures timezone-aware timestamps with server defaults."""
+    """Verify TimestampMixin configures timezone-aware timestamps with server
+    defaults.
+    """
     table = DummyEntity.__table__
     created_at_col = table.c.created_at
     updated_at_col = table.c.updated_at

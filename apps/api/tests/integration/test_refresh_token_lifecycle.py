@@ -1,4 +1,6 @@
-"""Integration tests for refresh token lifecycle, rotation, grace window, and replay detection."""
+"""Integration tests for refresh token lifecycle, rotation, grace window, and
+replay detection.
+"""
 
 import uuid
 from datetime import UTC, datetime, timedelta
@@ -85,7 +87,9 @@ def test_refresh_token_concurrency_grace_window():
 
 @pytest.mark.integration
 def test_refresh_token_replay_triggers_family_revocation():
-    """Verify that replaying a consumed token after grace window revokes the whole family."""
+    """Verify that replaying a consumed token after grace window revokes the
+    whole family.
+    """
     unique_email = f"replay_{uuid.uuid4().hex[:8]}@example.com"
     password = "SecurePassword123!"
 
@@ -182,7 +186,9 @@ def test_password_change_revokes_active_refresh_tokens():
 
 @pytest.mark.integration
 def test_distributed_rate_limiter_atomic_upsert():
-    """Verify the rate limiter enforces rate limits and returns 429 when threshold exceeded."""
+    """Verify the rate limiter enforces rate limits and returns 429 when
+    threshold exceeded.
+    """
     with SessionLocal() as db:
         test_ip = f"192.168.1.{uuid.uuid4().int % 250 + 1}"
         # Make 3 allowed calls
@@ -229,7 +235,9 @@ def test_distributed_rate_limiter_atomic_upsert():
 
 @pytest.mark.integration
 def test_concurrent_refresh_requests_thread_pool():
-    """Verify concurrent requests with the same refresh token are handled safely under row locks."""
+    """Verify concurrent requests with the same refresh token are handled safely
+    under row locks.
+    """
     import concurrent.futures
 
     unique_email = f"conc_{uuid.uuid4().hex[:8]}@example.com"
@@ -252,7 +260,8 @@ def test_concurrent_refresh_requests_thread_pool():
         res1 = f1.result()
         res2 = f2.result()
 
-    # Both requests should succeed (one as initial consumer, one as the bounded grace window consumer)
+    # Both requests should succeed (one as initial consumer, one as the bounded
+    # grace window consumer)
     assert res1.status_code == 200
     assert res2.status_code == 200
     assert "access_token" in res1.json()["data"]
@@ -261,7 +270,9 @@ def test_concurrent_refresh_requests_thread_pool():
 
 @pytest.mark.integration
 def test_grace_window_cannot_mint_indefinitely():
-    """Verify that a 3rd attempt with the same token within grace window is treated as replay."""
+    """Verify that a 3rd attempt with the same token within grace window is
+    treated as replay.
+    """
     unique_email = f"bounded_grace_{uuid.uuid4().hex[:8]}@example.com"
     password = "SecurePassword123!"
 
@@ -281,7 +292,8 @@ def test_grace_window_cannot_mint_indefinitely():
     res2 = client.post("/api/v1/auth/refresh", json={"refresh_token": rt1})
     assert res2.status_code == 200
 
-    # 3rd call: exceeded grace count (attempted indefinite minting) -> 401 Replay attack!
+    # 3rd call: exceeded grace count (attempted indefinite minting) -> 401 Replay
+    # attack!
     res3 = client.post("/api/v1/auth/refresh", json={"refresh_token": rt1})
     assert res3.status_code == 401
     assert "Replay attack detected" in res3.json()["detail"]
@@ -295,10 +307,12 @@ def test_grace_window_cannot_mint_indefinitely():
 @pytest.mark.integration
 def test_login_account_rate_limiting(monkeypatch):
     """Verify that excessive login attempts against a single account triggers 429."""
-    # Ensure rate limiting is active during this test across all environments (including CI where APP_ENV=test)
+    # Ensure rate limiting is active during this test across all environments
+    # (including CI where APP_ENV=test)
     monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
     monkeypatch.setattr(settings, "APP_ENV", "development")
-    # Configure testclient as trusted proxy so distinct forwarded client IPs are recognized
+    # Configure testclient as trusted proxy so distinct forwarded client IPs
+    # are recognized
     monkeypatch.setattr(settings, "TRUSTED_PROXIES", "testclient")
 
     target_email = f"brute_{uuid.uuid4().hex[:8]}@example.com"
@@ -337,7 +351,8 @@ def test_login_account_rate_limiting(monkeypatch):
     )
     assert res_diff_ip.status_code == 429
 
-    # Even with the correct password, the rate-limited account remains blocked until window expires
+    # Even with the correct password, the rate-limited account remains blocked
+    # until window expires
     res_correct_pw = client.post(
         "/api/v1/auth/login",
         json={"email": target_email, "password": "CorrectPassword123!"},
@@ -384,7 +399,9 @@ def test_cleanup_expired_rate_limit_buckets():
 
 @pytest.mark.integration
 def test_postgresql_row_locking_transaction_isolation():
-    """Verify PostgreSQL pessimistic row lock (FOR UPDATE) blocks concurrent sessions until commit."""
+    """Verify PostgreSQL pessimistic row lock (FOR UPDATE) blocks concurrent
+    sessions until commit.
+    """
     import threading
     import time
 
@@ -459,9 +476,11 @@ def test_postgresql_row_locking_transaction_isolation():
 
 @pytest.mark.integration
 def test_refresh_token_rollback_on_persistence_failure(monkeypatch):
-    """Verify that an unhandled failure while persisting the replacement token or committing
+    """Verify that an unhandled failure while persisting the replacement token
+    or committing
 
-    the transaction rolls back the transaction, leaving the original refresh token unconsumed
+    the transaction rolls back the transaction, leaving the original refresh
+    token unconsumed
     and therefore valid for a subsequent retry.
     """
     unique_email = f"rollback_{uuid.uuid4().hex[:8]}@example.com"
@@ -517,7 +536,8 @@ def test_refresh_token_rollback_on_persistence_failure(monkeypatch):
     # Restore the original function
     monkeypatch.undo()
 
-    # The client retries the refresh with the exact same rt1 - this must now succeed cleanly!
+    # The client retries the refresh with the exact same rt1 - this must now
+    # succeed cleanly!
     retry_res = client.post("/api/v1/auth/refresh", json={"refresh_token": rt1})
     assert retry_res.status_code == 200
     rt2 = retry_res.json()["data"]["refresh_token"]

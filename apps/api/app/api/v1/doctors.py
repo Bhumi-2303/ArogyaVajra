@@ -47,7 +47,9 @@ def list_doctors(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Retrieve paginated doctor profiles with search filtering across name, specialization, code, email."""
+    """Retrieve paginated doctor profiles with search filtering across name,
+    specialization, code, email.
+    """
     items, total, total_pages = DoctorService.list_doctors(
         db=db,
         current_user=current_user,
@@ -86,7 +88,8 @@ def create_doctor(
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    """Register a new doctor profile with auto-generated code DOC-00001 and audit trail."""
+    """Register a new doctor profile with auto-generated code DOC-00001 and audit
+    trail."""
     ip_address = get_client_identifier(request)
     user_agent = request.headers.get("user-agent")
 
@@ -150,7 +153,10 @@ def get_doctor_slots(
         date=date,
         day_of_week=date.isoweekday() % 7,
         slots=[TimeSlot(**s) for s in slots],
-        message=f"Retrieved {len([s for s in slots if s['is_available']])} available slot(s).",
+        message=(
+            f"Retrieved {len([s for s in slots if s['is_available']])} "
+            "available slot(s)."
+        ),
     )
 
 

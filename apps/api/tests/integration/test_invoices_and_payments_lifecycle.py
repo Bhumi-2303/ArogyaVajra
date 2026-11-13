@@ -1,4 +1,6 @@
-"""Integration tests for invoice status transitions, partial/full payments, overpayment, and cancel rules."""
+"""Integration tests for invoice status transitions, partial/full payments,
+overpayment, and cancel rules.
+"""
 
 import uuid
 from datetime import UTC, datetime
@@ -51,7 +53,9 @@ def create_user_with_role(role: UserRole) -> tuple[uuid.UUID, str, str]:
 
 @pytest.mark.integration
 def test_invoice_issue_payment_overpayment_and_immutability():
-    """Verify invoice issuance, partial payment, overpayment rejection, full payment, and cancel rules."""
+    """Verify invoice issuance, partial payment, overpayment rejection, full
+    payment, and cancel rules.
+    """
     create_user_with_role(UserRole.ADMIN)
     _, _, billing_token = create_user_with_role(UserRole.BILLING_STAFF)
     patient_user_id, _, patient_token = create_user_with_role(UserRole.PATIENT)
@@ -184,7 +188,9 @@ def test_invoice_issue_payment_overpayment_and_immutability():
         json={
             "patient_id": str(patient_id),
             "invoice_date": today_str,
-            "items": [{"description": "Minor service", "quantity": 1, "unit_price": 100}],
+            "items": [
+                {"description": "Minor service", "quantity": 1, "unit_price": 100}
+            ],
         },
     )
     assert inv_unpaid.status_code == 201

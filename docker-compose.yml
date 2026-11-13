@@ -1,8 +1,6 @@
 services:
-  # Database: PostgreSQL 16
   db:
     image: postgres:16-alpine
-    container_name: arogyavajra-db
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-arogyavajra}
@@ -13,26 +11,30 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-arogyavajra} -d ${POSTGRES_DB:-arogyavajra}"]
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
       interval: 5s
       timeout: 5s
       retries: 5
     networks:
       - arogyavajra-network
 
-  # Backend: FastAPI
   api:
     build:
       context: ./apps/api
       dockerfile: Dockerfile
-    container_name: arogyavajra-api
     restart: unless-stopped
     env_file:
       - .env
     ports:
       - "${API_PORT:-8000}:8000"
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
       interval: 5s
       timeout: 5s
       retries: 10
@@ -43,22 +45,24 @@ services:
     networks:
       - arogyavajra-network
 
-  # Frontend: Next.js
   web:
     build:
       context: ./apps/web
       dockerfile: Dockerfile
-    container_name: arogyavajra-web
     restart: unless-stopped
     env_file:
       - .env
     environment:
-      - API_INTERNAL_URL=${API_INTERNAL_URL:-http://api:8000}
-      - TRUST_PLATFORM_IP_HEADERS=${TRUST_PLATFORM_IP_HEADERS:-true}
+      API_INTERNAL_URL: ${API_INTERNAL_URL:-http://api:8000}
+      TRUST_PLATFORM_IP_HEADERS: ${TRUST_PLATFORM_IP_HEADERS:-false}
     ports:
       - "${WEB_PORT:-3000}:3000"
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:3000/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
       interval: 5s
       timeout: 5s
       retries: 10

@@ -1,4 +1,6 @@
-"""Integration tests for doctor management API endpoints, RBAC, search, and audit trail."""
+"""Integration tests for doctor management API endpoints, RBAC, search, and
+audit trail.
+"""
 
 import uuid
 from decimal import Decimal

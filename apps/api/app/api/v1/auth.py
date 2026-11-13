@@ -77,15 +77,18 @@ def clear_refresh_cookie(response: Response) -> None:
 
 
 def is_non_browser_client(request: Request) -> bool:
-    """Determine whether client is a genuine non-browser client requesting token body flow.
+    """Determine whether client is a genuine non-browser client requesting token
+    body flow.
 
     CRITICAL SECURITY INVARIANT:
-    - If a request carries a `refresh_token` cookie, it is strictly treated as a browser
-      request regardless of any headers, and will NEVER receive a refresh token in the body.
-      This prevents malicious scripts (e.g. via XSS) from sending `X-Client-Type: non-browser`
-      with ambient cookies to exfiltrate refresh tokens into response bodies.
-    - Only requests without a refresh cookie that explicitly supply `X-Client-Type: non-browser`
-      or `X-Auth-Flow: token-body` are treated as non-browser clients.
+    - If a request carries a `refresh_token` cookie, it is strictly treated as a
+      browser request regardless of any headers, and will NEVER receive a refresh
+      token in the body. This prevents malicious scripts (e.g. via XSS) from
+      sending `X-Client-Type: non-browser` with ambient cookies to exfiltrate
+      refresh tokens into response bodies.
+    - Only requests without a refresh cookie that explicitly supply
+      `X-Client-Type: non-browser` or `X-Auth-Flow: token-body` are treated as
+      non-browser clients.
     """
     if request.cookies.get("refresh_token"):
         return False
@@ -307,7 +310,9 @@ def refresh_token(
     payload: RefreshRequest | None = None,
     db: Session = Depends(get_db),
 ) -> APIResponse[TokenResponse]:
-    """Validate refresh token, enforce single-use rotation, and issue fresh token pair."""
+    """Validate refresh token, enforce single-use rotation, and issue fresh token
+    pair.
+    """
     check_rate_limit(
         db,
         "refresh",
@@ -328,7 +333,8 @@ def refresh_token(
         # do NOT fall back to cookies.
         raw_token = payload.refresh_token if payload and payload.refresh_token else None
     else:
-        # Browser client flow: strictly enforce reading exclusively from httpOnly cookie.
+        # Browser client flow: strictly enforce reading exclusively from
+        # httpOnly cookie.
         # Ignores payload.refresh_token to prevent token confusion or body leakage.
         raw_token = request.cookies.get("refresh_token")
 
@@ -350,7 +356,7 @@ def refresh_token(
         token_id = uuid.UUID(jti_str)
         family_claim_id = uuid.UUID(family_str) if family_str else None
     except (JWTError, ValueError):
-        raise credentials_exception
+        raise credentials_exception from None
 
     user = db.get(User, user_id)
     if not user or not user.is_active:
@@ -414,18 +420,24 @@ def refresh_token(
             )
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Replay attack detected: Refresh token reuse detected. Session terminated for security.",
+                detail=(
+                    "Replay attack detected: Refresh token reuse detected. "
+                    "Session terminated for security."
+                ),
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        # First and only allowed concurrent race resolution within 15-second grace window:
+        # First and only allowed concurrent race resolution within 15-second
+        # grace window:
         stored_token.grace_count += 1
     else:
         # Normal first-time consumption
         stored_token.consumed_at = now
 
-    # Rotate: issue a fresh refresh token inheriting the family ID in the same atomic transaction.
-    # Passing commit=False ensures the row lock on stored_token is held continuously until both
+    # Rotate: issue a fresh refresh token inheriting the family ID in the same
+    # atomic transaction.
+    # Passing commit=False ensures the row lock on stored_token is held
+    # continuously until both
     # the consumption/grace update and the new token record are committed together.
     # If any error occurs during replacement token issuance or commit, rollback ensures
     # the existing token is not marked consumed.
@@ -740,13 +752,19 @@ def reset_password(
     db.commit()
 
     return SimpleMessageResponse(
-        message="Password has been reset successfully. You can now log in with your new password."
+        message=(
+            "Password has been reset successfully. You can now log in with your "
+            "new password."
+        )
     )
 
 
 @router.get(
     "/debug-client-ip",
-    summary="Echo resolved client IP and proxy headers (admin-only in production, open in dev)",
+    summary=(
+        "Echo resolved client IP and proxy headers (admin-only in production, "
+        "open in dev)"
+    ),
 )
 def debug_client_ip(
     request: Request,
@@ -754,8 +772,10 @@ def debug_client_ip(
 ):
     """Temporary diagnostic endpoint to verify proxy IP resolution on Render deploys.
 
-    Protected: Accessible in development without auth, or in production by authenticated ADMIN users.
-    Decommissioning: Follow the step-by-step procedure in README.md to remove after deployment verification.
+    Protected: Accessible in development without auth, or in production by
+    authenticated ADMIN users.
+    Decommissioning: Follow the step-by-step procedure in README.md to remove
+    after deployment verification.
     """
     is_prod = settings.APP_ENV.lower() in ("production", "prod", "staging")
     if is_prod:
@@ -763,7 +783,9 @@ def debug_client_ip(
         if not auth_header or not auth_header.startswith("Bearer "):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required to access debug endpoint in production.",
+                detail=(
+                    "Authentication required to access debug endpoint in production."
+                ),
                 headers={"WWW-Authenticate": "Bearer"},
             )
         token = auth_header.split(" ")[1]
@@ -791,4 +813,3 @@ def debug_client_ip(
             "forwarded": request.headers.get("forwarded"),
         },
     }
-

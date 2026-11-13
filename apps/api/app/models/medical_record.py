@@ -20,7 +20,7 @@ class MedicalRecord(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     appointment_id = Column(
         UUID(as_uuid=True), ForeignKey("appointments.id"), nullable=True
     )
-    record_date = Column(Date, nullable=False)
+    record_date = Column(Date, nullable=False, index=True)
     chief_complaint = Column(Text, nullable=True)
     clinical_notes = Column(Text, nullable=True)
     diagnosis = Column(Text, nullable=True)

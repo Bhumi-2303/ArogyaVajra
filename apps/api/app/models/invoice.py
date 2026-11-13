@@ -8,7 +8,7 @@ from sqlalchemy.orm import relationship
 from app.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
 
 
-class InvoiceStatus(str, enum.Enum):
+class InvoiceStatus(enum.StrEnum):
     DRAFT = "DRAFT"
     ISSUED = "ISSUED"
     PARTIALLY_PAID = "PARTIALLY_PAID"
@@ -29,7 +29,7 @@ class Invoice(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     appointment_id = Column(
         UUID(as_uuid=True), ForeignKey("appointments.id"), nullable=True, index=True
     )
-    invoice_date = Column(Date, nullable=False)
+    invoice_date = Column(Date, nullable=False, index=True)
     subtotal = Column(Numeric(10, 2), nullable=False)
     discount = Column(Numeric(10, 2), nullable=False, default=0.00)
     tax = Column(Numeric(10, 2), nullable=False, default=0.00)
@@ -37,7 +37,10 @@ class Invoice(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     paid_amount = Column(Numeric(10, 2), nullable=False, default=0.00)
     balance = Column(Numeric(10, 2), nullable=False)
     status = Column(
-        SQLAlchemyEnum(InvoiceStatus), nullable=False, default=InvoiceStatus.DRAFT
+        SQLAlchemyEnum(InvoiceStatus),
+        nullable=False,
+        index=True,
+        default=InvoiceStatus.DRAFT,
     )
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
 

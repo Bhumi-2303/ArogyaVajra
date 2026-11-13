@@ -67,8 +67,11 @@ class Settings(BaseSettings):
                 if stripped == "*":
                     items.append(stripped)
                     continue
-                # If injected via Render Blueprint fromService property: host, it lacks a protocol scheme
-                if not stripped.startswith("http://") and not stripped.startswith("https://"):
+                # If injected via Render Blueprint fromService property: host,
+                # it lacks a protocol scheme
+                if not stripped.startswith("http://") and not stripped.startswith(
+                    "https://"
+                ):
                     if "localhost" in stripped or "127.0.0.1" in stripped:
                         stripped = f"http://{stripped}"
                     else:
@@ -78,8 +81,10 @@ class Settings(BaseSettings):
         return v
 
     # Reverse Proxy & Trusted Proxy Configuration
-    # Comma-separated list of trusted proxy IP addresses or CIDR blocks (e.g., "127.0.0.1,::1,10.0.0.0/8").
-    # If empty or unset, no proxy is trusted by default and forwarded headers are strictly ignored.
+    # Comma-separated list of trusted proxy IP addresses or CIDR blocks
+    # (e.g., "127.0.0.1,::1,10.0.0.0/8").
+    # If empty or unset, no proxy is trusted by default and forwarded headers are
+    # strictly ignored.
     TRUSTED_PROXIES: str = ""
 
     # Rate Limiting Configuration
@@ -113,11 +118,13 @@ class Settings(BaseSettings):
         if self.APP_ENV.lower() in ("production", "prod", "staging"):
             if not self.RATE_LIMIT_ENABLED:
                 raise ValueError(
-                    "Security validation failed: In production/staging environment, RATE_LIMIT_ENABLED must be True."
+                    "Security validation failed: In production/staging "
+                    "environment, RATE_LIMIT_ENABLED must be True."
                 )
             if self.RATE_LIMIT_MULTIPLIER != 1.0:
                 raise ValueError(
-                    "Security validation failed: In production/staging environment, RATE_LIMIT_MULTIPLIER must be 1.0."
+                    "Security validation failed: In production/staging "
+                    "environment, RATE_LIMIT_MULTIPLIER must be 1.0."
                 )
 
             if (
@@ -125,19 +132,23 @@ class Settings(BaseSettings):
                 or len(self.JWT_SECRET_KEY.strip()) < 32
             ):
                 raise ValueError(
-                    "Security validation failed: In production environment (APP_ENV=production), "
-                    "JWT_SECRET_KEY must not use known development defaults and must be at least 32 characters long."
+                    "Security validation failed: In production environment "
+                    "(APP_ENV=production), "
+                    "JWT_SECRET_KEY must not use known development defaults and "
+                    "must be at least 32 characters long."
                 )
 
             if self.APP_DEBUG:
                 raise ValueError(
-                    "Security validation failed: In production environment, APP_DEBUG must be False."
+                    "Security validation failed: In production environment, "
+                    "APP_DEBUG must be False."
                 )
 
             cors_list = self.cors_origins_list
             if not cors_list:
                 raise ValueError(
-                    "Security validation failed: In production environment, CORS_ORIGINS must not be empty."
+                    "Security validation failed: In production environment, "
+                    "CORS_ORIGINS must not be empty."
                 )
             for origin in cors_list:
                 origin_clean = origin.strip().lower()
@@ -149,17 +160,21 @@ class Settings(BaseSettings):
                     or "::1" in origin_clean
                 ):
                     raise ValueError(
-                        f"Security validation failed: In production environment, CORS origin '{origin}' "
-                        "cannot be a wildcard '*' or point to localhost/loopback addresses."
+                        "Security validation failed: In production environment, "
+                        f"CORS origin '{origin}' "
+                        "cannot be a wildcard '*' or point to "
+                        "localhost/loopback addresses."
                     )
                 if origin.endswith("/"):
                     raise ValueError(
-                        f"Security validation failed: In production environment, CORS origin '{origin}' "
+                        "Security validation failed: In production environment, "
+                        f"CORS origin '{origin}' "
                         "must not contain a trailing slash."
                     )
                 if not origin_clean.startswith("https://"):
                     raise ValueError(
-                        f"Security validation failed: In production environment, CORS origin '{origin}' "
+                        "Security validation failed: In production environment, "
+                        f"CORS origin '{origin}' "
                         "must use secure HTTPS ('https://')."
                     )
 
@@ -168,7 +183,8 @@ class Settings(BaseSettings):
                 or "postgres:postgres@" in self.DATABASE_URL
             ):
                 raise ValueError(
-                    "Security validation failed: In production environment, DATABASE_URL must not use "
+                    "Security validation failed: In production environment, "
+                    "DATABASE_URL must not use "
                     "known development or default database credentials."
                 )
 
@@ -177,8 +193,10 @@ class Settings(BaseSettings):
                 or len(self.BOOTSTRAP_SECRET.strip()) < 16
             ):
                 raise ValueError(
-                    "Security validation failed: In production environment, BOOTSTRAP_SECRET "
-                    "cannot use known development defaults and must be at least 16 characters long."
+                    "Security validation failed: In production environment, "
+                    "BOOTSTRAP_SECRET "
+                    "cannot use known development defaults and must be at least "
+                    "16 characters long."
                 )
 
         return self

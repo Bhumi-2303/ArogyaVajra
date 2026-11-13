@@ -1,7 +1,8 @@
 """Resource-relationship authorization primitives and ownership verification engine.
 
 Implements TRD Section 10 and FRONTEND-BACKEND-CONTRACT Section 40:
-Request -> Authenticate User -> Resolve Role -> Check Permission -> Check Resource Relationship -> Execute Service.
+Request -> Authenticate User -> Resolve Role -> Check Permission -> Check Resource
+Relationship -> Execute Service.
 """
 
 import uuid
@@ -17,7 +18,9 @@ def check_resource_ownership(
     resource_owner_id: uuid.UUID | str,
     bypass_roles: Iterable[UserRole] = (UserRole.ADMIN,),
 ) -> bool:
-    """Evaluate whether the authenticated user owns the resource or has an authorized bypass role."""
+    """Evaluate whether the authenticated user owns the resource or has an
+    authorized bypass role.
+    """
     if user.role in bypass_roles:
         return True
     return str(user.id) == str(resource_owner_id)
@@ -28,10 +31,12 @@ def verify_resource_ownership(
     resource_owner_id: uuid.UUID | str,
     bypass_roles: Iterable[UserRole] = (UserRole.ADMIN,),
 ) -> None:
-    """Enforce that the authenticated user owns the resource or has an authorized bypass role.
+    """Enforce that the authenticated user owns the resource or has an authorized
+    bypass role.
 
     Raises:
-        HTTPException: 403 Forbidden if the user is neither owner nor granted bypass role.
+        HTTPException: 403 Forbidden if the user is neither owner nor granted
+            bypass role.
     """
     if not check_resource_ownership(user, resource_owner_id, bypass_roles):
         raise HTTPException(
@@ -49,7 +54,8 @@ def verify_patient_resource_access(
         UserRole.ADMIN,
     ),
 ) -> None:
-    """Enforce that the user is the patient themselves or has an authorized clinical role.
+    """Enforce that the user is the patient themselves or has an authorized
+    clinical role.
 
     Raises:
         HTTPException: 403 Forbidden if unauthorized.
@@ -95,7 +101,8 @@ def verify_billing_resource_access(
     user: User,
     patient_user_id: uuid.UUID | str,
 ) -> None:
-    """Enforce that the user is the patient viewing their own billing, or billing staff / admin.
+    """Enforce that the user is the patient viewing their own billing, or billing
+    staff / admin.
 
     Raises:
         HTTPException: 403 Forbidden if unauthorized.

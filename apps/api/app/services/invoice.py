@@ -171,9 +171,8 @@ class InvoiceService:
                 detail="Cannot modify a paid or cancelled invoice.",
             )
 
-        if (
-            data.status == InvoiceStatus.CANCELLED
-            and invoice.paid_amount > Decimal("0.00")
+        if data.status == InvoiceStatus.CANCELLED and invoice.paid_amount > Decimal(
+            "0.00"
         ):
             raise HTTPException(
                 status_code=http_status.HTTP_400_BAD_REQUEST,

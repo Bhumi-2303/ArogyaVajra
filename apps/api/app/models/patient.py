@@ -4,7 +4,7 @@ import uuid
 from datetime import date
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Date, ForeignKey, Index, String, Text
+from sqlalchemy import Date, ForeignKey, String, Text
 from sqlalchemy import Uuid as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -28,7 +28,6 @@ class PatientProfile(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     )
     patient_code: Mapped[str] = mapped_column(
         String(32),
-        unique=True,
         nullable=False,
         index=True,
     )
@@ -71,11 +70,6 @@ class PatientProfile(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         "User",
         back_populates="patient_profile",
         lazy="joined",
-    )
-
-    __table_args__ = (
-        Index("ix_patient_profiles_patient_code", "patient_code"),
-        Index("ix_patient_profiles_phone", "phone"),
     )
 
     @property

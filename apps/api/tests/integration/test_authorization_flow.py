@@ -1,4 +1,5 @@
-"""Comprehensive integration tests for RBAC, resource ownership, and untrusted client inputs.
+"""Comprehensive integration tests for RBAC, resource ownership, and untrusted
+client inputs.
 
 Verifies:
 1. Unauthenticated users cannot reach protected routes (401).
@@ -113,7 +114,8 @@ def test_rbac_role_enforcement():
         == 403
     )
 
-    # 3. Clinical staff endpoint (/api/v1/authz/clinical-staff: Doctor, Receptionist, Admin)
+    # 3. Clinical staff endpoint (/api/v1/authz/clinical-staff: Doctor,
+    # Receptionist, Admin)
     assert (
         client.get(
             "/api/v1/authz/clinical-staff",

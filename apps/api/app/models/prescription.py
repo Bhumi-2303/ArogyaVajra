@@ -8,7 +8,7 @@ from sqlalchemy.orm import relationship
 from app.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
 
 
-class PrescriptionStatus(str, enum.Enum):
+class PrescriptionStatus(enum.StrEnum):
     ACTIVE = "ACTIVE"
     COMPLETED = "COMPLETED"
     CANCELLED = "CANCELLED"
@@ -29,11 +29,12 @@ class Prescription(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     appointment_id = Column(
         UUID(as_uuid=True), ForeignKey("appointments.id"), nullable=True, index=True
     )
-    prescription_date = Column(Date, nullable=False)
+    prescription_date = Column(Date, nullable=False, index=True)
     instructions = Column(Text, nullable=True)
     status = Column(
         SQLAlchemyEnum(PrescriptionStatus),
         nullable=False,
+        index=True,
         default=PrescriptionStatus.ACTIVE,
     )
 

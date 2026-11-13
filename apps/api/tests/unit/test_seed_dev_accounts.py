@@ -26,7 +26,9 @@ def test_seed_accounts_safety_blocks_production():
 
 
 def test_seed_accounts_safety_blocks_render_cloud_database_url():
-    """Verify that seed_accounts refuses to run against a Render production database URL."""
+    """Verify that seed_accounts refuses to run against a Render production
+    database URL.
+    """
     fake_render_url = "postgresql+psycopg://user:pass@dpg-abc1234-a.oregon-postgres.render.com/arogyavajra_prod"
     with (
         patch.dict(
@@ -93,7 +95,9 @@ def test_seed_accounts_idempotency_and_completeness():
 
 
 def test_seed_accounts_custom_password():
-    """Verify that seed_accounts respects custom password override without mutating shared test DB."""
+    """Verify that seed_accounts respects custom password override without
+    mutating shared test DB.
+    """
     factory = get_sessionmaker()
     custom_pwd = "CustomDevPassword123!"
     with factory() as db, patch.object(db, "commit"):

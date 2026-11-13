@@ -32,7 +32,8 @@ class PatientService:
         user_agent: str | None = None,
     ) -> PatientProfile:
         """Create a new patient profile with generated code and audit log."""
-        # 1. Authorize: Only staff (ADMIN, RECEPTIONIST) or self-registering PATIENT can create
+        # 1. Authorize: Only staff (ADMIN, RECEPTIONIST) or self-registering
+        # PATIENT can create
         if current_user.role not in (
             UserRole.ADMIN,
             UserRole.RECEPTIONIST,
@@ -78,7 +79,9 @@ class PatientService:
         else:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Either email or user_id is required to create a patient profile.",
+                detail=(
+                    "Either email or user_id is required to create a patient profile."
+                ),
             )
 
         # Check if user already has a profile

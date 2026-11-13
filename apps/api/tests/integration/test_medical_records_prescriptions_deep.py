@@ -1,4 +1,6 @@
-"""Integration tests for medical records and prescriptions authorization and lifecycle."""
+"""Integration tests for medical records and prescriptions authorization and
+lifecycle.
+"""
 
 import uuid
 from datetime import UTC, datetime
@@ -69,7 +71,9 @@ def create_doctor(user_id: uuid.UUID) -> uuid.UUID:
 
 @pytest.mark.integration
 def test_medical_records_authorization_and_crud():
-    """Verify doctor creation of medical record, patient read access, and cross-patient isolation."""
+    """Verify doctor creation of medical record, patient read access, and
+    cross-patient isolation.
+    """
     doc_user_id, _, doc_token = create_user_with_role(UserRole.DOCTOR)
     doc_id = create_doctor(doc_user_id)
 
@@ -117,7 +121,8 @@ def test_medical_records_authorization_and_crud():
     )
     assert p2_read.status_code == 403
 
-    # 4. Patient 1 attempts to update medical record (403 - patients cannot write records)
+    # 4. Patient 1 attempts to update medical record (403 - patients cannot write
+    # records)
     p1_upd = client.put(
         f"/api/v1/medical-records/{rec_id}",
         headers=auth_headers(p1_token),
@@ -137,7 +142,9 @@ def test_medical_records_authorization_and_crud():
 
 @pytest.mark.integration
 def test_prescription_lifecycle_and_cancellation():
-    """Verify prescription issuance, item creation, patient access, and cancellation rules."""
+    """Verify prescription issuance, item creation, patient access, and
+    cancellation rules.
+    """
     doc1_user_id, _, doc1_token = create_user_with_role(UserRole.DOCTOR)
     doc1_id = create_doctor(doc1_user_id)
 

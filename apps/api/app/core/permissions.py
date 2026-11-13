@@ -4,13 +4,15 @@ Conforms strictly to Arogyavajra TRD Section 10/11 and APP-FLOW Section 21.
 """
 
 from collections.abc import Iterable
-from enum import Enum
+from enum import StrEnum
 
 from app.models.user import UserRole
 
 
-class Permission(str, Enum):
-    """Granular system permissions covering clinical, administrative, and billing actions."""
+class Permission(StrEnum):
+    """Granular system permissions covering clinical, administrative, and billing
+    actions.
+    """
 
     # Administration & Audit
     USERS_READ = "users:read"
@@ -122,6 +124,8 @@ def has_all_permissions(role: UserRole, permissions: Iterable[Permission]) -> bo
 
 
 def has_any_permission(role: UserRole, permissions: Iterable[Permission]) -> bool:
-    """Check if a UserRole possesses at least one permission from the given collection."""
+    """Check if a UserRole possesses at least one permission from the given
+    collection.
+    """
     granted = ROLE_PERMISSIONS.get(role, set())
     return any(p in granted for p in permissions)

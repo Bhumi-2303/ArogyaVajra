@@ -1,4 +1,6 @@
-"""Authorization inspection and verification endpoints for testing and runtime RBAC validation."""
+"""Authorization inspection and verification endpoints for testing and runtime
+RBAC validation.
+"""
 
 from typing import Any
 
@@ -59,7 +61,9 @@ def check_patient_resource(
     patient_id: str,
     user: User = Depends(get_current_user),
 ):
-    """Requires patient to own the resource or user to have clinical staff bypass role."""
+    """Requires patient to own the resource or user to have clinical staff bypass
+    role.
+    """
     verify_patient_resource_access(user, patient_id)
     return {"message": "Patient resource access verified", "patient_id": patient_id}
 
@@ -71,7 +75,9 @@ def check_untrusted_client_role(
     header_role: str | None = Header(None, alias="X-User-Role"),
     user: User = Depends(require_admin),
 ):
-    """Strictly enforces that query param, header, or body claims cannot elevate privileges."""
+    """Strictly enforces that query param, header, or body claims cannot elevate
+    privileges.
+    """
     return {
         "verified_role": user.role.value,
         "claimed_role_query": claimed_role,

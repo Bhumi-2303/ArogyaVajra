@@ -292,7 +292,8 @@ def test_get_client_identifier_trusts_configured_proxy_and_uses_single_header(
     req = Request(scope)
     assert get_client_identifier(req) == "198.51.100.22"
 
-    # Case 2: X-Forwarded-For through trusted proxy is NOT walked; only X-Real-IP is used
+    # Case 2: X-Forwarded-For through trusted proxy is NOT walked; only X-Real-IP
+    # is used
     scope = {
         "type": "http",
         "client": ("127.0.0.1", 1234),
@@ -317,7 +318,8 @@ def test_rate_limiter_cannot_be_bypassed_in_production(monkeypatch):
     mock_db = MagicMock()
     mock_db.execute.return_value.fetchone.return_value = (1,)
 
-    # Even if bypass_in_test=True, in production it must not bypass and must attempt DB query
+    # Even if bypass_in_test=True, in production it must not bypass and must
+    # attempt DB query
     check_rate_limit(
         db=mock_db,
         key_prefix="test",
@@ -338,7 +340,8 @@ def test_get_client_identifier_does_not_walk_forwarded_for(monkeypatch):
 
     monkeypatch.setattr(settings, "TRUSTED_PROXIES", "10.0.0.1, 10.0.0.2")
 
-    # When connecting from trusted proxy without X-Real-IP, X-Forwarded-For is NOT walked.
+    # When connecting from trusted proxy without X-Real-IP, X-Forwarded-For is
+    # NOT walked.
     # It safely falls back to the direct peer IP (10.0.0.1).
     scope = {
         "type": "http",
@@ -404,7 +407,8 @@ def test_alembic_url_resolution_deterministic():
 
     # Case 1: Normal operation without overrides -> resolves to settings.DATABASE_URL
     cfg1 = Config(alembic_ini_path)
-    # In alembic.ini, sqlalchemy.url is blank; env.py resolution sets settings.DATABASE_URL
+    # In alembic.ini, sqlalchemy.url is blank; env.py resolution sets
+    # settings.DATABASE_URL
     resolved_url1 = cfg1.get_main_option("sqlalchemy.url") or settings.DATABASE_URL
     assert resolved_url1 == settings.DATABASE_URL
 
@@ -420,7 +424,9 @@ def test_alembic_url_resolution_deterministic():
 
 
 def test_production_config_refuses_loosened_rate_limits():
-    """Verify production-config validator refuses loosened rate limits in production and staging."""
+    """Verify production-config validator refuses loosened rate limits in
+    production and staging.
+    """
     import pytest
 
     from app.core.config import Settings

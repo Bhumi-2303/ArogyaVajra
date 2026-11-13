@@ -1,4 +1,6 @@
-"""Database package with engine, session management, transactions, and declarative base."""
+"""Database package with engine, session management, transactions, and
+declarative base.
+"""
 
 from app.db.base import (
     POSTGRES_NAMING_CONVENTION,

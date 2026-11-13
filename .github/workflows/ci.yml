@@ -1,3 +1,4 @@
+
 name: Arogyavajra CI
 
 on:
@@ -6,10 +7,19 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: arogyavajra-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   backend-qa:
-    name: Backend Lint, Migrations & Tests
+    name: Backend Lint, Security, Migrations & Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+
     services:
       postgres:
         image: postgres:16-alpine
@@ -20,14 +30,14 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
+          --health-cmd "pg_isready -U arogyavajra -d arogyavajra"
+          --health-interval 5s
           --health-timeout 5s
-          --health-retries 5
+          --health-retries 10
 
     env:
       DATABASE_URL: postgresql+psycopg://arogyavajra:arogyavajra_dev_password@localhost:5432/arogyavajra
-      JWT_SECRET_KEY: dev-secret-key-change-in-production
+      JWT_SECRET_KEY: ci-only-insecure-secret-not-for-production
       APP_ENV: test
 
     steps:
@@ -40,51 +50,85 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-          cache: "pip"
-          cache-dependency-path: apps/api/requirements.txt
+          cache: pip
+          cache-dependency-path: |
+            apps/api/requirements.txt
+            apps/api/pyproject.toml
 
-      - name: Install Dependencies
+      - name: Install Backend Dependencies
+        working-directory: apps/api
         run: |
-          cd apps/api
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          python -m pip install -r requirements.txt
+          python -m pip install -e ".[dev]"
 
-      - name: Run Enforceable Ruff Lint Gate
-        run: |
-          cd apps/api
-          python scripts/lint_gate.py
+      - name: Run Ruff Lint Gate
+        working-directory: apps/api
+        run: python scripts/lint_gate.py
 
-      - name: Wait for PostgreSQL Readiness
+      - name: Verify Python Formatting
+        working-directory: apps/api
+        run: ruff format --check .
+
+      - name: Audit Python Dependencies
+        working-directory: apps/api
+        run: pip-audit
+
+      - name: Wait for PostgreSQL
         run: |
-          python -c "
-          import time, psycopg
-          for i in range(30):
+          python - <<'PY'
+          import time
+          import psycopg
+
+          for attempt in range(30):
               try:
-                  with psycopg.connect('postgresql://arogyavajra:arogyavajra_dev_password@localhost:5432/arogyavajra') as conn:
-                      print('PostgreSQL is ready and accepting connections.')
+                  with psycopg.connect(
+                      "postgresql://arogyavajra:arogyavajra_dev_password"
+                      "@localhost:5432/arogyavajra"
+                  ):
+                      print("PostgreSQL is ready.")
                       break
-              except Exception as e:
-                  print(f'Waiting for PostgreSQL... ({e})')
+              except psycopg.OperationalError:
+                  print(f"Waiting for PostgreSQL ({attempt + 1}/30)...")
                   time.sleep(1)
           else:
-              raise SystemExit('PostgreSQL did not become ready within 30 seconds.')
-          "
+              raise SystemExit("PostgreSQL did not become ready.")
+          PY
 
       - name: Run Database Migrations
-        run: |
-          cd apps/api
-          alembic upgrade head
+        working-directory: apps/api
+        run: alembic upgrade head
 
-      - name: Run Pytest Suite with Coverage Gate (>=80%)
+      - name: Verify Database Migration Consistency
+        working-directory: apps/api
+        run: alembic check
+
+      - name: Run Backend Tests with Coverage
+        working-directory: apps/api
         run: |
-          cd apps/api
-          pytest -v --cov=app/services --cov=app/api/v1 --cov-report=term-missing --cov-fail-under=80
+          pytest -v \
+            --cov=app \
+            --cov-report=term-missing \
+            --cov-report=xml \
+            --cov-fail-under=80
+
+      - name: Upload Backend Coverage Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: apps/api/coverage.xml
+          if-no-files-found: ignore
+          retention-days: 7
 
   frontend-qa:
     name: Frontend Lint, Type Check & Build
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+
     env:
       NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v5
@@ -93,94 +137,88 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: "20"
-          cache: "npm"
+          cache: npm
           cache-dependency-path: apps/web/package-lock.json
 
-      - name: Install Dependencies
-        run: |
-          cd apps/web
-          npm ci
+      - name: Install Frontend Dependencies
+        working-directory: apps/web
+        run: npm ci
 
       - name: Run ESLint
-        run: |
-          cd apps/web
-          npm run lint
+        working-directory: apps/web
+        run: npm run lint
 
       - name: Run TypeScript Type Check
-        run: |
-          cd apps/web
-          npm run type-check
+        working-directory: apps/web
+        run: npm run type-check
 
-      - name: Run Next.js Build
-        run: |
-          cd apps/web
-          npm run build
+      - name: Run Next.js Production Build
+        working-directory: apps/web
+        run: npm run build
 
       - name: Run API URL Regression Suite
-        run: |
-          cd apps/web
-          node scripts/verify-api-url-construction.mjs
+        working-directory: apps/web
+        run: node scripts/verify-api-url-construction.mjs
 
       - name: Run Security Headers & CSP Regression Suite
-        run: |
-          cd apps/web
-          node scripts/verify-security-headers.mjs
+        working-directory: apps/web
+        run: node scripts/verify-security-headers.mjs
 
       - name: Run Runtime API Proxy Regression Suite
-        run: |
-          cd apps/web
-          node scripts/verify-api-proxy-runtime.mjs
+        working-directory: apps/web
+        run: node scripts/verify-api-proxy-runtime.mjs
 
       - name: Run Demo Credentials Isolation Verification
-        run: |
-          cd apps/web
-          node scripts/verify-demo-credentials-isolation.mjs
+        working-directory: apps/web
+        run: node scripts/verify-demo-credentials-isolation.mjs
 
       - name: Run Public Experience Verification
-        run: |
-          cd apps/web
-          node scripts/verify-public-experience.mjs
+        working-directory: apps/web
+        run: node scripts/verify-public-experience.mjs
 
       - name: Run Responsive Shell Verification
-        run: |
-          cd apps/web
-          node scripts/verify-responsive-shell.mjs
+        working-directory: apps/web
+        run: node scripts/verify-responsive-shell.mjs
 
   e2e-qa:
-    name: End-to-End Playwright & Live Verification
+    name: Full-Stack Integration & Playwright
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     needs: [backend-qa, frontend-qa]
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: Start Docker Compose Environment
-        timeout-minutes: 6
+      - name: Prepare CI Environment
         run: |
           cp .env.example .env
-          docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build --wait
 
-      - name: Seed Database with Initial Data & Verify Accounts
-        timeout-minutes: 2
+      - name: Start Full-Stack Docker Environment
+        timeout-minutes: 10
         run: |
-          docker compose exec -T api python scripts/seed_dev_accounts.py
+          docker compose \
+            -f docker-compose.yml \
+            -f docker-compose.ci.yml \
+            up -d --build --wait
+
+      - name: Seed Database and Verify Demo Accounts
+        timeout-minutes: 3
+        run: |
+          docker compose \
+            -f docker-compose.yml \
+            -f docker-compose.ci.yml \
+            exec -T api python scripts/seed_dev_accounts.py
 
       - name: Set up Node.js 20
         uses: actions/setup-node@v5
         with:
           node-version: "20"
-          cache: "npm"
+          cache: npm
           cache-dependency-path: apps/web/package-lock.json
-
-      - name: Ensure Host Workspace Permissions
-        run: |
-          sudo chown -R $USER:$USER .
 
       - name: Cache Playwright Browsers
         uses: actions/cache@v4
@@ -189,51 +227,47 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('apps/web/package-lock.json') }}
 
-      - name: Install Frontend Dependencies & Playwright
-        timeout-minutes: 4
+      - name: Install Frontend Dependencies and Browser
+        working-directory: apps/web
+        timeout-minutes: 8
         run: |
-          cd apps/web
           npm ci
-          npx playwright install chromium
+          npx playwright install --with-deps chromium
 
-      - name: Run Live Integration Verification Suites
-        timeout-minutes: 5
+      - name: Run Live Integration Verification
+        working-directory: apps/web
+        timeout-minutes: 7
         env:
           BASE_URL: http://localhost:3000
           API_URL: http://localhost:8000
           REQUIRE_LIVE_STACK: "true"
         run: |
-          cd apps/web
           node scripts/verify-auth-experience.mjs
           node scripts/verify-authorization-flow.mjs
           node scripts/verify-patient-experience.mjs
           node scripts/verify-doctor-experience.mjs
           node scripts/verify-admin-users.mjs
-          node scripts/verify-public-experience.mjs
-          node scripts/verify-responsive-shell.mjs
 
-      - name: Run Playwright End-to-End Tests
-        timeout-minutes: 5
+      - name: Run Playwright E2E Tests
+        working-directory: apps/web
+        timeout-minutes: 8
         env:
           BASE_URL: http://localhost:3000
           PLAYWRIGHT_TEST_BASE_URL: http://localhost:3000
-        run: |
-          cd apps/web
-          npm run test:e2e
+        run: npm run test:e2e
 
-      - name: Dump Docker Logs on Failure or Cancellation
+      - name: Dump Docker Logs on Failure
         if: failure() || cancelled()
         run: |
-          echo "=== ArogyaVajra Containers Status ==="
-          docker compose ps -a
-          echo "=== ArogyaVajra Web Container Logs ==="
-          docker compose logs web
-          echo "=== ArogyaVajra API Container Logs ==="
-          docker compose logs api
-          echo "=== ArogyaVajra DB Container Logs ==="
-          docker compose logs db
+          docker compose \
+            -f docker-compose.yml \
+            -f docker-compose.ci.yml ps -a || true
 
-      - name: Upload Playwright Test Artifacts on Failure
+          docker compose \
+            -f docker-compose.yml \
+            -f docker-compose.ci.yml logs --no-color || true
+
+      - name: Upload Playwright Artifacts
         if: failure()
         uses: actions/upload-artifact@v4
         with:
@@ -241,10 +275,12 @@ jobs:
           path: |
             apps/web/playwright-report/
             apps/web/test-results/
+          if-no-files-found: ignore
           retention-days: 7
 
       - name: Tear Down Docker Environment
         if: always()
         run: |
-          docker compose down -v
-
+          docker compose \
+            -f docker-compose.yml \
+            -f docker-compose.ci.yml down -v --remove-orphans

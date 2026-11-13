@@ -37,7 +37,9 @@ def create_authenticated_user(role: UserRole) -> tuple[User, str]:
 
 @pytest.mark.integration
 def test_unauthorized_roles_blocked_from_user_management():
-    """Verify non-admin roles (PATIENT, DOCTOR, RECEPTIONIST, BILLING_STAFF) are blocked with 403."""
+    """Verify non-admin roles (PATIENT, DOCTOR, RECEPTIONIST, BILLING_STAFF) are
+    blocked with 403.
+    """
     # 1. Unauthenticated request -> 401
     unauth_res = client.get("/api/v1/users")
     assert unauth_res.status_code == 401
@@ -115,7 +117,9 @@ def test_admin_list_and_search_users():
 
 @pytest.mark.integration
 def test_admin_user_detail_and_role_assignment():
-    """Verify administrator can inspect user details and assign roles with audit trail."""
+    """Verify administrator can inspect user details and assign roles with audit
+    trail.
+    """
     admin_user, admin_token = create_authenticated_user(UserRole.ADMIN)
     headers = {"Authorization": f"Bearer {admin_token}"}
 
@@ -157,7 +161,9 @@ def test_admin_user_detail_and_role_assignment():
 
 @pytest.mark.integration
 def test_admin_account_activation_and_deactivation_lifecycle():
-    """Verify activation/deactivation alters status, enforces login block, and writes audit trails."""
+    """Verify activation/deactivation alters status, enforces login block, and
+    writes audit trails.
+    """
     admin_user, admin_token = create_authenticated_user(UserRole.ADMIN)
     headers = {"Authorization": f"Bearer {admin_token}"}
 

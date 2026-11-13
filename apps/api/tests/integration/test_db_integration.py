@@ -22,7 +22,9 @@ pytestmark = pytest.mark.integration
 
 @pytest.fixture(scope="module")
 def require_db():
-    """Ensure live database and required tools are available before running integration tests."""
+    """Ensure live database and required tools are available before running
+    integration tests.
+    """
     if not HAS_ALEMBIC:
         pytest.skip("Alembic is not installed in this environment.")
     if not check_db_connection():
@@ -58,14 +60,18 @@ def test_live_postgres_native_uuid(require_db):
 
 
 def test_live_transactional_session(require_db):
-    """Verify transactional_session creates, queries, and rolls back cleanly against PostgreSQL."""
+    """Verify transactional_session creates, queries, and rolls back cleanly
+    against PostgreSQL.
+    """
     with transactional_session() as session:
         result = session.execute(text("SELECT 42 AS value")).mappings().one()
         assert result["value"] == 42
 
 
 def test_live_alembic_heads_and_current(require_db):
-    """Verify Alembic configuration and commands against the live PostgreSQL database."""
+    """Verify Alembic configuration and commands against the live PostgreSQL
+    database.
+    """
     from pathlib import Path
 
     ini_candidates = [

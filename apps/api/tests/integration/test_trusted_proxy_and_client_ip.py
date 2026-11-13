@@ -2,15 +2,19 @@
 rate limiting bucketing, audit logging, and debug endpoint.
 
 Test coverage:
-1. Two different clients connecting via a trusted proxy with platform/trusted X-Real-IP
-   receive separate rate-limit buckets. Spoofed client-supplied X-Forwarded-For is ignored.
-2. The same headers from an untrusted caller are ignored (rate-limited by direct peer IP,
-   cannot bypass rate limiting via spoofed headers).
+1. Two different clients connecting via a trusted proxy with platform/trusted
+   X-Real-IP
+   receive separate rate-limit buckets. Spoofed client-supplied X-Forwarded-For
+   is ignored.
+2. The same headers from an untrusted caller are ignored (rate-limited by direct
+   peer IP, cannot bypass rate limiting via spoofed headers).
 3. Audit logs store the real client IP extracted from X-Real-IP via trusted proxy.
-4. Untrusted callers attempting to spoof headers have direct socket host stored in audit logs.
+4. Untrusted callers attempting to spoof headers have direct socket host stored
+   in audit logs.
 5. Appointment creation audit log stores real client IP from X-Real-IP.
-6. Diagnostic endpoint /api/v1/auth/debug-client-ip echoes resolved client IP and received headers;
-   strictly requires ADMIN role in production, accessible in dev.
+6. Diagnostic endpoint /api/v1/auth/debug-client-ip echoes resolved client IP
+   and received headers; strictly requires ADMIN role in production, accessible
+   in dev.
 """
 
 import uuid
@@ -46,12 +50,13 @@ def create_test_user(email_prefix: str, role: UserRole = UserRole.PATIENT) -> Us
 
 
 @pytest.mark.integration
-def test_two_different_forwarded_clients_from_trusted_proxy_get_separate_rate_limit_buckets(
+def test_trusted_proxy_forwarded_ips_get_separate_rate_limit_buckets(
     monkeypatch,
 ):
     """Integration test (i): Two different clients connecting via a trusted proxy
 
-    with distinct authoritative X-Real-IP headers receive independent rate-limit counters.
+    with distinct authoritative X-Real-IP headers receive independent rate-limit
+    counters.
     Client-supplied X-Forwarded-For is ignored and does not alter the rate-limit bucket.
     """
     # Configure Render private network range as trusted proxy and enforce rate limiting
@@ -61,7 +66,8 @@ def test_two_different_forwarded_clients_from_trusted_proxy_get_separate_rate_li
     user_a = create_test_user("client_a")
     user_b = create_test_user("client_b")
 
-    # Both clients connect through the same trusted web proxy IP on the 10.0.0.0/8 network
+    # Both clients connect through the same trusted web proxy IP on the
+    # 10.0.0.0/8 network
     proxy_client = TestClient(app, client=("10.0.1.50", 44321))
 
     client_ip_a = "198.51.100.11"
@@ -106,7 +112,8 @@ def test_two_different_forwarded_clients_from_trusted_proxy_get_separate_rate_li
 def test_forwarded_headers_from_untrusted_caller_are_ignored(monkeypatch):
     """Integration test (ii): An untrusted caller attempting to spoof X-Real-IP
 
-    or X-Forwarded-For is rate-limited by its direct connection IP, preventing spoofing bypasses.
+    or X-Forwarded-For is rate-limited by its direct connection IP, preventing
+    spoofing bypasses.
     """
     monkeypatch.setattr(settings, "TRUSTED_PROXIES", "10.0.0.0/8")
     monkeypatch.setattr(settings, "APP_ENV", "production")
@@ -183,7 +190,8 @@ def test_audit_logs_store_real_client_ip_from_trusted_proxy(monkeypatch):
 
 @pytest.mark.integration
 def test_audit_logs_untrusted_caller_stores_direct_host_not_spoofed_ip(monkeypatch):
-    """Integration test: Untrusted caller attempting to spoof X-Real-IP / X-Forwarded-For
+    """Integration test: Untrusted caller attempting to spoof X-Real-IP /
+    X-Forwarded-For
 
     has its direct socket IP recorded in audit_logs, NOT the spoofed headers.
     """

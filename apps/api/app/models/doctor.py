@@ -25,7 +25,9 @@ if TYPE_CHECKING:
 
 
 class DoctorProfile(Base, UUIDPrimaryKeyMixin, TimestampMixin):
-    """Doctor clinical profile, specialization, credentials, and consultation details."""
+    """Doctor clinical profile, specialization, credentials, and consultation
+    details.
+    """
 
     __tablename__ = "doctor_profiles"
 
@@ -91,7 +93,10 @@ class DoctorProfile(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     )
 
     def __repr__(self) -> str:
-        return f"<DoctorProfile code={self.doctor_code} name={self.first_name} {self.last_name} spec={self.specialization}>"
+        return (
+            f"<DoctorProfile code={self.doctor_code} name={self.first_name} "
+            f"{self.last_name} spec={self.specialization}>"
+        )
 
 
 class DoctorAvailability(Base, UUIDPrimaryKeyMixin, TimestampMixin):
@@ -145,4 +150,7 @@ class DoctorAvailability(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     )
 
     def __repr__(self) -> str:
-        return f"<DoctorAvailability doctor_id={self.doctor_id} day={self.day_of_week} {self.start_time}-{self.end_time}>"
+        return (
+            f"<DoctorAvailability doctor_id={self.doctor_id} "
+            f"day={self.day_of_week} {self.start_time}-{self.end_time}>"
+        )

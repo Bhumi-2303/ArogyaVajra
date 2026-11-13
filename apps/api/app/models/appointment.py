@@ -17,7 +17,7 @@ from sqlalchemy.orm import relationship
 from app.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
 
 
-class AppointmentStatus(str, enum.Enum):
+class AppointmentStatus(enum.StrEnum):
     SCHEDULED = "SCHEDULED"
     CONFIRMED = "CONFIRMED"
     COMPLETED = "COMPLETED"

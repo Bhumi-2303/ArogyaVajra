@@ -15,7 +15,9 @@ class EmailSender(ABC):
 
 
 class ConsoleEmailSender(EmailSender):
-    """Console implementation logging email payloads for dev, staging, and container environments."""
+    """Console implementation logging email payloads for dev, staging, and
+    container environments.
+    """
 
     def send_password_reset_email(self, to_email: str, reset_url: str) -> None:
         logger.info(

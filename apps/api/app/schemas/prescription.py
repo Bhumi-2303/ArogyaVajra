@@ -41,7 +41,8 @@ class PrescriptionCreate(PrescriptionBase):
 class PrescriptionUpdate(BaseModel):
     instructions: str | None = None
     status: PrescriptionStatus | None = None
-    # Assuming updating items means replacing the whole list of items or we just keep it simple.
+    # Assuming updating items means replacing the whole list of items or we just
+    # keep it simple.
     items: list[PrescriptionItemCreate] | None = None
 
 

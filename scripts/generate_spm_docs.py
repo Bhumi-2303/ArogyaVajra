@@ -237,7 +237,9 @@ This document presents a structured engineering evaluation of candidate Software
 # ==============================================================================
 # DOCUMENT 05 — WORK BREAKDOWN STRUCTURE (WBS)
 # ==============================================================================
-docs["05-work-breakdown-structure.md"] = """# DOCUMENT 05 — WORK BREAKDOWN STRUCTURE (WBS)
+docs[
+    "05-work-breakdown-structure.md"
+] = """# DOCUMENT 05 — WORK BREAKDOWN STRUCTURE (WBS)
 
 ## 1. Purpose
 The Work Breakdown Structure (WBS) decomposes the entire Arogyavajra project scope into manageable work packages and discrete, deliverable-oriented tasks, establishing accountability, dependency mapping, and progress tracking.
@@ -624,7 +626,9 @@ The Test Plan defines the multi-tiered verification strategy, testing environmen
 # ==============================================================================
 # DOCUMENT 14 — REQUIREMENT TRACEABILITY MATRIX (RTM)
 # ==============================================================================
-docs["14-requirement-traceability-matrix.md"] = """# DOCUMENT 14 — REQUIREMENT TRACEABILITY MATRIX (RTM)
+docs[
+    "14-requirement-traceability-matrix.md"
+] = """# DOCUMENT 14 — REQUIREMENT TRACEABILITY MATRIX (RTM)
 
 ## 1. Purpose
 The Requirement Traceability Matrix (RTM) ensures end-to-end forward and backward traceability, establishing that every functional requirement originates from business specifications, is broken down in the WBS, realized in source code, and verified by test cases.
@@ -662,7 +666,9 @@ Correlates Functional Requirements (FR-01 to FR-14) with WBS Tasks, Architectura
 # ==============================================================================
 # DOCUMENT 15 — CONFIGURATION / VERSION CONTROL RECORD
 # ==============================================================================
-docs["15-configuration-management-record.md"] = """# DOCUMENT 15 — CONFIGURATION / VERSION CONTROL RECORD
+docs[
+    "15-configuration-management-record.md"
+] = """# DOCUMENT 15 — CONFIGURATION / VERSION CONTROL RECORD
 
 ## 1. Purpose
 The Configuration Management Record documents release baselines, repository branching conventions, tag milestones, and major engineering changes to ensure code integrity and reproducibility.

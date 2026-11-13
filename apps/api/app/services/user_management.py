@@ -165,7 +165,9 @@ class UserManagementService:
         ip_address: str | None = None,
         user_agent: str | None = None,
     ) -> User:
-        """Update role and/or activation status with clinical safety checks and audit logs."""
+        """Update role and/or activation status with clinical safety checks and
+        audit logs.
+        """
         cls._verify_admin(current_user)
         user = cls.get_user_detail(db, user_id, current_user)
 

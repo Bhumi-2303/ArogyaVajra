@@ -26,8 +26,10 @@ class AppointmentService:
     ):
         """Check if the doctor has an active availability slot for the given time."""
         day_of_week = (
-            (appointment_date.weekday() + 1) % 7
-        )  # Python weekday: 0=Mon, 6=Sun. ArogyaVajra schema usually: 0=Sun, 6=Sat? Let's check: 0=Sunday..6=Saturday or 1=Monday..7=Sunday. The schema says: 0=Sunday .. 6=Saturday.
+            appointment_date.weekday() + 1
+        ) % 7  # Python weekday: 0=Mon, 6=Sun. ArogyaVajra schema usually: 0=Sun,
+        # 6=Sat? Let's check: 0=Sunday..6=Saturday or 1=Monday..7=Sunday.
+        # The schema says: 0=Sunday .. 6=Saturday.
         # Python weekday: 0=Monday, 1=Tuesday, ..., 6=Sunday.
         # So Sunday should be 0.
         isoweekday = appointment_date.isoweekday()  # 1=Mon, ..., 7=Sun
@@ -138,7 +140,10 @@ class AppointmentService:
                 status_code=status.HTTP_409_CONFLICT,
                 detail={
                     "code": "APPOINTMENT_CONFLICT",
-                    "message": "The requested time slot conflicts with an existing appointment.",
+                    "message": (
+                        "The requested time slot conflicts with an existing "
+                        "appointment."
+                    ),
                 },
             )
 
@@ -166,7 +171,10 @@ class AppointmentService:
                 status_code=status.HTTP_409_CONFLICT,
                 detail={
                     "code": "APPOINTMENT_CONFLICT",
-                    "message": "The requested time slot conflicts with an existing appointment.",
+                    "message": (
+                        "The requested time slot conflicts with an existing "
+                        "appointment."
+                    ),
                 },
             ) from exc
 
@@ -245,7 +253,9 @@ class AppointmentService:
                     detail="Cannot complete a cancelled appointment.",
                 )
 
-            # Rule: completed cannot be directly rescheduled (rescheduled maps to SCHEDULED/CONFIRMED typically, but not explicitly states here except "rescheduled")
+            # Rule: completed cannot be directly rescheduled (rescheduled maps to
+            # SCHEDULED/CONFIRMED typically, but not explicitly states here except
+            # "rescheduled")
             if appointment.status == AppointmentStatus.COMPLETED and data.status in [
                 AppointmentStatus.SCHEDULED,
                 AppointmentStatus.CONFIRMED,
@@ -290,7 +300,10 @@ class AppointmentService:
             ]:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Cannot reschedule a {appointment.status.value.lower()} appointment.",
+                    detail=(
+                        f"Cannot reschedule a "
+                        f"{appointment.status.value.lower()} appointment."
+                    ),
                 )
 
             new_date = data.appointment_date or appointment.appointment_date
@@ -319,7 +332,10 @@ class AppointmentService:
                     status_code=status.HTTP_409_CONFLICT,
                     detail={
                         "code": "APPOINTMENT_CONFLICT",
-                        "message": "The requested time slot conflicts with an existing appointment.",
+                        "message": (
+                            "The requested time slot conflicts with an existing "
+                            "appointment."
+                        ),
                     },
                 )
 
@@ -340,7 +356,10 @@ class AppointmentService:
                 status_code=status.HTTP_409_CONFLICT,
                 detail={
                     "code": "APPOINTMENT_CONFLICT",
-                    "message": "The requested time slot conflicts with an existing appointment.",
+                    "message": (
+                        "The requested time slot conflicts with an existing "
+                        "appointment."
+                    ),
                 },
             ) from exc
 

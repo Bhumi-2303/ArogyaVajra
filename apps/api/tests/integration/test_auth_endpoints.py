@@ -276,7 +276,9 @@ def test_inactive_user_access_rejection():
 
 @pytest.mark.integration
 def test_register_with_profile_and_age():
-    """Verify that registering with full_name, age, and requested_role provisions PatientProfile."""
+    """Verify that registering with full_name, age, and requested_role provisions
+    PatientProfile.
+    """
     unique_email = f"patient_{uuid.uuid4().hex[:8]}@example.com"
     password = "SecurePassword123!"
     full_name = "Arjun Varma"
@@ -388,8 +390,10 @@ def test_no_refresh_token_in_body_browser_vs_non_browser():
     assert "access_token" in ref_b.json()["data"]
     assert "refresh_token" in ref_b.cookies
 
-    # Scenario (a): Malicious / browser script sends cookie + X-Client-Type: non-browser
-    # CRITICAL: Because request carries a refresh_token cookie, it is strictly treated as a
+    # Scenario (a): Malicious / browser script sends cookie +
+    # X-Client-Type: non-browser
+    # CRITICAL: Because request carries a refresh_token cookie, it is strictly
+    # treated as a
     # browser request and MUST NEVER receive a refresh_token in the response body.
     exfil_client = TestClient(app, cookies={"refresh_token": cookie_val})
     exfil_res = exfil_client.post(

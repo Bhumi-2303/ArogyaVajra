@@ -28,7 +28,9 @@ class MockEmailSender(EmailSender):
 
 @pytest.mark.integration
 def test_forgot_password_and_reset_password_lifecycle():
-    """Verify forgot password generates single-use token, emails link, and resets password."""
+    """Verify forgot password generates single-use token, emails link, and resets
+    password.
+    """
     mock_sender = MockEmailSender()
     set_email_sender(mock_sender)
 
@@ -86,7 +88,8 @@ def test_forgot_password_and_reset_password_lifecycle():
         assert token_record.token_hash == hash_token(raw_token)
         assert token_record.is_used is False
 
-    # 3. Non-enumerating test: forgot-password with non-existent email returns same message
+    # 3. Non-enumerating test: forgot-password with non-existent email returns
+    # same message
     unknown_email = f"unknown_{uuid.uuid4().hex[:8]}@example.com"
     unknown_res = client.post(
         "/api/v1/auth/forgot-password",
@@ -211,7 +214,9 @@ def test_reset_password_expired_token():
 
 @pytest.mark.integration
 def test_cookie_based_refresh_and_logout():
-    """Verify refresh token is set in httpOnly cookie and can be used for rotation and logout."""
+    """Verify refresh token is set in httpOnly cookie and can be used for
+    rotation and logout.
+    """
     email = f"cookie_{uuid.uuid4().hex[:8]}@example.com"
     password = "SecurePassword123!"
 

@@ -54,7 +54,9 @@ def test_validate_password_complexity_rejects_forbidden_patterns():
 
 
 def test_validate_bootstrap_secret_missing_trusted():
-    """Verify missing trusted secret fails closed in production and errors in other envs."""
+    """Verify missing trusted secret fails closed in production and errors in
+    other envs.
+    """
     # In production, missing trusted secret fails closed
     with pytest.raises(
         ValueError,
@@ -76,7 +78,9 @@ def test_validate_bootstrap_secret_missing_trusted():
 
 
 def test_validate_bootstrap_secret_production_invariants():
-    """Verify production checks for trusted secret length, trivial values, and entropy."""
+    """Verify production checks for trusted secret length, trivial values, and
+    entropy.
+    """
     # Under 16 chars is rejected
     with pytest.raises(ValueError, match="at least 16 characters"):
         validate_bootstrap_secret("short-prod-key", "short-prod-key", "production")
@@ -123,7 +127,9 @@ def test_validate_bootstrap_secret_success():
 
 
 def test_bootstrap_initial_admin_authorization_failure():
-    """Verify bootstrap_initial_admin rejects missing or mismatched authorization secret."""
+    """Verify bootstrap_initial_admin rejects missing or mismatched authorization
+    secret.
+    """
     factory = get_sessionmaker()
     with factory() as db:
         # Fails closed when trusted secret is missing in production
@@ -161,7 +167,9 @@ def test_validate_email_format():
 
 
 def test_bootstrap_initial_admin_creation_and_audit():
-    """Verify bootstrap creates a new admin user and records an audit log without secrets."""
+    """Verify bootstrap creates a new admin user and records an audit log
+    without secrets.
+    """
     factory = get_sessionmaker()
     test_email = f"bootstrap.admin.{uuid.uuid4().hex[:8]}@example.com"
     test_password = "SecureChief#Pass123!"
@@ -228,7 +236,9 @@ def test_bootstrap_initial_admin_creation_and_audit():
 
 
 def test_bootstrap_initial_admin_promotes_existing_user():
-    """Verify bootstrap promotes an existing user when no active administrator exists."""
+    """Verify bootstrap promotes an existing user when no active administrator
+    exists.
+    """
     factory = get_sessionmaker()
     existing_user_email = f"registered.patient.{uuid.uuid4().hex[:8]}@example.com"
     new_password = "PromotedChief#Pass456!"
@@ -357,7 +367,9 @@ def test_emergency_recovery_force_flag_with_existing_admins():
 
 
 def test_emergency_recovery_force_flag_cannot_bypass_safety_checks():
-    """Verify that --force CANNOT bypass authorization, password complexity, or email checks."""
+    """Verify that --force CANNOT bypass authorization, password complexity, or
+    email checks.
+    """
     factory = get_sessionmaker()
     valid_key = "Enterprise#Operator#Key#2026!XyZ"
     with factory() as db:

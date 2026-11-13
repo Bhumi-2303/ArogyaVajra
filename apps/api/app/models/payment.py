@@ -8,7 +8,7 @@ from sqlalchemy.orm import relationship
 from app.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
 
 
-class PaymentMethod(str, enum.Enum):
+class PaymentMethod(enum.StrEnum):
     CASH = "CASH"
     UPI = "UPI"
     CARD = "CARD"

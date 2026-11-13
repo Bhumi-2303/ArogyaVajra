@@ -56,7 +56,9 @@ class UserRoleUpdate(BaseModel):
 
     role: UserRole = Field(
         ...,
-        description="Target role (PATIENT, DOCTOR, RECEPTIONIST, BILLING_STAFF, ADMIN).",
+        description=(
+            "Target role (PATIENT, DOCTOR, RECEPTIONIST, BILLING_STAFF, ADMIN)."
+        ),
     )
 
 
@@ -75,17 +77,24 @@ class UserCreate(BaseModel):
     email: EmailStr = Field(..., description="Unique email address for user login")
     role: UserRole = Field(
         ...,
-        description="Assigned role (PATIENT, DOCTOR, RECEPTIONIST, BILLING_STAFF, ADMIN)",
+        description=(
+            "Assigned role (PATIENT, DOCTOR, RECEPTIONIST, BILLING_STAFF, ADMIN)"
+        ),
     )
     password: str | None = Field(
         default=None,
         min_length=8,
-        description="Initial password. If omitted, a secure temporary password is automatically generated.",
+        description=(
+            "Initial password. If omitted, a secure temporary password is "
+            "automatically generated."
+        ),
     )
 
 
 class UserCreateResponse(BaseModel):
-    """Envelope for user creation response, providing one-time access to generated temporary credentials."""
+    """Envelope for user creation response, providing one-time access to
+    generated temporary credentials.
+    """
 
     data: UserResponse
     temporary_password: str | None = None

@@ -23,7 +23,8 @@ def upgrade() -> None:
         # Enable btree_gist extension for scalar types equality inside GiST
         op.execute("CREATE EXTENSION IF NOT EXISTS btree_gist;")
 
-        # Exclusion constraint preventing overlapping time ranges for the same doctor and date
+        # Exclusion constraint preventing overlapping time ranges for the same
+        # doctor and date
         # while status IN ('SCHEDULED', 'CONFIRMED')
         op.execute(
             """
@@ -32,7 +33,8 @@ def upgrade() -> None:
             EXCLUDE USING gist (
                 doctor_id WITH =,
                 appointment_date WITH =,
-                tsrange((appointment_date + start_time), (appointment_date + end_time), '[)') WITH &&
+                tsrange((appointment_date + start_time), \
+(appointment_date + end_time), '[)') WITH &&
             )
             WHERE (status IN ('SCHEDULED', 'CONFIRMED'));
             """
@@ -43,5 +45,6 @@ def downgrade() -> None:
     bind = op.get_bind()
     if bind.dialect.name == "postgresql":
         op.execute(
-            "ALTER TABLE appointments DROP CONSTRAINT IF EXISTS exclude_overlapping_appointments;"
+            "ALTER TABLE appointments DROP CONSTRAINT IF EXISTS "
+            "exclude_overlapping_appointments;"
         )

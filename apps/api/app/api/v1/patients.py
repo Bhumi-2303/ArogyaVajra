@@ -47,7 +47,9 @@ def list_patients(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Retrieve paginated patient profiles with search filtering across code, name, phone, email."""
+    """Retrieve paginated patient profiles with search filtering across code,
+    name, phone, email.
+    """
     items, total, total_pages = PatientService.list_patients(
         db=db,
         current_user=current_user,
@@ -85,7 +87,9 @@ def create_patient(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Register a new patient profile with auto-generated patient code (e.g., PAT-00001)."""
+    """Register a new patient profile with auto-generated patient code
+    (e.g., PAT-00001).
+    """
     ip_address = get_client_identifier(request)
     user_agent = request.headers.get("user-agent")
 
@@ -114,7 +118,9 @@ def get_patient(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Retrieve detailed demographics for a single patient enforcing relationship security."""
+    """Retrieve detailed demographics for a single patient enforcing relationship
+    security.
+    """
     patient = PatientService.get_patient(
         db=db,
         patient_id=patient_id,

@@ -28,7 +28,7 @@ class UserRole(str, enum.Enum):
 UserRoleType = Enum(
     UserRole,
     name="user_role",
-    native_enum=False,
+    native_enum=True,
     values_callable=lambda x: [e.value for e in x],
 )
 

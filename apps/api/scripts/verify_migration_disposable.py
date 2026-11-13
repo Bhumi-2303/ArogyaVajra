@@ -69,7 +69,8 @@ def run_migration_verification():
     try:
         # 2. Upgrade to preceding revision (7ea81b2c90df)
         print(
-            "\n[2/6] Upgrading disposable database to preceding revision (7ea81b2c90df)..."
+            "\n[2/6] Upgrading disposable database to preceding revision "
+            "(7ea81b2c90df)..."
         )
         command.upgrade(alembic_cfg, "7ea81b2c90df")
         print("  ✓ Successfully upgraded to revision 7ea81b2c90df")
@@ -119,7 +120,7 @@ def run_migration_verification():
             """)
             indexes = cur.fetchall()
             print(f"  ✓ Indexes present on refresh_tokens: {len(indexes)}")
-            for idx_name, idx_def in indexes:
+            for idx_name, _idx_def in indexes:
                 print(f"    - {idx_name}")
 
         # 5. Test downgrade and re-upgrade

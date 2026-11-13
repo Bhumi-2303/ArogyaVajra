@@ -42,7 +42,9 @@ class PatientCreate(PatientBase):
 
     email: EmailStr | None = Field(
         default=None,
-        description="User email. If user account does not exist, one will be provisioned.",
+        description=(
+            "User email. If user account does not exist, one will be provisioned."
+        ),
     )
     user_id: uuid.UUID | None = Field(
         default=None,
@@ -116,7 +118,9 @@ class PatientListResponse(BaseModel):
 
 
 class PatientSubresourceListResponse(BaseModel):
-    """Generic envelope for patient retrieval integration (appointments, records, prescriptions, invoices)."""
+    """Generic envelope for patient retrieval integration (appointments, records,
+    prescriptions, invoices).
+    """
 
     data: list[dict[str, Any]] = Field(default_factory=list)
     message: str = "Records retrieved successfully."

@@ -111,7 +111,9 @@ def create_test_doctor(admin_token: str) -> tuple[str, str]:
 
 @pytest.mark.integration
 def test_simultaneous_bookings_exactly_one_succeeds_and_one_conflicts():
-    """Fire two simultaneous booking requests for the same slot; assert exactly one 201 and one 409."""
+    """Fire two simultaneous booking requests for the same slot; assert exactly
+    one 201 and one 409.
+    """
     _, _, admin_token = create_authenticated_user(UserRole.ADMIN)
     doctor_id, _ = create_test_doctor(admin_token)
 
@@ -168,7 +170,9 @@ def test_simultaneous_bookings_exactly_one_succeeds_and_one_conflicts():
 
 @pytest.mark.integration
 def test_db_exclusion_constraint_blocks_direct_overlapping_inserts():
-    """Verify that PostgreSQL directly raises IntegrityError on overlapping appointments."""
+    """Verify that PostgreSQL directly raises IntegrityError on overlapping
+    appointments.
+    """
     factory = get_sessionmaker()
     doctor_uuid = uuid.uuid4()
     patient1_uuid = uuid.uuid4()
@@ -276,7 +280,9 @@ def test_db_exclusion_constraint_blocks_direct_overlapping_inserts():
 
 @pytest.mark.integration
 def test_reschedule_conflict_rejected_with_appointment_conflict_error():
-    """Verify that rescheduling via PUT into an occupied slot returns 409 APPOINTMENT_CONFLICT."""
+    """Verify that rescheduling via PUT into an occupied slot returns 409
+    APPOINTMENT_CONFLICT.
+    """
     _, _, admin_token = create_authenticated_user(UserRole.ADMIN)
     doctor_id, _ = create_test_doctor(admin_token)
 

@@ -16,11 +16,11 @@ class RateLimitBucket(Base):
     key: Mapped[str] = mapped_column(
         String(255),
         primary_key=True,
-        index=True,
     )
     count: Mapped[int] = mapped_column(
         Integer,
         default=1,
+        server_default="1",
         nullable=False,
     )
     window_expires_at: Mapped[datetime] = mapped_column(

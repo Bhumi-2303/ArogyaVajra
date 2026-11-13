@@ -69,7 +69,9 @@ def create_doctor(user_id: uuid.UUID) -> uuid.UUID:
 
 @pytest.mark.integration
 def test_doctor_availability_lifecycle_and_slots():
-    """Verify availability creation, listing, slot calculation, booking impact, and deletion."""
+    """Verify availability creation, listing, slot calculation, booking impact,
+    and deletion.
+    """
     doc1_user_id, _, doc1_token = create_user_with_role(UserRole.DOCTOR)
     doc1_id = create_doctor(doc1_user_id)
 
@@ -88,7 +90,8 @@ def test_doctor_availability_lifecycle_and_slots():
     target_date = target_dt.date()
     # Python weekday(): Monday is 0 and Sunday is 6.
     # Our DB model day_of_week: 0=Sunday or 1=Monday?
-    # In doctor service: day_of_week is typically matched via date.weekday() or (date.weekday() + 1) % 7
+    # In doctor service: day_of_week is typically matched via date.weekday() or
+    # (date.weekday() + 1) % 7
     # Let's add availability for all 7 days to test robustly
     created_slot_ids = []
     for dow in range(7):

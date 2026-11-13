@@ -1,185 +1,335 @@
 #!/usr/bin/env python3
-"""ArogyaVajra Enforceable Ruff Lint Gate.
+"""Enforce the Arogyavajra Ruff lint baseline.
 
-Enforces zero lint violations on newly changed or added Python files,
-prevents any new lint violations across the codebase, and ratchets
-against the documented legacy baseline.
+The gate:
+1. Prevents the total number of findings from exceeding the baseline.
+2. Prevents findings for any file/rule pair from increasing.
+3. Requires changed Python files to pass Ruff without violations.
 """
+
+from __future__ import annotations
 
 import json
 import logging
 import os
+import shutil
 import subprocess
 import sys
+from collections import Counter
 from pathlib import Path
 
 logger = logging.getLogger("lint_gate")
 
 
-def get_git_modified_files(api_root: Path) -> list[str]:
-    """Identify Python files modified in current branch, commit, or working tree."""
-    modified_files = set()
-
-    try:
-        root_res = subprocess.run(
-            ["git", "rev-parse", "--show-toplevel"],
-            cwd=api_root,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        repo_root = (
-            Path(root_res.stdout.strip()) if root_res.returncode == 0 else api_root
-        )
-    except (subprocess.SubprocessError, OSError):
-        repo_root = api_root
-
-    # 1. Check uncommitted / staged working tree changes
-    try:
-        status_res = subprocess.run(
-            ["git", "status", "--porcelain"],
-            cwd=api_root,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        for line in status_res.stdout.splitlines():
-            if len(line) > 3:
-                filepath = line[3:].strip().split(" -> ")[-1]
-                if filepath.endswith(".py"):
-                    full_path = (repo_root / filepath).resolve()
-                    if full_path.exists() and full_path.is_relative_to(api_root):
-                        modified_files.add(os.path.relpath(full_path, api_root))
-    except (subprocess.SubprocessError, OSError) as err:
-        logger.debug("Could not read git status: %s", err)
-
-    # 2. Check diff against origin/main or HEAD~1
-    diff_targets = ["origin/main...HEAD", "HEAD~1...HEAD"]
-    for target in diff_targets:
-        try:
-            diff_res = subprocess.run(
-                ["git", "diff", "--name-only", target],
-                cwd=api_root,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            if diff_res.returncode == 0 and diff_res.stdout.strip():
-                for line in diff_res.stdout.splitlines():
-                    filepath = line.strip()
-                    if filepath.endswith(".py"):
-                        full_path = (repo_root / filepath).resolve()
-                        if full_path.exists() and full_path.is_relative_to(api_root):
-                            modified_files.add(os.path.relpath(full_path, api_root))
-                break
-        except (subprocess.SubprocessError, OSError) as err:
-            logger.debug("Could not read git diff target %s: %s", target, err)
-
-    return sorted(modified_files)
-
-
-def main() -> int:
-    api_root = Path(__file__).resolve().parent.parent
-    baseline_path = api_root / ".ruff-baseline.json"
-
-    print("=" * 60)
-    print("       Arogyavajra Enforceable Ruff Lint Gate")
-    print("=" * 60)
-
-    if not baseline_path.exists():
-        print(f"ERROR: Baseline file not found: {baseline_path}")
-        return 1
-
-    with open(baseline_path, "r", encoding="utf-8") as f:
-        baseline_items = json.load(f)
-
-    baseline_signatures = {
-        (item["filename"], item["code"], item.get("line")) for item in baseline_items
-    }
-    baseline_ceiling = len(baseline_items)
-    print(f"Recorded legacy baseline: {baseline_ceiling} findings in backlog.")
-
-    # 1. Run ruff on entire codebase
-    ruff_bin = sys.executable.replace("python", "ruff")
-    if not os.path.exists(ruff_bin):
-        ruff_bin = "ruff"
-
-    ruff_res = subprocess.run(
-        [ruff_bin, "check", ".", "--output-format", "json"],
-        cwd=api_root,
+def run_command(
+    command: list[str],
+    cwd: Path,
+) -> subprocess.CompletedProcess[str]:
+    """Run a command and capture its output."""
+    return subprocess.run(
+        command,
+        cwd=cwd,
         capture_output=True,
         text=True,
         check=False,
     )
 
+
+def get_ruff_command() -> list[str]:
+    """Find Ruff without relying on executable-path string replacement."""
+    executable = shutil.which("ruff")
+
+    if executable:
+        return [executable]
+
+    return [sys.executable, "-m", "ruff"]
+
+
+def normalize_filename(filename: str, api_root: Path) -> str:
+    """Normalize filenames relative to the API directory."""
+    path = Path(filename)
+
+    if not path.is_absolute():
+        path = api_root / path
+
+    resolved = path.resolve()
+
     try:
-        current_findings = json.loads(ruff_res.stdout)
-    except json.JSONDecodeError:
-        print(
-            f"ERROR: Failed to parse Ruff JSON output:\n{ruff_res.stderr or ruff_res.stdout}"
+        return resolved.relative_to(api_root.resolve()).as_posix()
+    except ValueError:
+        raise ValueError(f"File is outside the API directory: {filename}") from None
+
+
+def load_baseline(path: Path, api_root: Path) -> list[dict[str, str]]:
+    """Load and validate the Ruff baseline."""
+    if not path.is_file():
+        raise FileNotFoundError(f"Baseline file not found: {path}")
+
+    with path.open(encoding="utf-8") as file:
+        data = json.load(file)
+
+    if not isinstance(data, list):
+        raise TypeError("Ruff baseline must contain a JSON array.")
+
+    validated: list[dict[str, str]] = []
+
+    for index, item in enumerate(data):
+        if not isinstance(item, dict):
+            raise TypeError(f"Invalid baseline entry at index {index}.")
+
+        filename = item.get("filename")
+        code = item.get("code")
+
+        if not isinstance(filename, str):
+            raise TypeError(f"Missing filename at baseline entry {index}.")
+
+        if not isinstance(code, str):
+            raise TypeError(f"Missing code at baseline entry {index}.")
+
+        validated.append(
+            {
+                "filename": normalize_filename(filename, api_root),
+                "code": code,
+            }
         )
-        return 1
 
-    current_count = len(current_findings)
-    print(f"Current total repository findings: {current_count}")
+    return validated
 
-    # 2. Check for ratchet regression (ceiling violation)
-    if current_count > baseline_ceiling:
-        print(
-            f"\n[FAIL] Ratchet violation: Total findings ({current_count}) "
-            f"exceed baseline ceiling ({baseline_ceiling}) by {current_count - baseline_ceiling}."
-        )
-        return 1
 
-    # 3. Check for any brand new violations not in baseline
-    new_violations = []
-    for item in current_findings:
-        rel_filename = os.path.relpath(item["filename"], api_root)
-        sig = (rel_filename, item["code"], item["location"]["row"])
-        if sig not in baseline_signatures:
-            file_code_sigs = {(f, c) for f, c, _ in baseline_signatures}
-            if (rel_filename, item["code"]) not in file_code_sigs:
-                new_violations.append((rel_filename, item))
-
-    if new_violations:
-        print(f"\n[FAIL] Detected {len(new_violations)} NEW lint violation(s):")
-        for fn, v in new_violations:
-            loc = v["location"]
-            print(f"  - {fn}:{loc['row']}:{loc['column']}: {v['code']} {v['message']}")
-        return 1
-
-    # 4. Check all git modified/added files strictly
-    modified_files = get_git_modified_files(api_root)
-    if modified_files:
-        print(f"\nVerifying {len(modified_files)} modified Python file(s) strictly:")
-        for mf in modified_files:
-            print(f"  • {mf}")
-        mod_check = subprocess.run(
-            [ruff_bin, "check", *modified_files],
-            cwd=api_root,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if mod_check.returncode != 0:
-            print("\n[FAIL] Modified files failed strict Ruff check:")
-            print(mod_check.stdout or mod_check.stderr)
-            return 1
-        print("  ✓ All modified files passed strict Ruff inspection.")
-    else:
-        print("\nNo modified Python files detected in current context.")
-
-    # 5. Success summary
-    if current_count < baseline_ceiling:
-        print(
-            f"\n✓ Backlog improved: {baseline_ceiling - current_count} legacy issues resolved!"
-        )
-    print(
-        "\n✓ Lint gate passed: zero new violations, modified files clean, within baseline ceiling."
+def get_modified_python_files(api_root: Path) -> list[str]:
+    """Collect changed Python files from Git and the working tree."""
+    root_result = run_command(
+        ["git", "rev-parse", "--show-toplevel"],
+        api_root,
     )
-    print("=" * 60)
+    if root_result.returncode != 0:
+        raise RuntimeError(
+            f"Could not locate Git repository root: {root_result.stderr.strip()}"
+        )
+    repo_root = Path(root_result.stdout.strip()).resolve()
+
+    base_ref = (
+        f"origin/{os.environ['GITHUB_BASE_REF']}"
+        if os.environ.get("GITHUB_BASE_REF")
+        else "origin/main"
+    )
+
+    commands = [
+        [
+            "git",
+            "diff",
+            "--name-only",
+            "--diff-filter=ACMRTUXB",
+            "-z",
+            f"{base_ref}...HEAD",
+        ],
+        [
+            "git",
+            "diff",
+            "--name-only",
+            "--diff-filter=ACMRTUXBD",
+            "-z",
+            "HEAD",
+        ],
+    ]
+
+    modified: set[str] = set()
+
+    for command in commands:
+        result = run_command(command, repo_root)
+
+        if result.returncode != 0:
+            logger.debug(
+                "Git command unavailable: %s",
+                result.stderr.strip(),
+            )
+            continue
+
+        for filename in result.stdout.split("\0"):
+            if not filename.endswith(".py"):
+                continue
+
+            try:
+                relative = normalize_filename(
+                    str(repo_root / filename),
+                    api_root,
+                )
+            except ValueError:
+                continue
+
+            if (api_root / relative).is_file():
+                modified.add(relative)
+
+    untracked = run_command(
+        ["git", "ls-files", "--others", "--exclude-standard", "-z"],
+        repo_root,
+    )
+    if untracked.returncode != 0:
+        raise RuntimeError(
+            f"Could not list untracked files: {untracked.stderr.strip()}"
+        )
+
+    for filename in untracked.stdout.split("\0"):
+        if not filename.endswith(".py"):
+            continue
+
+        try:
+            relative = normalize_filename(str(repo_root / filename), api_root)
+        except ValueError:
+            continue
+
+        if (api_root / relative).is_file():
+            modified.add(relative)
+
+    return sorted(modified)
+
+
+def get_current_findings(
+    ruff_command: list[str],
+    api_root: Path,
+) -> list[dict]:
+    """Run Ruff and return its JSON findings."""
+    result = run_command(
+        ruff_command + ["check", ".", "--output-format", "json"],
+        api_root,
+    )
+
+    if result.returncode not in (0, 1):
+        raise RuntimeError(
+            f"Ruff could not execute correctly.\n{result.stderr or result.stdout}"
+        )
+
+    try:
+        findings = json.loads(result.stdout)
+    except json.JSONDecodeError as error:
+        raise RuntimeError(f"Could not parse Ruff JSON output: {error}") from error
+
+    if not isinstance(findings, list):
+        raise TypeError("Ruff JSON output is not an array.")
+
+    return findings
+
+
+def count_findings(
+    findings: list[dict],
+    api_root: Path,
+) -> Counter[tuple[str, str]]:
+    """Count findings by normalized filename and Ruff rule."""
+    counts: Counter[tuple[str, str]] = Counter()
+
+    for index, item in enumerate(findings):
+        if not isinstance(item, dict):
+            raise TypeError(f"Invalid Ruff finding at index {index}.")
+
+        filename = item.get("filename")
+        code = item.get("code")
+
+        if not isinstance(filename, str):
+            raise TypeError(f"Missing filename in Ruff finding at index {index}.")
+
+        if not isinstance(code, str):
+            raise TypeError(f"Missing rule code in Ruff finding at index {index}.")
+
+        normalized = normalize_filename(filename, api_root)
+        counts[(normalized, code)] += 1
+
+    return counts
+
+
+def main() -> int:
+    """Run the Ruff baseline and changed-file checks."""
+    api_root = Path(__file__).resolve().parent.parent
+    baseline_path = api_root / ".ruff-baseline.json"
+    ruff_command = get_ruff_command()
+
+    print("=" * 64)
+    print("          Arogyavajra Enforceable Ruff Lint Gate")
+    print("=" * 64)
+
+    try:
+        baseline = load_baseline(baseline_path, api_root)
+    except (
+        OSError,
+        json.JSONDecodeError,
+        TypeError,
+        ValueError,
+    ) as error:
+        print(f"[FAIL] Could not load baseline: {error}")
+        return 1
+
+    baseline_total = len(baseline)
+
+    baseline_counts = Counter((item["filename"], item["code"]) for item in baseline)
+
+    print(f"Recorded baseline: {baseline_total} findings.")
+
+    try:
+        findings = get_current_findings(ruff_command, api_root)
+        current_counts = count_findings(findings, api_root)
+    except (OSError, RuntimeError, TypeError, ValueError) as error:
+        print(f"[FAIL] Could not inspect Ruff findings: {error}")
+        return 1
+
+    current_total = len(findings)
+
+    print(f"Current repository findings: {current_total}")
+
+    failures: list[str] = []
+
+    # Check total finding count.
+    if current_total > baseline_total:
+        failures.append(
+            f"Total findings increased from {baseline_total} to {current_total}."
+        )
+
+    # Check individual file/rule pairs.
+    for key, count in current_counts.items():
+        allowed = baseline_counts.get(key, 0)
+
+        if count > allowed:
+            filename, code = key
+
+            failures.append(f"{filename}: {code} increased from {allowed} to {count}.")
+
+    if failures:
+        print("\n[FAIL] Ruff baseline regression:")
+
+        for failure in failures:
+            print(f"  - {failure}")
+
+    # Strictly check changed Python files.
+    modified_files = get_modified_python_files(api_root)
+
+    if modified_files:
+        print(f"\nStrictly checking {len(modified_files)} changed Python file(s):")
+
+        strict_result = run_command(
+            ruff_command + ["check", *modified_files],
+            api_root,
+        )
+
+        if strict_result.returncode != 0:
+            print("[FAIL] Changed Python files failed strict Ruff checking.")
+            print(strict_result.stdout or strict_result.stderr)
+            return 1
+
+        print("Changed Python files passed strict Ruff checking.")
+
+    else:
+        print("\nNo changed Python files detected.")
+
+    if failures:
+        return 1
+
+    if current_total < baseline_total:
+        print(f"\nBacklog improved by {baseline_total - current_total} finding(s).")
+
+    print("\n[PASS] Ruff lint gate passed.")
+    print("=" * 64)
+
     return 0
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     sys.exit(main())

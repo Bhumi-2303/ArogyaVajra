@@ -148,7 +148,10 @@ def _run_seed_on_session(db: Session, password: str) -> dict[str, str]:
             license_number=lic_num,
             phone="+91-9876543210",
             consultation_fee=Decimal("500.00"),
-            bio="Senior Consultant Cardiologist with extensive clinical experience in preventive and interventional cardiology.",
+            bio=(
+                "Senior Consultant Cardiologist with extensive clinical experience "
+                "in preventive and interventional cardiology."
+            ),
         )
         db.add(doc_profile)
         db.flush()
@@ -157,7 +160,8 @@ def _run_seed_on_session(db: Session, password: str) -> dict[str, str]:
         )
     else:
         print(
-            f"[*] DoctorProfile already exists: Dr. {doc_profile.first_name} {doc_profile.last_name}"
+            f"[*] DoctorProfile already exists: Dr. {doc_profile.first_name} "
+            f"{doc_profile.last_name}"
         )
 
     # Doctor Availability (Mon-Fri 09:00 - 17:00)
@@ -217,7 +221,8 @@ def _run_seed_on_session(db: Session, password: str) -> dict[str, str]:
         print(f"[+] Created PatientProfile: Ramesh Gupta ({pat_profile.patient_code})")
     else:
         print(
-            f"[*] PatientProfile already exists: {pat_profile.first_name} {pat_profile.last_name}"
+            f"[*] PatientProfile already exists: {pat_profile.first_name} "
+            f"{pat_profile.last_name}"
         )
 
     # 6. Clinical Records (Appointment, Medical Record, Prescription, Invoice)
@@ -258,10 +263,21 @@ def _run_seed_on_session(db: Session, password: str) -> dict[str, str]:
             doctor_id=doc_profile.id,
             appointment_id=apt.id,
             record_date=today,
-            chief_complaint="Mild palpitations during high exertion; occasional fatigue",
-            clinical_notes="BP 128/82 mmHg, resting heart rate 74 bpm. Normal S1/S2 heart sounds. Resting 12-lead ECG showed normal sinus rhythm.",
-            diagnosis="Benign sinus arrhythmia; early stage primary essential hypertension (controlled)",
-            treatment_notes="Prescribed Metoprolol 25mg daily. Advised 30 minutes daily moderate aerobic exercise and reduced sodium intake.",
+            chief_complaint=(
+                "Mild palpitations during high exertion; occasional fatigue"
+            ),
+            clinical_notes=(
+                "BP 128/82 mmHg, resting heart rate 74 bpm. Normal S1/S2 heart "
+                "sounds. Resting 12-lead ECG showed normal sinus rhythm."
+            ),
+            diagnosis=(
+                "Benign sinus arrhythmia; early stage primary essential "
+                "hypertension (controlled)"
+            ),
+            treatment_notes=(
+                "Prescribed Metoprolol 25mg daily. Advised 30 minutes daily "
+                "moderate aerobic exercise and reduced sodium intake."
+            ),
             follow_up_date=date(
                 today.year,
                 today.month + 1 if today.month < 12 else 1,
@@ -399,7 +415,9 @@ def seed_accounts(
     db: Session | None = None,
     password: str | None = None,
 ) -> dict[str, str]:
-    """Seed authoritative development accounts. Strictly prevented if APP_ENV=production or pointing to production DB."""
+    """Seed authoritative development accounts. Strictly prevented if
+    APP_ENV=production or pointing to production DB.
+    """
     app_env = os.environ.get("APP_ENV") or settings.APP_ENV
     if app_env == "production" and not os.environ.get("ALLOW_PRODUCTION_DEMO_SEED"):
         raise RuntimeError(
@@ -425,7 +443,8 @@ def seed_accounts(
     )
     if is_cloud_prod and not os.environ.get("ALLOW_PRODUCTION_DEMO_SEED"):
         raise RuntimeError(
-            "Seeding demo accounts is strictly prohibited against a production or Render cloud database."
+            "Seeding demo accounts is strictly prohibited against a production "
+            "or Render cloud database."
         )
 
     active_password = password or os.environ.get("DEMO_USER_PASSWORD") or DEV_PASSWORD
